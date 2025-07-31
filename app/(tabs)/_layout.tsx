@@ -15,29 +15,83 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: 'absolute',
+            height: 88,
+            paddingBottom: 20,
+            paddingTop: 8,
           },
-          default: {},
+          android: {
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
+          default: {
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
         }),
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={focused ? 28 : 24} 
+              name="house.fill" 
+              color={color} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="search"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Search',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={focused ? 28 : 24} 
+              name="magnifyingglass" 
+              color={color} 
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: 'Favorites',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={focused ? 28 : 24} 
+              name="heart.fill" 
+              color={color} 
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={focused ? 28 : 24} 
+              name="person.fill" 
+              color={color} 
+            />
+          ),
         }}
       />
     </Tabs>
