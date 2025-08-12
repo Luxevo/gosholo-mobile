@@ -1,0 +1,87 @@
+import React from 'react';
+import Svg, { G, Path, Defs, Filter, FeFlood, FeColorMatrix, FeOffset, FeGaussianBlur, FeBlend } from 'react-native-svg';
+
+interface ButtonSvgProps {
+  width?: number;
+  height?: number;
+}
+
+export function ButtonSvg({ width = 56, height = 56 }: ButtonSvgProps) {
+  return (
+    <Svg
+      width={width}
+      height={height}
+      viewBox="0 0 110 103"
+      fill="none"
+    >
+      <G filter="url(#filter0_dd_105_117)">
+        <Path
+          d="M15 45C15 22.9086 32.9086 5 55 5C77.0914 5 95 22.9086 95 45C95 67.0914 77.0914 85 55 85C32.9086 85 15 67.0914 15 45Z"
+          fill="#FF6233"
+        />
+        <Path
+          d="M55 6C76.5391 6 94 23.4609 94 45C94 66.5391 76.5391 84 55 84C33.4609 84 16 66.5391 16 45C16 23.4609 33.4609 6 55 6Z"
+          stroke="#E5E7EB"
+          strokeWidth="2"
+        />
+        <Path
+          d="M55 65C60.3043 65 65.3914 62.8929 69.1421 59.1421C72.8929 55.3914 75 50.3043 75 45C75 39.6957 72.8929 34.6086 69.1421 30.8579C65.3914 27.1071 60.3043 25 55 25C49.6957 25 44.6086 27.1071 40.8579 30.8579C37.1071 34.6086 35 39.6957 35 45C35 50.3043 37.1071 55.3914 40.8579 59.1421C44.6086 62.8929 49.6957 65 55 65ZM58.9609 50.3984L47.6875 54.7344C46.1719 55.3203 44.6797 53.8281 45.2656 52.3125L49.6016 41.0391C49.8594 40.375 50.375 39.8594 51.0391 39.6016L62.3125 35.2656C63.8281 34.6797 65.3203 36.1719 64.7344 37.6875L60.3984 48.9609C60.1484 49.625 59.625 50.1406 58.9609 50.3984ZM57.5 45C57.5 44.337 57.2366 43.7011 56.7678 43.2322C56.2989 42.7634 55.663 42.5 55 42.5C54.337 42.5 53.7011 42.7634 53.2322 43.2322C52.7634 43.7011 52.5 44.337 52.5 45C52.5 45.663 52.7634 46.2989 53.2322 46.7678C53.7011 47.2366 54.337 47.5 55 47.5C55.663 47.5 56.2989 47.2366 56.7678 46.7678C57.2366 46.2989 57.5 45.663 57.5 45Z"
+          fill="white"
+        />
+      </G>
+      <Defs>
+        <Filter
+          id="filter0_dd_105_117"
+          x="0"
+          y="0"
+          width="110"
+          height="110"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <FeFlood floodOpacity="0" result="BackgroundImageFix" />
+          <FeColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <FeOffset dy="10" />
+          <FeGaussianBlur stdDeviation="7.5" />
+          <FeColorMatrix
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0"
+          />
+          <FeBlend
+            mode="normal"
+            in2="BackgroundImageFix"
+            result="effect1_dropShadow_105_117"
+          />
+          <FeColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <FeOffset dy="4" />
+          <FeGaussianBlur stdDeviation="3" />
+          <FeColorMatrix
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0"
+          />
+          <FeBlend
+            mode="normal"
+            in2="effect1_dropShadow_105_117"
+            result="effect2_dropShadow_105_117"
+          />
+          <FeBlend
+            mode="normal"
+            in="SourceGraphic"
+            in2="effect2_dropShadow_105_117"
+            result="shape"
+          />
+        </Filter>
+      </Defs>
+    </Svg>
+  );
+}
