@@ -20,7 +20,7 @@ const COLORS = {
 
 interface Badge {
   text: string;
-  type: 'discount' | 'delivery' | 'price';
+  type: 'discount' | 'delivery' | 'price' | 'trending' | 'hot';
 }
 
 interface RestaurantCardProps {
@@ -31,6 +31,7 @@ interface RestaurantCardProps {
   reviewCount: number;
   badges?: Badge[];
   type?: 'default' | 'offers' | 'events';
+  specialBadge?: string;
   onPress?: () => void;
   onFavoritePress?: () => void;
   isFavorite?: boolean;
@@ -44,6 +45,7 @@ export function RestaurantCard({
   reviewCount,
   badges = [],
   type = 'default',
+  specialBadge,
   onPress,
   onFavoritePress,
   isFavorite = false,
@@ -56,6 +58,10 @@ export function RestaurantCard({
         return { backgroundColor: COLORS.blue, color: COLORS.white };
       case 'price':
         return { backgroundColor: COLORS.teal, color: COLORS.white };
+      case 'trending':
+        return { backgroundColor: COLORS.green, color: COLORS.black };
+      case 'hot':
+        return { backgroundColor: COLORS.primary, color: COLORS.white };
       default:
         return { backgroundColor: COLORS.gray, color: COLORS.black };
     }
@@ -82,6 +88,11 @@ export function RestaurantCard({
             {rating} ({reviewCount}+)
           </Text>
         </View>
+        {specialBadge && (
+          <View style={styles.specialBadge}>
+            <Text style={styles.specialBadgeText}>{specialBadge}</Text>
+          </View>
+        )}
         <TouchableOpacity style={styles.favoriteButton} onPress={onFavoritePress}>
           <IconSymbol 
             name={isFavorite ? "heart.fill" : "heart"} 
@@ -171,6 +182,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.black,
     marginLeft: 4,
+  },
+  specialBadge: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  specialBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.white,
   },
   favoriteButton: {
     position: 'absolute',
