@@ -1,26 +1,49 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * App color theme with brand colors for the food delivery app
  */
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+export const AppColors = {
+  primary: '#FF6233',      // Orange - main brand color
+  teal: '#016167',         // Dark teal - secondary brand color
+  green: '#B2FD9D',        // Light green - accent color
+  blue: '#5BC4DB',         // Light blue - accent color
+  white: '#FFFFFF',
+  black: '#000000',
+  gray: '#F5F5F5',
+  darkGray: '#666666',
+  lightGray: '#E5E5E5',
+};
+
+const tintColorLight = AppColors.primary;
+const tintColorDark = AppColors.white;
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: AppColors.black,
+    background: AppColors.white,
     tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
+    icon: AppColors.darkGray,
+    tabIconDefault: AppColors.darkGray,
     tabIconSelected: tintColorLight,
+    primary: AppColors.primary,
+    secondary: AppColors.teal,
+    accent: AppColors.green,
+    accentBlue: AppColors.blue,
+    surface: AppColors.gray,
+    border: AppColors.lightGray,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: AppColors.white,
+    background: AppColors.black,
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: AppColors.darkGray,
+    tabIconDefault: AppColors.darkGray,
     tabIconSelected: tintColorDark,
+    primary: AppColors.primary,
+    secondary: AppColors.teal,
+    accent: AppColors.green,
+    accentBlue: AppColors.blue,
+    surface: '#2A2A2A',
+    border: '#444444',
   },
 };

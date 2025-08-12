@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-
+import { RestaurantCard } from '@/components/RestaurantCard';
+  
 const COLORS = {
   primary: '#FF6233',
   teal: '#016167',
@@ -23,6 +24,8 @@ const COLORS = {
 };
 
 export default function HomeScreen() {
+
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
@@ -52,7 +55,7 @@ export default function HomeScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search restaurants, cuisines, or events..."
-            placeholderTextColor={COLORS.darkGray}
+              placeholderTextColor={COLORS.darkGray}
           />
           <TouchableOpacity style={styles.searchButton}>
             <IconSymbol name="magnifyingglass" size={20} color={COLORS.darkGray} />
@@ -114,61 +117,33 @@ export default function HomeScreen() {
           </View>
           
           {/* Restaurant Cards */}
-          <View style={styles.restaurantCard}>
-            <View style={styles.cardImageContainer}>
-              <View style={styles.cardImage} />
-              <View style={styles.ratingBadge}>
-                <IconSymbol name="star.fill" size={12} color={COLORS.green} />
-                <Text style={styles.ratingText}>4.8 (120+)</Text>
-              </View>
-              <TouchableOpacity style={styles.favoriteButton}>
-                <IconSymbol name="heart" size={20} color={COLORS.white} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.cardContent}>
-              <View style={styles.restaurantInfo}>
-                <Text style={styles.restaurantName}>Burger & Lobster</Text>
-                <Text style={styles.restaurantCuisine}>American, Seafood</Text>
-                <Text style={styles.deliveryInfo}>15-25 min • 1.2 miles away</Text>
-              </View>
-              <View style={styles.cardFooter}>
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>20% Off</Text>
-                </View>
-                <View style={styles.deliveryBadge}>
-                  <Text style={styles.deliveryText}>Free Delivery</Text>
-                </View>
-                <View style={styles.priceBadge}>
-                  <Text style={styles.priceText}>$$$</Text>
-                </View>
-              </View>
-            </View>
-          </View>
+          <RestaurantCard
+            name="Burger & Lobster"
+            cuisine="American, Seafood"
+            deliveryInfo="15-25 min • 1.2 miles away"
+            rating={4.8}
+            reviewCount={120}
+            badges={[
+              { text: '20% Off', type: 'discount' },
+              { text: 'Free Delivery', type: 'delivery' },
+              { text: '$$$', type: 'price' },
+            ]}
+            onPress={() => console.log('Restaurant pressed')}
+            onFavoritePress={() => console.log('Favorite pressed')}
+          />
 
-          <View style={styles.restaurantCard}>
-            <View style={styles.cardImageContainer}>
-              <View style={styles.cardImage} />
-              <View style={styles.ratingBadge}>
-                <IconSymbol name="star.fill" size={12} color={COLORS.green} />
-                <Text style={styles.ratingText}>4.6 (95+)</Text>
-              </View>
-              <TouchableOpacity style={styles.favoriteButton}>
-                <IconSymbol name="heart" size={20} color={COLORS.white} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.cardContent}>
-              <View style={styles.restaurantInfo}>
-                <Text style={styles.restaurantName}>Pasta Paradise</Text>
-                <Text style={styles.restaurantCuisine}>Italian, Pasta</Text>
-                <Text style={styles.deliveryInfo}>20-30 min • 0.8 miles away</Text>
-              </View>
-              <View style={styles.cardFooter}>
-                <View style={styles.priceBadge}>
-                  <Text style={styles.priceText}>$$</Text>
-                </View>
-              </View>
-            </View>
-          </View>
+          <RestaurantCard
+            name="Pasta Paradise"
+            cuisine="Italian, Pasta"
+            deliveryInfo="20-30 min • 0.8 miles away"
+            rating={4.6}
+            reviewCount={95}
+            badges={[
+              { text: '$$', type: 'price' },
+            ]}
+            onPress={() => console.log('Restaurant pressed')}
+            onFavoritePress={() => console.log('Favorite pressed')}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -321,124 +296,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: COLORS.black,
     marginLeft: 4,
-  },
-  restaurantCard: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    backgroundColor: COLORS.white,
-    shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardImageContainer: {
-    position: 'relative',
-    height: 160,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    backgroundColor: COLORS.gray,
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    backgroundColor: COLORS.gray,
-  },
-  ratingBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.black,
-    marginLeft: 4,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardContent: {
-    padding: 16,
-    backgroundColor: COLORS.teal,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-  },
-  restaurantInfo: {
-    marginBottom: 12,
-  },
-  restaurantName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: COLORS.white,
-  },
-  restaurantCuisine: {
-    fontSize: 14,
-    marginBottom: 4,
-    color: COLORS.white,
-  },
-  deliveryInfo: {
-    fontSize: 12,
-    color: COLORS.white,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  discountBadge: {
-    backgroundColor: COLORS.green,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  discountText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.black,
-  },
-  deliveryBadge: {
-    backgroundColor: COLORS.blue,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  deliveryText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  priceBadge: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  priceText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.white,
   },
 }); 
