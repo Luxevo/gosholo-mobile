@@ -11,7 +11,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jostinjarry1.gosholomobile",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map."
       }
     },
     "android": {
