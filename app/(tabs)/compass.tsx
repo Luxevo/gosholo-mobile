@@ -7,7 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
-  Alert,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -15,7 +16,8 @@ import { RestaurantCard } from '@/components/RestaurantCard';
 import * as Location from 'expo-location';
 
 // Conditional import for Mapbox (only works in native builds)
-let Mapbox: any, MapView: any, Camera: any, LocationPuck: any, PointAnnotation: any;
+let Mapbox: any, MapView: any, Camera: any, LocationPuck: any, PointAnnotation: any, 
+    FillExtrusionLayer: any, VectorSource: any, Terrain: any, Atmosphere: any;
 try {
   const MapboxMaps = require('@rnmapbox/maps');
   Mapbox = MapboxMaps.default;
@@ -23,6 +25,10 @@ try {
   Camera = MapboxMaps.Camera;
   LocationPuck = MapboxMaps.LocationPuck;
   PointAnnotation = MapboxMaps.PointAnnotation;
+  FillExtrusionLayer = MapboxMaps.FillExtrusionLayer;
+  VectorSource = MapboxMaps.VectorSource;
+  Terrain = MapboxMaps.Terrain;
+  Atmosphere = MapboxMaps.Atmosphere;
 } catch (error) {
   console.log('Mapbox not available in Expo Go - using fallback');
 }
@@ -43,9 +49,26 @@ if (Mapbox) {
   Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoiZ29zaG9sb2RldiIsImEiOiJjbWU5MWk2azMwbHVoMmxvcGE1eGtremU0In0.q2nBfy2FIzS69h7sYrkOzQ');
 }
 
+const { width, height } = Dimensions.get('window');
+
 export default function CompassScreen() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [isMapModalVisible, setIsMapModalVisible] = useState(false);
+  const [mapStyle, setMapStyle] = useState(Mapbox?.StyleURL?.Street || 'mapbox://styles/mapbox/streets-v12');
+
+  // Available map styles
+  const mapStyles = [
+    { name: 'Street', url: Mapbox?.StyleURL?.Street || 'mapbox://styles/mapbox/streets-v12' },
+    { name: '3D City', url: 'mapbox://styles/mapbox/streets-v12' }, // Will add 3D buildings
+    { name: 'Cinematic', url: 'mapbox://styles/mapbox/satellite-streets-v12' }, // Satellite with 3D
+    { name: 'Blueprint', url: 'mapbox://styles/mapbox/cjf4m44iw0uza2spb3ovr1g9p' },
+    { name: 'Comic Book', url: 'mapbox://styles/mapbox/cjaudgl840gn32rnrepcb9b9g' },
+    { name: 'Light', url: Mapbox?.StyleURL?.Light || 'mapbox://styles/mapbox/light-v11' },
+    { name: 'Dark', url: Mapbox?.StyleURL?.Dark || 'mapbox://styles/mapbox/dark-v11' },
+    { name: 'Satellite', url: Mapbox?.StyleURL?.Satellite || 'mapbox://styles/mapbox/satellite-v9' },
+    { name: 'Outdoors', url: Mapbox?.StyleURL?.Outdoors || 'mapbox://styles/mapbox/outdoors-v12' },
+  ];
 
   // Sample restaurant locations
   const restaurantLocations = [
@@ -90,7 +113,22 @@ export default function CompassScreen() {
   };
 
   const handleOpenMap = () => {
-    Alert.alert('Open Map', 'Opening full map view...');
+    setIsMapModalVisible(true);
+  };
+
+  const handleCloseMap = () => {
+    setIsMapModalVisible(false);
+  };
+
+  const cycleMapStyle = () => {
+    const currentIndex = mapStyles.findIndex(style => style.url === mapStyle);
+    const nextIndex = (currentIndex + 1) % mapStyles.length;
+    setMapStyle(mapStyles[nextIndex].url);
+  };
+
+  const getCurrentStyleName = () => {
+    const currentStyle = mapStyles.find(style => style.url === mapStyle);
+    return currentStyle?.name || 'Street';
   };
 
   return (
@@ -132,13 +170,15 @@ export default function CompassScreen() {
             {Mapbox && MapView ? (
               <MapView
                 style={styles.map}
-                styleURL={Mapbox.StyleURL.Street}
+                styleURL={mapStyle}
                 zoomEnabled={true}
                 scrollEnabled={true}
               >
                 <Camera
                   centerCoordinate={userLocation || [-74.006, 40.7128]}
-                  zoomLevel={14}
+                  zoomLevel={mapStyle.includes('3D') || mapStyle.includes('Cinematic') ? 16 : 14}
+                  pitch={mapStyle.includes('3D') || mapStyle.includes('Cinematic') ? 45 : 0}
+                  heading={mapStyle.includes('3D') || mapStyle.includes('Cinematic') ? 20 : 0}
                   animationDuration={1000}
                 />
                 
@@ -151,16 +191,30 @@ export default function CompassScreen() {
                   />
                 )}
 
+                {/* 3D Buildings Layer */}
+                {(mapStyle.includes('3D') || mapStyle.includes('Cinematic')) && FillExtrusionLayer && (
+                  <FillExtrusionLayer
+                    id="buildings-3d"
+                    sourceID="composite"
+                    sourceLayerID="building"
+                    filter={['==', 'extrude', 'true']}
+                    style={{
+                      fillExtrusionColor: '#aaa',
+                      fillExtrusionHeight: ['get', 'height'],
+                      fillExtrusionBase: ['get', 'min_height'],
+                      fillExtrusionOpacity: 0.6,
+                    }}
+                  />
+                )}
+
                 {restaurantLocations.map((restaurant) => (
                   <PointAnnotation
                     key={restaurant.id}
                     id={restaurant.id}
                     coordinate={restaurant.coordinates as [number, number]}
                   >
-                    <View style={styles.markerContainer}>
-                      <View style={styles.marker}>
-                        <IconSymbol name="fork.knife" size={16} color={COLORS.white} />
-                      </View>
+                    <View style={styles.marker}>
+                      <IconSymbol name="fork.knife" size={16} color={COLORS.white} />
                     </View>
                   </PointAnnotation>
                 ))}
@@ -254,6 +308,117 @@ export default function CompassScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Full Screen Map Modal */}
+      <Modal
+        visible={isMapModalVisible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        statusBarHidden={false}
+      >
+        <View style={styles.fullScreenMapContainer}>
+          <StatusBar barStyle="light-content" backgroundColor={COLORS.black} />
+          
+          {/* Map Header */}
+          <View style={styles.mapHeader}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleCloseMap}>
+              <IconSymbol name="xmark" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.mapHeaderTitle}>Discover Restaurants</Text>
+            <TouchableOpacity style={styles.mapLocationButton} onPress={handleUseMyLocation}>
+              <IconSymbol name="location.fill" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Full Screen Map */}
+          {Mapbox && MapView ? (
+            <MapView
+              style={styles.fullScreenMap}
+              styleURL={mapStyle}
+              zoomEnabled={true}
+              scrollEnabled={true}
+            >
+              <Camera
+                centerCoordinate={userLocation || [-74.006, 40.7128]}
+                zoomLevel={mapStyle.includes('3D') || mapStyle.includes('Cinematic') ? 17 : 15}
+                pitch={mapStyle.includes('3D') || mapStyle.includes('Cinematic') ? 60 : 0}
+                heading={mapStyle.includes('3D') || mapStyle.includes('Cinematic') ? 30 : 0}
+                animationDuration={1000}
+              />
+              
+              {hasLocationPermission && userLocation && (
+                <LocationPuck
+                  puckBearing="heading"
+                  puckBearingEnabled
+                  topImage="topImage"
+                  visible={true}
+                />
+              )}
+
+              {/* 3D Buildings Layer */}
+              {(mapStyle.includes('3D') || mapStyle.includes('Cinematic')) && FillExtrusionLayer && (
+                <FillExtrusionLayer
+                  id="buildings-3d-fullscreen"
+                  sourceID="composite"
+                  sourceLayerID="building"
+                  filter={['==', 'extrude', 'true']}
+                  style={{
+                    fillExtrusionColor: [
+                      'interpolate',
+                      ['linear'],
+                      ['get', 'height'],
+                      0, '#e6f7ff',
+                      50, '#91d5ff', 
+                      100, '#40a9ff',
+                      200, '#1890ff',
+                      300, '#096dd9'
+                    ],
+                    fillExtrusionHeight: ['get', 'height'],
+                    fillExtrusionBase: ['get', 'min_height'],
+                    fillExtrusionOpacity: 0.8,
+                  }}
+                />
+              )}
+
+              {restaurantLocations.map((restaurant) => (
+                <PointAnnotation
+                  key={restaurant.id}
+                  id={restaurant.id}
+                  coordinate={restaurant.coordinates as [number, number]}
+                >
+                  <View style={styles.fullScreenMarker}>
+                    <IconSymbol name="fork.knife" size={20} color={COLORS.white} />
+                  </View>
+                </PointAnnotation>
+              ))}
+            </MapView>
+          ) : (
+            <View style={styles.fullScreenMapFallback}>
+              <Text style={styles.mapFallbackText}>
+                📍 Interactive map available in native build
+              </Text>
+            </View>
+          )}
+
+          {/* Map Controls */}
+          <View style={styles.mapControls}>
+            <TouchableOpacity style={styles.controlButton} onPress={cycleMapStyle}>
+              <IconSymbol name="layers.fill" size={20} color={COLORS.black} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.controlButton}>
+              <IconSymbol name="magnifyingglass" size={20} color={COLORS.black} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.controlButton}>
+              <IconSymbol name="list.bullet" size={20} color={COLORS.black} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Style Indicator */}
+          <View style={styles.styleIndicator}>
+            <Text style={styles.styleIndicatorText}>{getCurrentStyleName()}</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -337,10 +502,6 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     borderRadius: 16,
-  },
-  markerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   marker: {
     width: 32,
@@ -457,5 +618,118 @@ const styles = StyleSheet.create({
   },
   restaurantsSection: {
     paddingBottom: 20,
+  },
+  // Full Screen Map Modal Styles
+  fullScreenMapContainer: {
+    flex: 1,
+    backgroundColor: COLORS.black,
+  },
+  mapHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: COLORS.teal,
+    zIndex: 1000,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  mapLocationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenMap: {
+    flex: 1,
+    width: width,
+    height: height,
+  },
+  fullScreenMapFallback: {
+    flex: 1,
+    backgroundColor: COLORS.blue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.white,
+    shadowColor: COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  mapControls: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    flexDirection: 'column',
+  },
+  controlButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  styleIndicator: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    shadowColor: COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  styleIndicatorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.teal,
   },
 });
