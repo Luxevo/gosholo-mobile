@@ -1,16 +1,20 @@
-import React from 'react';
+import { OfferCard } from '@/components/OfferCard';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useOffers } from '@/hooks/useOffers';
+import * as Location from 'expo-location';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
-  View,
-  ScrollView,
   TextInput,
   TouchableOpacity,
-  StatusBar,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { RestaurantCard } from '@/components/RestaurantCard';
 
 const COLORS = {
   primary: '#FF6233',
@@ -24,6 +28,86 @@ const COLORS = {
 };
 
 export default function OffersScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'nearby' | 'online' | 'in_store'>('all');
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  
+  const { offers, loading, error, refetch } = useOffers({
+    searchQuery,
+    filterType: activeFilter,
+    userLocation,
+  });
+
+  console.log('Offers screen state:', { offers: offers.length, loading, error });
+
+  React.useEffect(() => {
+    getUserLocation();
+  }, []);
+
+  const getUserLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation([location.coords.longitude, location.coords.latitude]);
+      }
+    } catch (error) {
+      console.log('Location error:', error);
+    }
+  };
+
+  const renderOffers = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading offers...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <IconSymbol name="exclamationmark.triangle" size={48} color={COLORS.darkGray} />
+          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (offers.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <IconSymbol name="tag" size={48} color={COLORS.darkGray} />
+          <Text style={styles.emptyTitle}>No offers found</Text>
+          <Text style={styles.emptyText}>
+            {searchQuery 
+              ? `No offers match "${searchQuery}"` 
+              : activeFilter === 'nearby'
+              ? 'No offers found in your area'
+              : 'Check back later for new deals!'}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.offersSection}>
+        {offers.map((offer) => (
+          <OfferCard
+            key={offer.id}
+            offer={offer}
+            onPress={() => console.log('Offer pressed:', offer.id)}
+            onFavoritePress={() => console.log('Favorite pressed:', offer.id)}
+          />
+        ))}
+      </View>
+    );
+  };
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
@@ -44,13 +128,26 @@ export default function OffersScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refetch}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
             placeholder="Search offers, restaurants..."
             placeholderTextColor={COLORS.darkGray}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
           <TouchableOpacity style={styles.searchButton}>
             <IconSymbol name="magnifyingglass" size={20} color={COLORS.darkGray} />
@@ -73,72 +170,19 @@ export default function OffersScreen() {
           </View>
         </View>
 
-        {/* Filter Tabs */}
+        {/* Filter Tabs - Simple for now */}
         <View style={styles.filterTabs}>
-          <TouchableOpacity style={[styles.filterTab, styles.activeFilterTab]}>
-            <IconSymbol name="tag.fill" size={16} color={COLORS.white} />
-            <Text style={styles.activeFilterText}>All Offers</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterTab}>
-            <Text style={styles.filterText}>Near Me</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterTab}>
-            <Text style={styles.filterText}>Free Delivery</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterTab}>
-            <Text style={styles.filterText}>Dine-in Only</Text>
+          <TouchableOpacity 
+            style={[styles.filterTab, activeFilter === 'all' && styles.activeFilterTab]}
+            onPress={() => setActiveFilter('all')}
+          >
+            <IconSymbol name="tag.fill" size={16} color={activeFilter === 'all' ? COLORS.white : COLORS.darkGray} />
+            <Text style={activeFilter === 'all' ? styles.activeFilterText : styles.filterText}>All Offers</Text>
           </TouchableOpacity>
         </View>
 
         {/* Offers List */}
-        <View style={styles.offersSection}>
-          <RestaurantCard
-            name="Crispy Bites"
-            cuisine="Fast Food • Burgers"
-            deliveryInfo="Min. spend $20 • 1.1 miles"
-            rating={4.2}
-            reviewCount={112}
-            type="offers"
-            badges={[
-              { text: '40% OFF', type: 'discount' },
-              { text: 'Free Delivery', type: 'delivery' },
-              { text: '$$', type: 'price' },
-            ]}
-            onPress={() => console.log('Crispy Bites pressed')}
-            onFavoritePress={() => console.log('Favorite pressed')}
-          />
-
-          <RestaurantCard
-            name="Napoli Pizza"
-            cuisine="Italian • Pizza"
-            deliveryInfo="Dine-in Only • 0.6 miles"
-            rating={4.7}
-            reviewCount={289}
-            type="offers"
-            badges={[
-              { text: 'Buy 1 Get 1', type: 'discount' },
-              { text: '$$$', type: 'price' },
-            ]}
-            onPress={() => console.log('Napoli Pizza pressed')}
-            onFavoritePress={() => console.log('Favorite pressed')}
-          />
-
-          <RestaurantCard
-            name="Sushi Master"
-            cuisine="Japanese • Sushi"
-            deliveryInfo="25-30 min • 1.5 miles"
-            rating={4.8}
-            reviewCount={156}
-            type="offers"
-            badges={[
-              { text: '30% OFF', type: 'discount' },
-              { text: 'Free Delivery', type: 'delivery' },
-              { text: '$$$$', type: 'price' },
-            ]}
-            onPress={() => console.log('Sushi Master pressed')}
-            onFavoritePress={() => console.log('Favorite pressed')}
-          />
-        </View>
+        {renderOffers()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -285,5 +329,68 @@ const styles = StyleSheet.create({
   },
   offersSection: {
     paddingBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
