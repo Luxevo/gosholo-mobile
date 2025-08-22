@@ -1,16 +1,18 @@
-import React from 'react';
+import { EventCard } from '@/components/EventCard';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useEvents } from '@/hooks/useEvents';
+import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
-  ScrollView,
   TextInput,
   TouchableOpacity,
-  StatusBar,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { EventCard } from '@/components/EventCard';
 
 const COLORS = {
   primary: '#FF6233',
@@ -24,104 +26,94 @@ const COLORS = {
 };
 
 export default function EventsScreen() {
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton}>
-          <IconSymbol name="line.3.horizontal" size={24} color={COLORS.black} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Events</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.notificationButton}>
-            <IconSymbol name="bell" size={24} color={COLORS.black} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.profileButton}>
-            <View style={styles.avatar} />
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'nearby' | 'this_week' | 'upcoming'>('all');
+  
+  const { events, loading, error, refetch } = useEvents({
+    searchQuery,
+    filterType: activeFilter,
+  });
+
+  const renderEvents = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading events...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <IconSymbol name="exclamationmark.triangle" size={48} color={COLORS.darkGray} />
+          <Text style={styles.errorTitle}>Oops! Something went wrong</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      );
+    }
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
+    if (events.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <IconSymbol name="calendar" size={48} color={COLORS.darkGray} />
+          <Text style={styles.emptyTitle}>No events found</Text>
+          <Text style={styles.emptyText}>
+            {searchQuery 
+              ? `No events match "${searchQuery}"` 
+              : 'Check back later for new events!'}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.eventsSection}>
+        {events.map((event) => (
+          <EventCard
+            key={event.id}
+            event={event}
+            onPress={() => console.log('Event pressed:', event.id)}
+            onFavoritePress={() => console.log('Favorite pressed:', event.id)}
+          />
+        ))}
+      </View>
+    );
+  };
+  return (
+    <SafeAreaView style={styles.container}>
+              {/* Search Bar */}
+              <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search food events, workshops..."
+            placeholder="Search events, workshops..."
             placeholderTextColor={COLORS.darkGray}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
           <TouchableOpacity style={styles.searchButton}>
             <IconSymbol name="magnifyingglass" size={20} color={COLORS.darkGray} />
           </TouchableOpacity>
         </View>
-
-        {/* Category Filters */}
-        <View style={styles.categoryFilters}>
-          <TouchableOpacity style={[styles.categoryFilter, styles.activeCategoryFilter]}>
-            <IconSymbol name="flame.fill" size={16} color={COLORS.white} />
-            <Text style={styles.activeCategoryText}>All</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryFilter}>
-            <IconSymbol name="flame" size={16} color={COLORS.darkGray} />
-            <Text style={styles.categoryText}>Trending</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryFilter}>
-            <IconSymbol name="fork.knife" size={16} color={COLORS.darkGray} />
-            <Text style={styles.categoryText}>Food Fest</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryFilter}>
-            <IconSymbol name="cup.and.saucer" size={16} color={COLORS.darkGray} />
-            <Text style={styles.categoryText}>Coffee</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.categoryFilter}>
-            <IconSymbol name="hammer" size={16} color={COLORS.darkGray} />
-            <Text style={styles.categoryText}>Workshop</Text>
-          </TouchableOpacity>
-        </View>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={refetch}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
 
         {/* Events List */}
-        <View style={styles.eventsSection}>
-          <EventCard
-            title="Midtown Food Festival"
-            location="Central Park, Midtown"
-            dateTime="Sat, May 25 • 6-10 PM"
-            attendees="1.2k+ attending"
-            type="Food Fest"
-            category="Trending"
-            isFree={true}
-            onGetTickets={() => console.log('Get Tickets pressed')}
-            onViewDetails={() => console.log('View Details pressed')}
-            onSave={() => console.log('Save pressed')}
-          />
-
-          <EventCard
-            title="Barista Latte Art Workshop"
-            location="BrewLab Café, Downtown"
-            dateTime="Sun, May 28 • 2-4 PM"
-            spotsLeft={32}
-            type="Workshop"
-            category="Coffee"
-            price="$20"
-            onBookNow={() => console.log('Book Now pressed')}
-            onViewDetails={() => console.log('View Details pressed')}
-            onSave={() => console.log('Save pressed')}
-          />
-
-          <EventCard
-            title="Chef Pop-up Experience"
-            location="Rooftop Garden, SoHo"
-            dateTime="Fri, Jun 2 • 7-11 PM"
-            attendees="500+ attending"
-            type="Pop-up"
-            category="Food Fest"
-            price="$45"
-            onGetTickets={() => console.log('Get Tickets pressed')}
-            onViewDetails={() => console.log('View Details pressed')}
-            onSave={() => console.log('Save pressed')}
-          />
-        </View>
+        {renderEvents()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -130,7 +122,7 @@ export default function EventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#FAFAFA',
   },
   header: {
     flexDirection: 'row',
@@ -138,6 +130,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
+    backgroundColor: COLORS.white,
   },
   menuButton: {
     width: 40,
@@ -222,5 +215,70 @@ const styles = StyleSheet.create({
   },
   eventsSection: {
     paddingBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
+    marginTop: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

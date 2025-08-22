@@ -1,341 +1,304 @@
-import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-} from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import type { EventWithCommerce } from '@/hooks/useEvents';
+import React, { memo, useMemo } from 'react';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const COLORS = {
   primary: '#FF6233',
+  ink: '#111827',
+  inkDim: '#4B5563',
+  bg: '#FFFFFF',
+  bgMuted: '#F6F7F9',
+  line: 'rgba(0,0,0,0.08)',
   teal: '#016167',
-  green: '#B2FD9D',
-  blue: '#5BC4DB',
+  success: '#B2FD9D',
+  overlay: 'rgba(0,0,0,0.55)',
   white: '#FFFFFF',
-  gray: '#F5F5F5',
-  darkGray: '#666666',
-  black: '#000000',
+};
+
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+};
+
+const RAD = {
+  md: 12,
+  lg: 16,
+  pill: 999,
 };
 
 interface EventCardProps {
-  title: string;
-  location: string;
-  dateTime: string;
-  attendees?: string;
-  type: string;
-  category: string;
-  price?: string;
-  isFree?: boolean;
-  spotsLeft?: number;
-  onGetTickets?: () => void;
-  onViewDetails?: () => void;
-  onBookNow?: () => void;
-  onSave?: () => void;
-  isSaved?: boolean;
+  event: EventWithCommerce;
+  onPress: () => void;
+  onFavoritePress?: () => void;
 }
 
-export function EventCard({
-  title,
-  location,
-  dateTime,
-  attendees,
-  type,
-  category,
-  price,
-  isFree = false,
-  spotsLeft,
-  onGetTickets,
-  onViewDetails,
-  onBookNow,
-  onSave,
-  isSaved = false,
-}: EventCardProps) {
-  const getCategoryColor = () => {
-    switch (category.toLowerCase()) {
-      case 'trending':
-        return COLORS.green;
-      case 'food fest':
-        return COLORS.primary;
-      case 'coffee':
-        return COLORS.teal;
-      case 'workshop':
-        return COLORS.primary;
-      default:
-        return COLORS.gray;
-    }
+export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFavoritePress }) => {
+  // ——— utils ———
+  const formatDateRange = () => {
+    if (!event.start_date) return 'Date TBD';
+    const start = new Date(event.start_date);
+    const end = event.end_date ? new Date(event.end_date) : null;
+
+    const f = (d: Date) =>
+      d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    if (end && +start !== +end) return `${f(start)} – ${f(end)}`;
+    return f(start);
   };
 
-  const getCategoryIcon = () => {
-    switch (category.toLowerCase()) {
-      case 'trending':
-        return 'flame.fill';
-      case 'food fest':
-        return 'fork.knife';
-      case 'coffee':
-        return 'cup.and.saucer.fill';
-      case 'workshop':
-        return 'hammer.fill';
-      default:
-        return 'calendar';
-    }
+  const getStatus = () => {
+    if (!event.start_date) return null;
+    const now = new Date();
+    const start = new Date(event.start_date);
+    const end = event.end_date ? new Date(event.end_date) : start;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const eventDay = new Date(start);
+    eventDay.setHours(0, 0, 0, 0);
+
+    if (now > end) return 'ENDED';
+    if (now >= start && now <= end) return 'HAPPENING NOW';
+    if (+today === +eventDay) return 'TODAY';
+    const tmr = new Date(today); tmr.setDate(tmr.getDate() + 1);
+    if (+tmr === +eventDay) return 'TOMORROW';
+    return null;
   };
 
+  const locationText = event.custom_location || event.commerces?.address || 'Location TBD';
+  const status = getStatus();
+  const isEnded = status === 'ENDED';
+
+  const followOrShare = useMemo(
+    () => (event.facebook_url || event.instagram_url ? 'Follow' : 'Share'),
+    [event.facebook_url, event.instagram_url]
+  );
+
+  // ——— render ———
   return (
-    <View style={styles.eventCard}>
-      <View style={styles.eventImageContainer}>
-        <View style={styles.eventImage} />
-        
-        {/* Category Badge */}
-        <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor() }]}>
-          <IconSymbol 
-            name={getCategoryIcon()} 
-            size={12} 
-            color={category === 'trending' ? COLORS.black : COLORS.white} 
-          />
-          <Text style={[
-            styles.categoryText,
-            { color: category === 'trending' ? COLORS.black : COLORS.white }
-          ]}>
-            {category}
+    <TouchableOpacity
+      style={[styles.card, isEnded && styles.cardDisabled]}
+      onPress={onPress}
+      disabled={isEnded}
+      activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={`${event.title}, ${formatDateRange()}`}
+    >
+      {/* Boost chip */}
+      {event.boosted && (
+        <View style={styles.boostChip}>
+          <IconSymbol name="star.fill" size={12} color={COLORS.teal} />
+          <Text style={styles.boostText}>
+            {event.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
           </Text>
         </View>
+      )}
 
-        {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={onSave}>
-          <IconSymbol 
-            name={isSaved ? "bookmark.fill" : "bookmark"} 
-            size={20} 
-            color={COLORS.white} 
-          />
-        </TouchableOpacity>
+      {/* Media */}
+      <View style={styles.media}>
+        {event.image_url ? (
+          <ImageBackground source={{ uri: event.image_url }} style={styles.mediaBg} imageStyle={styles.mediaImg}>
+            <View style={styles.mediaOverlay} />
+          </ImageBackground>
+        ) : (
+          <View style={[styles.mediaBg, styles.mediaPlaceholder]}>
+            <IconSymbol name="calendar" size={32} color={COLORS.white} />
+          </View>
+        )}
 
-        {/* Date/Time Overlay */}
-        <View style={styles.dateTimeOverlay}>
-          <Text style={styles.dateTimeText}>{dateTime}</Text>
+        {/* Date + Status bar */}
+        <View style={styles.bar}>
+          <View style={styles.barLeft}>
+            <IconSymbol name="calendar" size={14} color={COLORS.white} />
+            <Text style={styles.barText}>{formatDateRange()}</Text>
+          </View>
+          {!!status && (
+            <View style={[styles.statusPill, getStatusPillStyle(status)]}>
+              <Text style={styles.statusText}>{status}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Type Badge */}
-        <View style={styles.typeBadge}>
-          <Text style={styles.typeText}>{type}</Text>
-        </View>
+        {/* Favorite */}
+        {!!onFavoritePress && (
+          <TouchableOpacity
+            onPress={onFavoritePress}
+            style={styles.favBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Save to favorites"
+          >
+            <IconSymbol name="heart" size={16} color={COLORS.ink} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      <View style={styles.eventContent}>
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventTitle}>{title}</Text>
-          <Text style={styles.eventLocation}>{location}</Text>
-          
-          <View style={styles.eventDetails}>
-            {attendees && (
-              <View style={styles.detailItem}>
-                <IconSymbol name="person.2.fill" size={14} color={COLORS.primary} />
-                <Text style={styles.detailText}>{attendees}</Text>
-              </View>
-            )}
-            {spotsLeft && (
-              <View style={styles.detailItem}>
-                <IconSymbol name="clock" size={14} color={COLORS.primary} />
-                <Text style={styles.detailText}>{spotsLeft} spots left</Text>
-              </View>
-            )}
-            <View style={styles.detailItem}>
-              <IconSymbol name="location" size={14} color={COLORS.primary} />
-              <Text style={styles.detailText}>Indoor</Text>
-            </View>
+      {/* Content */}
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
+        <Text style={styles.sub} numberOfLines={1}>
+          {event.commerces?.name || 'Event'} • {event.commerces?.category || 'General'}
+        </Text>
+
+        <View style={styles.metaRow}>
+          <View style={styles.meta}>
+            <IconSymbol name="calendar" size={14} color={COLORS.primary} />
+            <Text style={styles.metaText} numberOfLines={1}>{formatDateRange()}</Text>
+          </View>
+          <View style={styles.meta}>
+            <IconSymbol name="mappin.and.ellipse" size={14} color={COLORS.inkDim} />
+            <Text style={styles.metaText} numberOfLines={1}>{locationText}</Text>
           </View>
         </View>
 
-        <View style={styles.priceContainer}>
-          {isFree ? (
-            <Text style={styles.freeText}>Free Entry</Text>
-          ) : (
-            <Text style={styles.priceText}>{price}</Text>
-          )}
+        {/* Actions */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            onPress={onPress}
+            disabled={isEnded}
+            style={[styles.primaryBtn, isEnded && styles.primaryBtnDisabled]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.primaryText}>{isEnded ? 'Ended' : 'View Event'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.secondaryBtn} accessibilityRole="button">
+            <Text style={styles.secondaryText}>{followOrShare}</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.eventActions}>
-        {onGetTickets && (
-          <TouchableOpacity style={styles.primaryButton} onPress={onGetTickets}>
-            <Text style={styles.primaryButtonText}>Get Tickets</Text>
-          </TouchableOpacity>
-        )}
-        {onBookNow && (
-          <TouchableOpacity style={styles.primaryButton} onPress={onBookNow}>
-            <Text style={styles.primaryButtonText}>Book Now</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity style={styles.secondaryButton} onPress={onViewDetails}>
-          <Text style={styles.secondaryButtonText}>View Details</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
+});
+
+function getStatusPillStyle(status: string) {
+  switch (status) {
+    case 'HAPPENING NOW':
+      return { backgroundColor: 'rgba(178,253,157,0.95)' };
+    case 'TODAY':
+      return { backgroundColor: 'rgba(255,98,51,0.95)' };
+    case 'TOMORROW':
+      return { backgroundColor: 'rgba(1,97,103,0.9)' };
+    case 'ENDED':
+      return { backgroundColor: 'rgba(17,24,39,0.7)' };
+    default:
+      return { backgroundColor: 'rgba(17,24,39,0.7)' };
+  }
 }
 
 const styles = StyleSheet.create({
-  eventCard: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
-    backgroundColor: COLORS.white,
-    shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  card: {
+    backgroundColor: COLORS.bg,
+    borderRadius: RAD.lg,
+    marginHorizontal: SPACING.lg,
+    marginVertical: SPACING.sm,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: COLORS.line,
+    // softer, platform-friendly shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  eventImageContainer: {
-    position: 'relative',
-    height: 200,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    backgroundColor: COLORS.gray,
-  },
-  eventImage: {
-    width: '100%',
-    height: '100%',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    backgroundColor: COLORS.gray,
-  },
-  categoryBadge: {
+  cardDisabled: { opacity: 0.6 },
+
+  // boost
+  boostChip: {
     position: 'absolute',
-    top: 12,
-    left: 12,
+    zIndex: 3,
+    top: SPACING.sm,
+    left: SPACING.sm,
+    backgroundColor: COLORS.success,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RAD.pill,
   },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  saveButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dateTimeOverlay: {
-    position: 'absolute',
-    bottom: 40,
-    left: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  dateTimeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  typeBadge: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  typeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-  eventContent: {
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  eventInfo: {
-    flex: 1,
-    marginRight: 16,
-  },
-  eventTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    marginBottom: 4,
-  },
-  eventLocation: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    marginBottom: 8,
-  },
-  eventDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  detailText: {
-    fontSize: 12,
-    color: COLORS.darkGray,
-    marginLeft: 4,
-  },
-  priceContainer: {
-    alignItems: 'flex-end',
-  },
-  freeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.green,
-  },
-  priceText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.blue,
-  },
-  eventActions: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    flex: 1,
-  },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.white,
-    textAlign: 'center',
-  },
-  secondaryButton: {
+  boostText: { fontSize: 12, fontWeight: '600', color: COLORS.teal, marginLeft: 4 },
+
+  // media
+  media: { position: 'relative', aspectRatio: 16 / 9, backgroundColor: COLORS.bgMuted },
+  mediaBg: { flex: 1 },
+  mediaImg: { width: '100%', height: '100%' },
+  mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#8B5CF6' },
+  mediaOverlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    flex: 1,
   },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-    textAlign: 'center',
+
+  // bar
+  bar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0, right: 0,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.overlay,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
+  barLeft: { flexDirection: 'row', alignItems: 'center' },
+  barText: { marginLeft: 6, color: COLORS.white, fontSize: 12, fontWeight: '600' },
+  statusPill: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: RAD.pill,
+  },
+  statusText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
+
+  // favorite
+  favBtn: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: SPACING.sm,
+    width: 36, height: 36,
+    borderRadius: RAD.pill,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  // body
+  body: { padding: SPACING.md, gap: SPACING.sm },
+  title: { fontSize: 16, fontWeight: '700', color: COLORS.ink },
+  sub: { fontSize: 12, color: COLORS.inkDim },
+
+  metaRow: { flexDirection: 'row', gap: SPACING.md },
+  meta: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, gap: 6 },
+  metaText: { fontSize: 12, color: COLORS.inkDim, flexShrink: 1 },
+
+  actions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm },
+  primaryBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RAD.pill,
+    paddingHorizontal: SPACING.lg,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexGrow: 0,
+  },
+  primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
+  primaryText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
+
+  secondaryBtn: {
+    backgroundColor: COLORS.bgMuted,
+    borderRadius: RAD.pill,
+    paddingHorizontal: SPACING.lg,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryText: { color: COLORS.primary, fontSize: 13, fontWeight: '700' },
 });
