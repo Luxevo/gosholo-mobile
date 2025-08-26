@@ -51,8 +51,6 @@ export const useEvents = (options: UseEventsOptions = {}) => {
 
       const { data: eventsData, error: eventsError } = await eventsQuery;
 
-      console.log('Events query result:', { eventsData, eventsError });
-
       if (eventsError) {
         throw eventsError;
       }
@@ -80,8 +78,6 @@ export const useEvents = (options: UseEventsOptions = {}) => {
         ...event,
         commerces: commercesData?.find(commerce => commerce.id === event.commerce_id) || null
       }));
-
-      console.log('Combined events data:', combinedData);
 
       let filteredData = combinedData;
 

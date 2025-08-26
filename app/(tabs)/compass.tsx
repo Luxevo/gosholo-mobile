@@ -9,9 +9,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import * as Location from 'expo-location';
+import { useCommerces } from '@/hooks/useCommerces';
 
 // Conditional import for Mapbox (only works in native builds)
-let Mapbox: any, MapView: any, Camera: any, LocationPuck: any, FillExtrusionLayer: any;
+let Mapbox: any, MapView: any, Camera: any, LocationPuck: any, FillExtrusionLayer: any, PointAnnotation: any;
 try {
   const MapboxMaps = require('@rnmapbox/maps');
   Mapbox = MapboxMaps.default;
@@ -19,6 +20,7 @@ try {
   Camera = MapboxMaps.Camera;
   LocationPuck = MapboxMaps.LocationPuck;
   FillExtrusionLayer = MapboxMaps.FillExtrusionLayer;
+  PointAnnotation = MapboxMaps.PointAnnotation;
 } catch (error) {
   console.log('Mapbox not available in Expo Go');
 }
@@ -43,6 +45,9 @@ export default function CompassScreen() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [is3D, setIs3D] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  
+  const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
 
   useEffect(() => {
     requestLocationPermission();
@@ -73,6 +78,24 @@ export default function CompassScreen() {
     setIs3D(!is3D);
   };
 
+  const getCategoryIcon = (category: string) => {
+    const categoryIcons: { [key: string]: string } = {
+      'Restaurant': '🍽️',
+      'Café': '☕',
+      'Boulangerie': '🥖',
+      'Épicerie': '🛒',
+      'Commerce': '🏪',
+      'Service': '🔧',
+      'Santé': '🏥',
+      'Beauté': '💄',
+      'Sport': '⚽',
+      'Culture': '🎭',
+      'Éducation': '📚',
+      'Autre': '📍',
+    };
+    return categoryIcons[category] || '📍';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
@@ -80,10 +103,17 @@ export default function CompassScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Map</Text>
-        <TouchableOpacity style={styles.toggleButton} onPress={toggleMapStyle}>
-          <IconSymbol name={is3D ? "cube" : "map"} size={24} color={COLORS.primary} />
-          <Text style={styles.toggleText}>{is3D ? "3D" : "2D"}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerInfo}>
+          <Text style={styles.debugText}>
+            {commercesLoading ? 'Loading...' : 
+             commercesError ? `Error: ${commercesError}` :
+             `${commerces.length} businesses`}
+          </Text>
+          <TouchableOpacity style={styles.toggleButton} onPress={toggleMapStyle}>
+            <IconSymbol name={is3D ? "cube" : "map"} size={24} color={COLORS.primary} />
+            <Text style={styles.toggleText}>{is3D ? "3D" : "2D"}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Map */}
@@ -91,7 +121,7 @@ export default function CompassScreen() {
         {Mapbox && MapView ? (
           <MapView
             style={styles.map}
-            styleURL={Mapbox?.StyleURL?.Street || 'mapbox://styles/mapbox/streets-v12'}
+            styleURL={Mapbox?.StyleURL?.Outdoors || 'mapbox://styles/mapbox/outdoors-v12'}
             zoomEnabled={true}
             scrollEnabled={true}
           >
@@ -142,6 +172,36 @@ export default function CompassScreen() {
                 }}
               />
             )}
+
+            {/* Gosholo Business Markers */}
+            {PointAnnotation && commerces.map((commerce) => (
+              commerce.latitude && commerce.longitude && (
+                <PointAnnotation
+                  key={commerce.id}
+                  id={commerce.id}
+                  coordinate={[commerce.longitude, commerce.latitude]}
+                  onSelected={() => setSelectedBusiness(commerce.id)}
+                  onDeselected={() => setSelectedBusiness(null)}
+                >
+                  <View style={[
+                    styles.markerContainer,
+                    selectedBusiness === commerce.id && styles.markerSelected
+                  ]}>
+                    <Text style={styles.markerEmoji}>
+                      {getCategoryIcon(commerce.category)}
+                    </Text>
+                  </View>
+                  
+                  {selectedBusiness === commerce.id && (
+                    <View style={styles.calloutContainer}>
+                      <Text style={styles.calloutTitle}>{commerce.name}</Text>
+                      <Text style={styles.calloutCategory}>{commerce.category}</Text>
+                      <Text style={styles.calloutAddress}>{commerce.address}</Text>
+                    </View>
+                  )}
+                </PointAnnotation>
+              )
+            ))}
           </MapView>
         ) : (
           <View style={styles.mapFallback}>
@@ -174,6 +234,15 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray,
+  },
+  headerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  debugText: {
+    fontSize: 12,
+    color: COLORS.darkGray,
   },
   headerTitle: {
     fontSize: 24,
@@ -230,5 +299,66 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
+  },
+  markerContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  markerSelected: {
+    borderColor: COLORS.teal,
+    borderWidth: 3,
+    transform: [{ scale: 1.2 }],
+  },
+  markerEmoji: {
+    fontSize: 20,
+  },
+  calloutContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 12,
+    minWidth: 200,
+    maxWidth: 250,
+    marginTop: 8,
+    shadowColor: COLORS.black,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: COLORS.gray,
+  },
+  calloutTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  calloutCategory: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  calloutAddress: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+    lineHeight: 16,
   },
 });

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { supabase, type Offer } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
 
 export type OfferWithCommerce = Offer & {
   commerces: {
@@ -51,7 +51,6 @@ export const useOffers = (options: UseOffersOptions = {}) => {
 
       const { data: offersData, error: offersError } = await offersQuery;
 
-      console.log('Offers query result:', { offersData, offersError });
 
       if (offersError) {
         throw offersError;
@@ -80,8 +79,6 @@ export const useOffers = (options: UseOffersOptions = {}) => {
         ...offer,
         commerces: commercesData?.find(commerce => commerce.id === offer.commerce_id) || null
       }));
-
-      console.log('Combined offers data:', combinedData);
 
       let filteredData = combinedData;
 
