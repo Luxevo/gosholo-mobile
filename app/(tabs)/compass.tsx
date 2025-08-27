@@ -1,18 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useCommerces } from '@/hooks/useCommerces';
+import * as Location from 'expo-location';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  StatusBar,
   StyleSheet,
   Text,
-  View,
   TouchableOpacity,
-  StatusBar,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import * as Location from 'expo-location';
-import { useCommerces } from '@/hooks/useCommerces';
 
-// Conditional import for Mapbox (only works in native builds)
-let Mapbox: any, MapView: any, Camera: any, LocationPuck: any, FillExtrusionLayer: any, PointAnnotation: any;
+// Conditional import for Mapbox (native builds only)
+let Mapbox: any,
+  MapView: any,
+  Camera: any,
+  LocationPuck: any,
+  FillExtrusionLayer: any,
+  PointAnnotation: any,
+  RasterDemSource: any,
+  Terrain: any,
+  SkyLayer: any;
+
 try {
   const MapboxMaps = require('@rnmapbox/maps');
   Mapbox = MapboxMaps.default;
@@ -21,8 +30,18 @@ try {
   LocationPuck = MapboxMaps.LocationPuck;
   FillExtrusionLayer = MapboxMaps.FillExtrusionLayer;
   PointAnnotation = MapboxMaps.PointAnnotation;
+  RasterDemSource = MapboxMaps.RasterDemSource;
+  Terrain = MapboxMaps.Terrain;
+  SkyLayer = MapboxMaps.SkyLayer;
 } catch (error) {
-  console.log('Mapbox not available in Expo Go');
+  console.log('Mapbox not available in Expo Go (use a dev build).');
+}
+
+// Initialize Mapbox (must happen before any map component mounts)
+if (Mapbox) {
+  Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN);
+  // Optional: disable telemetry
+  // Mapbox.setTelemetryEnabled(false);
 }
 
 const COLORS = {
@@ -36,17 +55,17 @@ const COLORS = {
   black: '#000000',
 };
 
-// Initialize Mapbox (only if available)
-if (Mapbox) {
-  Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN);
-}
+type LngLat = [number, number];
 
 export default function CompassScreen() {
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userLocation, setUserLocation] = useState<LngLat | null>(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [is3D, setIs3D] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
-  
+
+  const cameraRef = useRef<any>(null);
+
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
 
   useEffect(() => {
@@ -55,63 +74,113 @@ export default function CompassScreen() {
 
   const requestLocationPermission = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         setHasLocationPermission(true);
-        getCurrentLocation();
+        setPermissionDenied(false);
+        await getCurrentLocation(true);
+      } else {
+        setHasLocationPermission(false);
+        setPermissionDenied(!canAskAgain || status === 'denied');
       }
     } catch (error) {
       console.log('Location permission error:', error);
     }
   };
 
-  const getCurrentLocation = async () => {
+  const getCurrentLocation = async (animateCamera = false) => {
     try {
-      const location = await Location.getCurrentPositionAsync({});
-      setUserLocation([location.coords.longitude, location.coords.latitude]);
+      const loc = await Location.getCurrentPositionAsync({});
+      const coord: LngLat = [loc.coords.longitude, loc.coords.latitude];
+      setUserLocation(coord);
+
+      if (cameraRef.current && animateCamera) {
+        cameraRef.current.setCamera({
+          centerCoordinate: coord,
+          zoomLevel: 15,
+          animationDuration: 800,
+        });
+      }
+      return coord;
     } catch (error) {
       console.log('Get location error:', error);
     }
   };
 
-  const toggleMapStyle = () => {
-    setIs3D(!is3D);
+  const onLocatePress = async () => {
+    const coord = await getCurrentLocation(true);
+    if (!coord && userLocation && cameraRef.current) {
+      // fall back to last known location
+      cameraRef.current.setCamera({
+        centerCoordinate: userLocation,
+        zoomLevel: 15,
+        animationDuration: 800,
+      });
+    }
   };
 
-  const getCategoryIcon = (category: string) => {
-    const categoryIcons: { [key: string]: string } = {
-      'Restaurant': '🍽️',
-      'Café': '☕',
-      'Boulangerie': '🥖',
-      'Épicerie': '🛒',
-      'Commerce': '🏪',
-      'Service': '🔧',
-      'Santé': '🏥',
-      'Beauté': '💄',
-      'Sport': '⚽',
-      'Culture': '🎭',
-      'Éducation': '📚',
-      'Autre': '📍',
-    };
-    return categoryIcons[category] || '📍';
-  };
+  const toggleMapStyle = () => setIs3D((v) => !v);
+
+  const categoryIcons = useMemo(
+    () => ({
+      Restaurant: '🍽️',
+      Café: '☕',
+      Boulangerie: '🥖',
+      Épicerie: '🛒',
+      Commerce: '🏪',
+      Service: '🔧',
+      Santé: '🏥',
+      Beauté: '💄',
+      Sport: '⚽',
+      Culture: '🎭',
+      Éducation: '📚',
+      Autre: '📍',
+    }),
+    []
+  );
+
+  const categoryColors = useMemo(
+    () => ({
+      Restaurant: '#FF6233',
+      Café: '#8B4513',
+      Boulangerie: '#DEB887',
+      Épicerie: '#32CD32',
+      Commerce: '#4169E1',
+      Service: '#FF8C00',
+      Santé: '#DC143C',
+      Beauté: '#FF69B4',
+      Sport: '#00CED1',
+      Culture: '#9370DB',
+      Éducation: '#228B22',
+      Autre: '#696969',
+    }),
+    []
+  );
+
+  const getCategoryIcon = (category: string) => categoryIcons[category as keyof typeof categoryIcons] || '📍';
+  const getCategoryColor = (category: string) => (categoryColors as any)[category] || COLORS.primary;
+
+  const defaultCenter: LngLat = userLocation ?? [-74.006, 40.7128]; // NYC fallback
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Map</Text>
         <View style={styles.headerInfo}>
           <Text style={styles.debugText}>
-            {commercesLoading ? 'Loading...' : 
-             commercesError ? `Error: ${commercesError}` :
-             `${commerces.length} businesses`}
+            {commercesLoading
+              ? 'Loading...'
+              : commercesError
+              ? `Error: ${commercesError}`
+              : `${commerces.length} businesses`}
           </Text>
+
           <TouchableOpacity style={styles.toggleButton} onPress={toggleMapStyle}>
-            <IconSymbol name={is3D ? "cube" : "map"} size={24} color={COLORS.primary} />
-            <Text style={styles.toggleText}>{is3D ? "3D" : "2D"}</Text>
+            <IconSymbol name={is3D ? 'cube' : 'map'} size={24} color={COLORS.primary} />
+            <Text style={styles.toggleText}>{is3D ? '3D' : '2D'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -121,100 +190,159 @@ export default function CompassScreen() {
         {Mapbox && MapView ? (
           <MapView
             style={styles.map}
-            styleURL={Mapbox?.StyleURL?.Outdoors || 'mapbox://styles/mapbox/outdoors-v12'}
-            zoomEnabled={true}
-            scrollEnabled={true}
+            styleURL={Mapbox?.StyleURL?.Outdoors ?? 'mapbox://styles/mapbox/outdoors-v12'}
+            zoomEnabled
+            scrollEnabled
           >
             <Camera
-              centerCoordinate={userLocation || [-74.006, 40.7128]}
+              ref={cameraRef}
+              centerCoordinate={defaultCenter}
               zoomLevel={is3D ? 14.5 : 14}
               pitch={is3D ? 70 : 0}
               heading={is3D ? 45 : 0}
               animationDuration={2000}
             />
-            
+
             {hasLocationPermission && userLocation && (
-              <LocationPuck
-                puckBearing="heading"
-                puckBearingEnabled
-                visible={true}
-              />
+              <LocationPuck puckBearing="heading" puckBearingEnabled visible />
             )}
 
+            {/* True 3D: terrain + sky (only when toggled) */}
+            {is3D && RasterDemSource && Terrain && SkyLayer && (
+              <>
+                {/* DEM source for terrain */}
+                <RasterDemSource
+                  id="terrain-dem"
+                  url="mapbox://mapbox.mapbox-terrain-dem-v1"
+                  tileSize={512}
+                  maxzoom={14}
+                />
+                <Terrain sourceID="terrain-dem" exaggeration={1.4} />
+                <SkyLayer
+                  id="sky"
+                  style={{
+                    skyType: 'atmosphere',
+                    skyAtmosphereSun: [0.0, 0.0],
+                    skyAtmosphereSunIntensity: 15.0,
+                  }}
+                />
+              </>
+            )}
+
+            {/* 3D buildings (extrusions) */}
             {is3D && FillExtrusionLayer && (
               <FillExtrusionLayer
-                key="buildings-3d-layer"
-                id={`buildings-3d-${Date.now()}`}
+                id="buildings-3d" // stable id
                 sourceID="composite"
                 sourceLayerID="building"
                 minZoom={10}
-                filter={['==', 'extrude', 'true']}
+                filter={['==', ['get', 'extrude'], 'true']}
                 style={{
                   fillExtrusionColor: [
                     'interpolate',
                     ['linear'],
                     ['get', 'height'],
-                    0, '#fefefe',
-                    20, '#f8f8f8',
-                    50, '#f0f0f0', 
-                    100, '#e8e8e8',
-                    200, '#d4d4d4',
-                    300, '#a3a3a3',
-                    500, '#737373'
+                    0,
+                    '#fefefe',
+                    20,
+                    '#f8f8f8',
+                    50,
+                    '#f0f0f0',
+                    100,
+                    '#e8e8e8',
+                    200,
+                    '#d4d4d4',
+                    300,
+                    '#a3a3a3',
+                    500,
+                    '#737373',
                   ],
-                  fillExtrusionHeight: [
-                    '*',
-                    ['get', 'height'],
-                    1.8
-                  ],
+                  fillExtrusionHeight: ['*', ['get', 'height'], 1.8],
                   fillExtrusionBase: ['get', 'min_height'],
                   fillExtrusionOpacity: 0.9,
                 }}
               />
             )}
 
-            {/* Gosholo Business Markers */}
-            {PointAnnotation && commerces.map((commerce) => (
-              commerce.latitude && commerce.longitude && (
-                <PointAnnotation
-                  key={commerce.id}
-                  id={commerce.id}
-                  coordinate={[commerce.longitude, commerce.latitude]}
-                  onSelected={() => setSelectedBusiness(commerce.id)}
-                  onDeselected={() => setSelectedBusiness(null)}
-                >
-                  <View style={[
-                    styles.markerContainer,
-                    selectedBusiness === commerce.id && styles.markerSelected
-                  ]}>
-                    <Text style={styles.markerEmoji}>
-                      {getCategoryIcon(commerce.category)}
-                    </Text>
-                  </View>
-                  
-                  {selectedBusiness === commerce.id && (
-                    <View style={styles.calloutContainer}>
-                      <Text style={styles.calloutTitle}>{commerce.name}</Text>
-                      <Text style={styles.calloutCategory}>{commerce.category}</Text>
-                      <Text style={styles.calloutAddress}>{commerce.address}</Text>
+            {/* Business markers (PointAnnotation is fine for small sets) */}
+            {PointAnnotation &&
+              commerces.map((commerce: any) => {
+                if (!commerce.latitude || !commerce.longitude) return null;
+                const isSelected = selectedBusiness === commerce.id;
+                return (
+                  <PointAnnotation
+                    key={commerce.id}
+                    id={commerce.id}
+                    coordinate={[commerce.longitude, commerce.latitude]}
+                    onSelected={() => setSelectedBusiness(commerce.id)}
+                    onDeselected={() => setSelectedBusiness(null)}
+                  >
+                    <View
+                      style={[
+                        styles.markerContainer,
+                        isSelected && styles.markerSelected,
+                        { backgroundColor: getCategoryColor(commerce.category) },
+                      ]}
+                    >
+                      <Text style={styles.markerEmoji}>{getCategoryIcon(commerce.category)}</Text>
                     </View>
-                  )}
-                </PointAnnotation>
-              )
-            ))}
+                  </PointAnnotation>
+                );
+              })}
           </MapView>
         ) : (
           <View style={styles.mapFallback}>
-            <Text style={styles.mapFallbackText}>
-              📍 Map available in native build
+            <Text style={styles.mapFallbackText}>📍 Map available in a native dev build.</Text>
+            <Text style={styles.mapFallbackTextSmall}>
+              (Expo Go doesn’t support @rnmapbox/maps. Build a dev client.)
             </Text>
           </View>
         )}
-        
+
+        {/* Locate me */}
         {hasLocationPermission && (
-          <TouchableOpacity style={styles.locationButton} onPress={getCurrentLocation}>
+          <TouchableOpacity style={styles.locationButton} onPress={onLocatePress}>
             <IconSymbol name="location.fill" size={20} color={COLORS.white} />
           </TouchableOpacity>
+        )}
+
+        {/* Permission denied helper */}
+        {!hasLocationPermission && permissionDenied && (
+          <View style={styles.permissionBanner}>
+            <Text style={styles.permissionText}>
+              Location permission denied. Enable it in Settings to show your position.
+            </Text>
+            <TouchableOpacity style={styles.permissionRetry} onPress={requestLocationPermission}>
+              <Text style={styles.permissionRetryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Selected Business Callout */}
+        {selectedBusiness && (
+          <View style={styles.calloutOverlay}>
+            <View style={styles.calloutContainer}>
+              {(() => {
+                const business = commerces.find((c: any) => c.id === selectedBusiness);
+                if (!business) return null;
+                return (
+                  <>
+                    <Text style={styles.calloutTitle}>{business.name}</Text>
+                    <Text style={styles.calloutCategory}>{business.category}</Text>
+                    {!!business.address && (
+                      <Text style={styles.calloutAddress}>{business.address}</Text>
+                    )}
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={() => setSelectedBusiness(null)}
+                    >
+                      <IconSymbol name="xmark" size={16} color={COLORS.darkGray} />
+                    </TouchableOpacity>
+                  </>
+                );
+              })()}
+            </View>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -275,10 +403,17 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 24,
   },
   mapFallbackText: {
     color: COLORS.darkGray,
     fontSize: 16,
+    textAlign: 'center',
+  },
+  mapFallbackTextSmall: {
+    color: COLORS.darkGray,
+    fontSize: 12,
+    marginTop: 6,
     textAlign: 'center',
   },
   locationButton: {
@@ -292,57 +427,85 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
   },
+  permissionBanner: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffeeba',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+  },
+  permissionText: {
+    color: '#856404',
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  permissionRetry: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  permissionRetryText: {
+    color: COLORS.white,
+    fontWeight: '600',
+    fontSize: 12,
+  },
   markerContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderWidth: 3,
+    borderColor: COLORS.white,
     shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 6,
   },
   markerSelected: {
-    borderColor: COLORS.teal,
-    borderWidth: 3,
     transform: [{ scale: 1.2 }],
   },
   markerEmoji: {
     fontSize: 20,
   },
+  calloutOverlay: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
   calloutContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    padding: 12,
-    minWidth: 200,
-    maxWidth: 250,
-    marginTop: 8,
+    padding: 16,
+    maxWidth: 300,
     shadowColor: COLORS.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 10,
     borderWidth: 1,
     borderColor: COLORS.gray,
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    padding: 4,
   },
   calloutTitle: {
     fontSize: 16,
