@@ -1,30 +1,66 @@
+import HomeCard, { HomeCardData } from '@/components/HomeCard';
+import { router } from 'expo-router';
 import React from 'react';
 import {
+  StatusBar,
   StyleSheet,
   Text,
-  View,
-  ScrollView,
-  TextInput,
   TouchableOpacity,
-  StatusBar,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { RestaurantCard } from '@/components/RestaurantCard';
-  
+
 const COLORS = {
   primary: '#FF6233',
-  teal: '#016167',
-  green: '#B2FD9D',
-  blue: '#5BC4DB',
+  ink: '#111827',
   white: '#FFFFFF',
   gray: '#F5F5F5',
   darkGray: '#666666',
-  black: '#000000',
 };
 
-export default function HomeScreen() {
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+};
 
+// Card data configuration
+const HOME_CARDS: HomeCardData[] = [
+  {
+    id: 'explore',
+    title: 'Explore Nearby',
+    subtitle: 'Find restaurants & events around you',
+    image: require('@/assets/images/ui/map.png'),
+    route: '/compass',
+    hasButton: true,
+    buttonText: 'Open Map',
+  },
+  {
+    id: 'offers',
+    title: 'Special Offers',
+    subtitle: 'Discover amazing deals',
+    image: require('@/assets/images/ui/offers.png'),
+    route: '/offers',
+    hasButton: true,
+    buttonText: 'See Offers',
+  },
+  {
+    id: 'events',
+    title: 'Exciting Events',
+    subtitle: 'Find exciting events',
+    image: require('@/assets/images/ui/events.png'),
+    route: '/events',
+    hasButton: true,
+    buttonText: 'See Events',
+  },
+];
+
+export default function HomeScreen() {
+  const handleCardPress = (route: string) => {
+    router.push(route as any);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -32,120 +68,31 @@ export default function HomeScreen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.logo}>olo</Text>
-          <View style={styles.locationContainer}>
-            <IconSymbol name="location.fill" size={12} color={COLORS.green} />
-            <Text style={styles.locationText}>New York</Text>
-          </View>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.notificationButton}>
-            <IconSymbol name="bell" size={24} color={COLORS.black} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.profileButton}>
-            <View style={styles.avatar} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          accessibilityRole="button"
+          accessibilityLabel="Profile"
+        >
+          <View style={styles.avatar} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search restaurants, cuisines, or events..."
-              placeholderTextColor={COLORS.darkGray}
+      {/* Welcome Section */}
+      <View style={styles.welcomeSection}>
+        <Text style={styles.welcomeTitle}>Welcome!</Text>
+        <Text style={styles.welcomeSubtitle}>Where would you like to go?</Text>
+      </View>
+
+      {/* Navigation Cards */}
+      <View style={styles.cardsContainer}>
+        {HOME_CARDS.map((card) => (
+          <HomeCard
+            key={card.id}
+            card={card}
+            onPress={() => handleCardPress(card.route)}
           />
-          <TouchableOpacity style={styles.searchButton}>
-            <IconSymbol name="magnifyingglass" size={20} color={COLORS.darkGray} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Categories */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Categories</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-            <TouchableOpacity style={[styles.categoryButton, styles.activeCategory]}>
-              <IconSymbol name="fork.knife" size={16} color={COLORS.white} />
-              <Text style={styles.activeCategoryText}>All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <IconSymbol name="clock" size={16} color={COLORS.darkGray} />
-              <Text style={styles.categoryText}>Fast Food</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <IconSymbol name="globe" size={16} color={COLORS.darkGray} />
-              <Text style={styles.categoryText}>Italian</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton}>
-              <IconSymbol name="globe" size={16} color={COLORS.darkGray} />
-              <Text style={styles.categoryText}>Asian</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-
-        {/* Filters */}
-        <View style={styles.filtersContainer}>
-          <TouchableOpacity style={styles.filterButton}>
-            <IconSymbol name="slider.horizontal.3" size={16} color={COLORS.black} />
-            <Text style={styles.filterText}>Filters</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterOption}>
-            <Text style={styles.filterText}>Near Me</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterOption}>
-            <Text style={styles.filterText}>Highly Rated</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterOption}>
-            <Text style={styles.filterText}>Open Now</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Popular Now */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Popular Now</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Restaurant Cards */}
-          <RestaurantCard
-            name="Burger & Lobster"
-            cuisine="American, Seafood"
-            deliveryInfo="15-25 min • 1.2 miles away"
-            rating={4.8}
-            reviewCount={120}
-            badges={[
-              { text: '20% Off', type: 'discount' },
-              { text: 'Free Delivery', type: 'delivery' },
-              { text: '$$$', type: 'price' },
-            ]}
-            onPress={() => console.log('Restaurant pressed')}
-            onFavoritePress={() => console.log('Favorite pressed')}
-          />
-
-          <RestaurantCard
-            name="Pasta Paradise"
-            cuisine="Italian, Pasta"
-            deliveryInfo="20-30 min • 0.8 miles away"
-            rating={4.6}
-            reviewCount={95}
-            badges={[
-              { text: '$$', type: 'price' },
-            ]}
-            onPress={() => console.log('Restaurant pressed')}
-            onFavoritePress={() => console.log('Favorite pressed')}
-          />
-        </View>
-      </ScrollView>
+        ))}
+      </View>
     </SafeAreaView>
   );
 }
@@ -159,39 +106,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logo: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.teal,
-    marginRight: 12,
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.green,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  locationText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.black,
-    marginLeft: 4,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  notificationButton: {
-    marginRight: 12,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
   },
   profileButton: {
     width: 32,
@@ -203,98 +119,82 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: COLORS.gray,
   },
-  scrollView: {
-    flex: 1,
-  },
-  searchContainer: {
-    flexDirection: 'row',
+  welcomeSection: {
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: 32,
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginVertical: 16,
-    backgroundColor: COLORS.gray,
-    borderRadius: 12,
-    paddingHorizontal: 16,
   },
-  searchInput: {
-    flex: 1,
-    height: 48,
-    fontSize: 16,
-    color: COLORS.black,
-  },
-  searchButton: {
-    padding: 8,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
+  welcomeTitle: {
+    fontSize: 32,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.ink,
+    marginBottom: SPACING.sm,
   },
-  seeAllText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  categoriesScroll: {
-    paddingLeft: 20,
-  },
-  categoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-    borderRadius: 20,
-    backgroundColor: COLORS.gray,
-  },
-  activeCategory: {
-    backgroundColor: COLORS.primary,
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: '500',
+  welcomeSubtitle: {
+    fontSize: 16,
     color: COLORS.darkGray,
-    marginLeft: 6,
+    textAlign: 'center',
   },
-  activeCategoryText: {
+  cardsContainer: {
+    flex: 1,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+  },
+  card: {
+    borderRadius: 16,
+    marginBottom: SPACING.lg,
+    overflow: 'hidden',
+    height: 140,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+  },
+  cardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 16,
+    padding: SPACING.lg,
+    justifyContent: 'center',
+  },
+  cardContent: {
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: COLORS.white,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+  },
+  cardButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+  },
+  cardButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.white,
-    marginLeft: 6,
-  },
-  filtersContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.darkGray,
-  },
-  filterOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.black,
-    marginLeft: 4,
   },
 }); 
