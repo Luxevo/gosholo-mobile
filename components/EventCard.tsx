@@ -81,7 +81,11 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFav
   // ——— render ———
   return (
     <TouchableOpacity
-      style={[styles.card, isEnded && styles.cardDisabled]}
+      style={[
+        styles.card, 
+        isEnded && styles.cardDisabled,
+        event.boosted && styles.cardBoosted
+      ]}
       onPress={onPress}
       disabled={isEnded}
       activeOpacity={0.9}
@@ -91,7 +95,7 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFav
       {/* Boost chip */}
       {event.boosted && (
         <View style={styles.boostChip}>
-          <IconSymbol name="star.fill" size={12} color={COLORS.teal} />
+          <IconSymbol name="star.fill" size={12} color="#FFD700" />
           <Text style={styles.boostText}>
             {event.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
           </Text>
@@ -206,6 +210,16 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   cardDisabled: { opacity: 0.6 },
+  
+  cardBoosted: {
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
+  },
 
   // boost
   boostChip: {
@@ -213,17 +227,18 @@ const styles = StyleSheet.create({
     zIndex: 3,
     top: SPACING.sm,
     left: SPACING.sm,
-    backgroundColor: COLORS.success,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: RAD.pill,
+    gap: 4,
   },
-  boostText: { fontSize: 12, fontWeight: '600', color: COLORS.teal, marginLeft: 4 },
+  boostText: { fontSize: 10, fontWeight: '700', color: '#FFD700' },
 
   // media
-  media: { position: 'relative', aspectRatio: 16 / 9, backgroundColor: COLORS.bgMuted },
+  media: { position: 'relative', aspectRatio: 16 / 6, backgroundColor: COLORS.bgMuted },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#8B5CF6' },

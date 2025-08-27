@@ -85,7 +85,11 @@ export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFav
 
   return (
     <TouchableOpacity
-      style={[styles.card, isExpired && styles.cardDisabled]}
+      style={[
+        styles.card, 
+        isExpired && styles.cardDisabled,
+        offer.boosted && styles.cardBoosted
+      ]}
       onPress={onPress}
       disabled={isExpired}
       activeOpacity={0.9}
@@ -109,16 +113,14 @@ export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFav
           <View style={styles.discountPill}>
             <Text style={styles.discountText}>{discount}</Text>
           </View>
-
-          {!!onFavoritePress && (
-            <TouchableOpacity
-              onPress={onFavoritePress}
-              style={styles.favBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Save offer to favorites"
-            >
-              <IconSymbol name="heart" size={16} color={COLORS.ink} />
-            </TouchableOpacity>
+          
+          {offer.boosted && (
+            <View style={styles.boostBadge}>
+              <IconSymbol name="star.fill" size={12} color="#FFD700" />
+              <Text style={styles.boostText}>
+                {offer.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
+              </Text>
+            </View>
           )}
         </View>
 
@@ -144,12 +146,6 @@ export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFav
               {offer.commerces?.category} • {offerTypeLabel}
             </Text>
             {!!conditionText && <Text style={styles.condition} numberOfLines={1}>{conditionText}</Text>}
-            {offer.boosted && (
-              <View style={styles.featuredChip}>
-                <IconSymbol name="star.fill" size={10} color={COLORS.white} />
-                <Text style={styles.featuredText}>Featured</Text>
-              </View>
-            )}
           </View>
 
           <View style={styles.pricePill}>
@@ -184,8 +180,18 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   cardDisabled: { opacity: 0.6 },
+  
+  cardBoosted: {
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
+  },
 
-  media: { position: 'relative', aspectRatio: 16 / 9, backgroundColor: COLORS.bgMuted },
+  media: { position: 'relative', aspectRatio: 16 / 6, backgroundColor: COLORS.bgMuted },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.teal },
@@ -206,6 +212,21 @@ const styles = StyleSheet.create({
     borderRadius: RAD.pill,
   },
   discountText: { fontSize: 12, fontWeight: '700', color: COLORS.teal },
+
+  boostBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RAD.pill,
+    gap: 4,
+  },
+  boostText: { 
+    fontSize: 10, 
+    fontWeight: '700', 
+    color: '#FFD700' 
+  },
 
   favBtn: {
     width: 32, height: 32,
