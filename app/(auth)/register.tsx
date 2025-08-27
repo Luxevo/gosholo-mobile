@@ -74,7 +74,7 @@ export default function RegisterScreen() {
           {/* Registration Form */}
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Name</Text>
+              <Text style={styles.label}>Username</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={styles.input}
