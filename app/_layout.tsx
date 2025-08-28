@@ -17,8 +17,11 @@ export default function RootLayout() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Don't trigger navigation for password updates
+      if (event !== 'USER_UPDATED') {
+        setSession(session);
+      }
       setIsLoading(false);
     });
 
@@ -29,8 +32,12 @@ export default function RootLayout() {
     // Auto-navigate based on session state
     if (!isLoading) {
       if (session) {
-        // User is logged in, redirect to main app
-        router.replace('/(tabs)');
+        // User is logged in, redirect to main app only if not already in tabs
+        const segments = router.segments || [];
+        const isInTabs = segments.some(segment => segment === '(tabs)' || segment === 'tabs');
+        if (!isInTabs) {
+          router.replace('/(tabs)');
+        }
       } else {
         // User is not logged in, redirect to login
         router.replace('/(auth)/login');
