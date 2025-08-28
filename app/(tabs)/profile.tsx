@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useMobileUser } from '@/hooks/useMobileUser';
 import { supabase } from '@/lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
   
 export default function ProfileScreen() {
   const { profile, loading, error } = useMobileUser();

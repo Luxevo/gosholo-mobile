@@ -190,7 +190,7 @@ export default function CompassScreen() {
         {Mapbox && MapView ? (
           <MapView
             style={styles.map}
-            styleURL={Mapbox?.StyleURL?.Outdoors ?? 'mapbox://styles/mapbox/outdoors-v12'}
+            styleURL={Mapbox?.StyleURL?.Streets ?? 'mapbox://styles/mapbox/streets-v12'}
             zoomEnabled
             scrollEnabled
           >
