@@ -7,6 +7,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -44,8 +45,8 @@ import { supabase } from '@/lib/supabase';
         }
 
         if (data?.session) {
-          // Login successful
-          router.replace('/(tabs)');
+          // Login successful - root layout will handle navigation
+          console.log('Login successful');
         }
       } catch (error) {
         console.error('Login error:', error);
@@ -68,8 +69,14 @@ import { supabase } from '@/lib/supabase';
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoidingView}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <View style={styles.content}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.content}>
             {/* Logo and Illustration Section */}
             <View style={styles.logoSection}>
               <View style={styles.logoContainer}>
@@ -181,6 +188,7 @@ import { supabase } from '@/lib/supabase';
               </TouchableOpacity>
             </View>
           </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
@@ -193,10 +201,14 @@ import { supabase } from '@/lib/supabase';
     keyboardAvoidingView: {
       flex: 1,
     },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 20, // Extra padding at bottom for keyboard
+    },
       content: {
-    flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 20,
+    minHeight: '100%', // Ensure content takes full height
   },
       logoSection: {
     alignItems: 'center',

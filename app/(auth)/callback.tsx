@@ -37,10 +37,10 @@ export default function AuthCallbackScreen() {
         }
 
         if (session) {
-          // Email confirmed and user is authenticated - redirect immediately
-          router.replace('/(tabs)');
+          // Email confirmed and user is authenticated - root layout will handle navigation
+          console.log('Email confirmed and authenticated');
         } else {
-          // Email confirmed but user needs to login - redirect to login
+          // Email confirmed but user needs to login
           router.replace('/(auth)/login');
         }
       } catch (error) {

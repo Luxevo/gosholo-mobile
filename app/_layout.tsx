@@ -1,9 +1,43 @@
 // app/_layout.tsx - Root layout
 import { Stack, router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as Linking from 'expo-linking';
+import { supabase } from '@/lib/supabase';
+import { Session } from '@supabase/supabase-js';
 
 export default function RootLayout() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Auto-navigate based on session state
+    if (!isLoading) {
+      if (session) {
+        // User is logged in, redirect to main app
+        router.replace('/(tabs)');
+      } else {
+        // User is not logged in, redirect to login
+        router.replace('/(auth)/login');
+      }
+    }
+  }, [session, isLoading]);
+
   useEffect(() => {
     // Handle deep links from email confirmations
     const handleDeepLink = (url: string) => {
@@ -51,6 +85,15 @@ export default function RootLayout() {
 
     return () => subscription?.remove();
   }, []);
+
+  // Show loading screen while checking auth state
+  if (isLoading) {
+    return (
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="loading" options={{ headerShown: false }} />
+      </Stack>
+    );
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}/>

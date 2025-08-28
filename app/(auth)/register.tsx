@@ -6,6 +6,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -50,6 +51,7 @@ export default function RegisterScreen() {
         options: {
           data: {
             username: username.trim(), // This will be used by the trigger
+            user_type: 'mobile', // Explicit mobile user identification
           },
           // Mobile app deep link for email confirmation
           emailRedirectTo: 'gosholomobile://auth/callback',
@@ -75,16 +77,10 @@ export default function RegisterScreen() {
           ]
         );
       } else if (authData?.session) {
-        // Auto sign-in successful
+        // Auto sign-in successful - root layout will handle navigation
         Alert.alert(
           'Welcome!', 
-          'Your account has been created successfully.',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.replace('/(tabs)')
-            }
-          ]
+          'Your account has been created successfully.'
         );
       }
     } catch (error) {
@@ -108,8 +104,14 @@ export default function RegisterScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
 
           {/* Header Section */}
           <View style={styles.headerSection}>
@@ -267,6 +269,7 @@ export default function RegisterScreen() {
             </View>
           </View>
         </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -280,10 +283,14 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20, // Extra padding at bottom for keyboard
+  },
   content: {
-    flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 20,
+    minHeight: '100%', // Ensure content takes full height
   },
   logoSection: {
     alignItems: 'center',
