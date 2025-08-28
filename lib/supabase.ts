@@ -8,7 +8,12 @@ console.log('Supabase config:', {
   keyPrefix: supabaseAnonKey?.substring(0, 20) + '...' 
 });
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    detectSessionInUrl: false, // Disable for mobile - prevents web redirects
+    persistSession: true, // Keep session in mobile storage
+  },
+});
 
 // Types based on your database schema
 export type Commerce = {
@@ -85,4 +90,35 @@ export type Event = {
   updated_at: string;
   // Join with commerce data
   commerces?: Commerce;
+};
+
+// Mobile User Types
+export type MobileUserProfile = {
+  id: string;
+  username: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// Favorites Types
+export type UserFavoriteOffer = {
+  id: string;
+  user_id: string;
+  offer_id: string;
+  created_at: string;
+};
+
+export type UserFavoriteEvent = {
+  id: string;
+  user_id: string;
+  event_id: string;
+  created_at: string;
+};
+
+export type UserFavoriteCommerce = {
+  id: string;
+  user_id: string;
+  commerce_id: string;
+  created_at: string;
 };

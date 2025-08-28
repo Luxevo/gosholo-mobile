@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -14,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,7 +25,7 @@ export default function RegisterScreen() {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   const handleSignUp = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!username || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -41,12 +42,57 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Create user account with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password,
+        options: {
+          data: {
+            username: username.trim(), // This will be used by the trigger
+          },
+          // Mobile app deep link for email confirmation
+          emailRedirectTo: 'gosholomobile://auth/callback',
+        },
+      });
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        Alert.alert('Registration Error', authError.message);
+        return;
+      }
+
+      if (authData?.user && !authData?.session) {
+        // User created but needs to confirm email
+        Alert.alert(
+          'Registration Successful', 
+          'Please check your email to confirm your account before signing in.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.push('/(auth)/login')
+            }
+          ]
+        );
+      } else if (authData?.session) {
+        // Auto sign-in successful
+        Alert.alert(
+          'Welcome!', 
+          'Your account has been created successfully.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/(tabs)')
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-      // Navigate to main app after successful registration
-      router.replace('/(tabs)');
-    }, 1500);
+    }
   };
 
   const handleLogin = () => {
@@ -78,11 +124,11 @@ export default function RegisterScreen() {
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Your Name"
+                  placeholder="Choose a username"
                   placeholderTextColor="#9CA3AF"
-                  value={name}
-                  onChangeText={setName}
-                  autoCapitalize="words"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
                   autoCorrect={false}
                 />
                 <Ionicons 

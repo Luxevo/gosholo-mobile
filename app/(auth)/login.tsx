@@ -1,4 +1,4 @@
-  import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -14,6 +14,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '@/lib/supabase';
 
   export default function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -22,8 +23,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
     const [showPassword, setShowPassword] = useState(false);
 
     const backgroundColor = useThemeColor({}, 'background');
-    const textColor = useThemeColor({}, 'text');
-    const tintColor = useThemeColor({}, 'tint');
 
     const handleLogin = async () => {
       if (!email || !password) {
@@ -33,12 +32,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
       setIsLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.toLowerCase().trim(),
+          password,
+        });
+
+        if (error) {
+          Alert.alert('Login Error', error.message);
+          return;
+        }
+
+        if (data?.session) {
+          // Login successful
+          router.replace('/(tabs)');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      } finally {
         setIsLoading(false);
-        // Navigate to main app after successful login
-        router.replace('/(tabs)');
-      }, 1500);
+      }
     };
 
     const handleForgotPassword = () => {
@@ -161,7 +175,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
             {/* Sign Up Link */}
             <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>Don't have an account? </Text>
+              <Text style={styles.signUpText}>Don&apos;t have an account? </Text>
               <TouchableOpacity onPress={handleSignUp}>
                 <Text style={styles.signUpLink}>Sign Up</Text>
               </TouchableOpacity>
