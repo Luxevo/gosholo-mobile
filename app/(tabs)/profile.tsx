@@ -1,3 +1,4 @@
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 import { useMobileUser } from '@/hooks/useMobileUser';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,50 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
   
 export default function ProfileScreen() {
   const { profile, loading, error } = useMobileUser();
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
-  const handleChangePassword = async () => {
-    setIsChangingPassword(true);
-    
-    Alert.prompt(
-      'Change Password',
-      'Enter your new password:',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => setIsChangingPassword(false),
-        },
-        {
-          text: 'Update',
-          onPress: async (newPassword) => {
-            if (!newPassword || newPassword.length < 6) {
-              Alert.alert('Error', 'Password must be at least 6 characters');
-              setIsChangingPassword(false);
-              return;
-            }
-
-            try {
-              const { error } = await supabase.auth.updateUser({
-                password: newPassword
-              });
-
-              if (error) {
-                Alert.alert('Error', error.message);
-              } else {
-                Alert.alert('Success', 'Password updated successfully');
-              }
-            } catch (err) {
-              console.error('Password update error:', err);
-              Alert.alert('Error', 'Failed to update password');
-            } finally {
-              setIsChangingPassword(false);
-            }
-          },
-        },
-      ],
-      'secure-text'
-    );
+  const handleChangePassword = () => {
+    setShowChangePasswordModal(true);
   };
 
   const handleLogout = async () => {
@@ -127,11 +88,10 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem} 
             onPress={handleChangePassword}
-            disabled={isChangingPassword}
           >
             <Ionicons name="lock-closed-outline" size={20} color="#016167" />
             <Text style={styles.menuText}>Change Password</Text>
-            {isChangingPassword && <ActivityIndicator size="small" color="#FF6233" />}
+            <Ionicons name="chevron-forward" size={16} color="#CCCCCC" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
@@ -149,6 +109,14 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <ChangePasswordModal
+        visible={showChangePasswordModal}
+        onClose={() => {
+          console.log('Profile: Closing change password modal');
+          setShowChangePasswordModal(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
