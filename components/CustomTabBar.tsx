@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ButtonSvg } from '@/components/ButtonSvg';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSafeAreaPadding } from '@/hooks/useSafeAreaPadding';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface TabBarProps {
   state: any;
@@ -14,6 +15,7 @@ interface TabBarProps {
 export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const { getTabBarPadding } = useSafeAreaPadding();
 
   const getIconName = (routeName: string, focused: boolean) => {
     switch (routeName) {
@@ -50,7 +52,13 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   };
 
   return (
-    <View style={[styles.tabBar, { backgroundColor: colors.background }]}>
+    <View style={[
+      styles.tabBar, 
+      { 
+        backgroundColor: colors.background,
+        paddingBottom: getTabBarPadding(),
+      }
+    ]}>
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
@@ -113,8 +121,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    height: 80,
-    paddingBottom: 16,
+    minHeight: 80,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E5',

@@ -2,11 +2,11 @@ import HomeCard, { HomeCardData } from '@/components/HomeCard';
 import { router } from 'expo-router';
 import React from 'react';
 import {
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -65,17 +65,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.profileButton}
-          accessibilityRole="button"
-          accessibilityLabel="Profile"
-        >
-          <View style={styles.avatar} />
-        </TouchableOpacity>
-      </View>
+    
 
       {/* Welcome Section */}
       <View style={styles.welcomeSection}>
@@ -120,8 +110,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray,
   },
   welcomeSection: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: 32,
+    paddingTop:10,
+    ...Platform.select({
+      ios: {
+        paddingVertical: 32,
+      },
+      android: {
+        paddingBottom: 0,
+      },
+
+    }),
     alignItems: 'center',
   },
   welcomeTitle: {
