@@ -1,13 +1,15 @@
+import BusinessDetailModal from '@/components/BusinessDetailModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useCommerces } from '@/hooks/useCommerces';
+import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  FlatList,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -62,7 +64,9 @@ export default function CompassScreen() {
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [is3D, setIs3D] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<Commerce | null>(null);
+  const [showBusinessModal, setShowBusinessModal] = useState(false);
+  const [showBusinessList, setShowBusinessList] = useState(false);
 
   const cameraRef = useRef<any>(null);
 
@@ -120,6 +124,20 @@ export default function CompassScreen() {
   };
 
   const toggleMapStyle = () => setIs3D((v) => !v);
+
+  const handleBusinessPress = (commerce: Commerce) => {
+    setSelectedBusiness(commerce);
+    setShowBusinessModal(true);
+  };
+
+  const handleCloseBusinessModal = () => {
+    setShowBusinessModal(false);
+    setSelectedBusiness(null);
+  };
+
+  const toggleBusinessList = () => {
+    setShowBusinessList(!showBusinessList);
+  };
 
   const categoryIcons = useMemo(
     () => ({
@@ -182,11 +200,53 @@ export default function CompassScreen() {
             <IconSymbol name={is3D ? 'cube' : 'map'} size={24} color={COLORS.primary} />
             <Text style={styles.toggleText}>{is3D ? '3D' : '2D'}</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity style={styles.listButton} onPress={toggleBusinessList}>
+            <IconSymbol name="list.bullet" size={20} color={COLORS.white} />
+            <Text style={styles.listButtonText}>List</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Map */}
+      {/* Map Container with Business List Overlay */}
       <View style={styles.mapContainer}>
+        {/* Business List Overlay */}
+        {showBusinessList && (
+          <View style={styles.businessListOverlay}>
+            <View style={styles.businessListHeader}>
+              <Text style={styles.businessListTitle}>Businesses</Text>
+              <TouchableOpacity onPress={toggleBusinessList}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={commerces}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.businessListItem}
+                  onPress={() => handleBusinessPress(item)}
+                >
+                  <View style={styles.businessItemContent}>
+                    <View style={[styles.businessItemIcon, { backgroundColor: getCategoryColor(item.category) }]}>
+                      <Text style={styles.businessItemEmoji}>{getCategoryIcon(item.category)}</Text>
+                    </View>
+                    <View style={styles.businessItemDetails}>
+                      <Text style={styles.businessItemName} numberOfLines={1}>{item.name}</Text>
+                      <Text style={styles.businessItemCategory}>{item.category}</Text>
+                      {item.address && (
+                        <Text style={styles.businessItemAddress} numberOfLines={1}>{item.address}</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        )}
+
+        {/* Map */}
         {Mapbox && MapView ? (
           <MapView
             style={styles.map}
@@ -266,25 +326,35 @@ export default function CompassScreen() {
 
             {/* Business markers (PointAnnotation is fine for small sets) */}
             {PointAnnotation &&
-              commerces.map((commerce: any) => {
+              commerces.map((commerce: Commerce) => {
                 if (!commerce.latitude || !commerce.longitude) return null;
-                const isSelected = selectedBusiness === commerce.id;
+                const isSelected = selectedBusiness?.id === commerce.id;
                 return (
                   <PointAnnotation
                     key={commerce.id}
                     id={commerce.id}
                     coordinate={[commerce.longitude, commerce.latitude]}
-                    onSelected={() => setSelectedBusiness(commerce.id)}
+                    onSelected={() => handleBusinessPress(commerce)}
                     onDeselected={() => setSelectedBusiness(null)}
                   >
                     <View
                       style={[
-                        styles.markerContainer,
-                        isSelected && styles.markerSelected,
-                        { backgroundColor: getCategoryColor(commerce.category) },
+                        styles.businessMarker,
+                        isSelected && styles.businessMarkerSelected,
                       ]}
                     >
-                      <Text style={styles.markerEmoji}>{getCategoryIcon(commerce.category)}</Text>
+                     
+                        <View style={[styles.logoPlaceholder, { backgroundColor: getCategoryColor(commerce.category) }]}>
+                          <Text style={styles.logoPlaceholderText}>
+                            {commerce.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      
+                      <View style={styles.businessNameContainer}>
+                        <Text style={styles.businessNameText} numberOfLines={1}>
+                          {commerce.name}
+                        </Text>
+                      </View>
                     </View>
                   </PointAnnotation>
                 );
@@ -318,33 +388,13 @@ export default function CompassScreen() {
           </View>
         )}
 
-        {/* Selected Business Callout */}
-        {selectedBusiness && (
-          <View style={styles.calloutOverlay}>
-            <View style={styles.calloutContainer}>
-              {(() => {
-                const business = commerces.find((c: any) => c.id === selectedBusiness);
-                if (!business) return null;
-                return (
-                  <>
-                    <Text style={styles.calloutTitle}>{business.name}</Text>
-                    <Text style={styles.calloutCategory}>{business.category}</Text>
-                    {!!business.address && (
-                      <Text style={styles.calloutAddress}>{business.address}</Text>
-                    )}
-                    <TouchableOpacity
-                      style={styles.closeButton}
-                      onPress={() => setSelectedBusiness(null)}
-                    >
-                      <IconSymbol name="xmark" size={16} color={COLORS.darkGray} />
-                    </TouchableOpacity>
-                  </>
-                );
-              })()}
-            </View>
-          </View>
-        )}
       </View>
+
+      <BusinessDetailModal
+        visible={showBusinessModal}
+        business={selectedBusiness}
+        onClose={handleCloseBusinessModal}
+      />
     </SafeAreaView>
   );
 }
@@ -390,6 +440,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
     marginLeft: 6,
+  },
+  listButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 4,
+  },
+  listButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.white,
   },
   mapContainer: {
     flex: 1,
@@ -480,48 +544,139 @@ const styles = StyleSheet.create({
   markerEmoji: {
     fontSize: 20,
   },
-  calloutOverlay: {
-    position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
+  businessMarker: {
     alignItems: 'center',
+    maxWidth: 140,
   },
-  calloutContainer: {
+  businessMarkerSelected: {
+    transform: [{ scale: 1.15 }],
+  },
+  logoContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 16,
-    maxWidth: 300,
+    borderWidth: 3,
+    borderColor: COLORS.white,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 8,
+  },
+  businessLogo: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  logoPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.white,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoPlaceholderText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.white,
+  },
+  businessNameContainer: {
+    marginTop: 6,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.gray,
-    position: 'relative',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    minWidth: 60,
   },
-  closeButton: {
+  businessNameText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.black,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  businessListOverlay: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    padding: 4,
+    top: 0,
+    left: 0,
+    width: '45%',
+    height: '100%',
+    backgroundColor: COLORS.white,
+    zIndex: 1000,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.gray,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  calloutTitle: {
-    fontSize: 16,
+  businessListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  businessListTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.black,
-    marginBottom: 4,
   },
-  calloutCategory: {
+  businessListItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  businessItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  businessItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  businessItemEmoji: {
+    fontSize: 18,
+  },
+  businessItemDetails: {
+    flex: 1,
+  },
+  businessItemName: {
     fontSize: 14,
-    color: COLORS.primary,
     fontWeight: '600',
-    marginBottom: 4,
+    color: COLORS.black,
+    marginBottom: 2,
   },
-  calloutAddress: {
+  businessItemCategory: {
     fontSize: 12,
+    color: COLORS.primary,
+    marginBottom: 2,
+  },
+  businessItemAddress: {
+    fontSize: 11,
     color: COLORS.darkGray,
-    lineHeight: 16,
   },
 });

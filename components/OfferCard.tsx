@@ -156,7 +156,7 @@ export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFav
         {/* CTA */}
         <TouchableOpacity style={[styles.primaryBtn, isExpired && styles.primaryBtnDisabled]} onPress={onPress}>
           <Text style={[styles.primaryText, isExpired && styles.primaryTextDisabled]}>
-            {isExpired ? 'Expired' : 'Claim Offer'}
+            {isExpired ? 'Expired' : 'View Offer'}
           </Text>
         </TouchableOpacity>
       </View>
