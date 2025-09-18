@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a React Native mobile app built with Expo SDK 53, using TypeScript and Expo Router for navigation. The app connects to a Supabase backend and features location-based functionality with Mapbox integration.
+This is a React Native mobile app built with Expo SDK 54, using TypeScript and Expo Router v5 for navigation. The app connects to a Supabase backend and features location-based functionality with Mapbox integration.
 
 ## Development Commands
 
@@ -19,7 +19,7 @@ expo start
 
 # Platform-specific development
 npm run android    # Start Android emulator
-npm run ios        # Start iOS simulator  
+npm run ios        # Start iOS simulator
 npm run web        # Start web version
 
 # Linting
@@ -27,27 +27,47 @@ npm run lint       # Run ESLint
 
 # Reset project (moves starter code to app-example/)
 npm run reset-project
+
+# Build commands (via EAS)
+# Development build with development client
+npx eas build --profile development --platform ios
+npx eas build --profile development --platform android
+
+# Preview build for internal testing
+npx eas build --profile preview --platform ios
+npx eas build --profile preview --platform android
+
+# Production build with auto-increment
+npx eas build --profile production --platform ios
+npx eas build --profile production --platform android
 ```
 
 ## Architecture & Key Patterns
 
 ### Navigation Structure
-- Uses Expo Router v5 with file-based routing
+- Uses Expo Router v5 with file-based routing and typed routes enabled
 - Root layout: `app/_layout.tsx` (Stack navigation, no headers)
 - Tab navigation: `app/(tabs)/_layout.tsx` with CustomTabBar component
-- Authentication screens: `app/(auth)/` folder
-- Main tabs: `index`, `offers`, `compass`, `events`, `profile`
+- Authentication screens: `app/(auth)/` folder (login.tsx, register.tsx, callback.tsx)
+- Main tabs: `index` (home), `offers`, `compass`, `events`, `profile`
+- Special screens: `loading.tsx`, `+not-found.tsx`
 
 ### Database & State Management
 - **Supabase Client**: `lib/supabase.ts` - handles database connection and type definitions
-- **Custom Hooks**: Located in `hooks/` folder for data fetching (e.g., `useOffers.ts`, `useEvents.ts`)
+- **Custom Hooks**: Located in `hooks/` folder for data fetching and state management
+  - Data hooks: `useOffers.ts`, `useEvents.ts`, `useCommerces.ts`
+  - User management: `useMobileUser.ts`
+  - UI hooks: `useThemeColor.ts`, `useColorScheme.ts`, `useSafeAreaPadding.ts`
 - **Data Flow**: Components use custom hooks → hooks query Supabase → RLS policies handle security
 
 ### Component Architecture
-- **Themed Components**: `ThemedView.tsx`, `ThemedText.tsx` support light/dark modes
+- **Themed Components**: `ThemedView.tsx`, `ThemedText.tsx` support automatic light/dark modes
 - **UI Components**: Located in `components/ui/` folder
-- **Card Components**: `OfferCard.tsx`, `EventCard.tsx`, `RestaurantCard.tsx` with consistent design patterns
-- **Custom Tab Bar**: `CustomTabBar.tsx` handles special compass tab styling
+  - Platform-specific: `TabBarBackground.tsx/.ios.tsx`, `IconSymbol.tsx/.ios.tsx`
+- **Card Components**: `OfferCard.tsx`, `EventCard.tsx`, `RestaurantCard.tsx`, `HomeCard.tsx` with consistent design patterns
+- **Navigation Components**: `CustomTabBar.tsx` handles special compass tab styling, `HapticTab.tsx` for tactile feedback
+- **Utility Components**: `ButtonSvg.tsx`, `ParallaxScrollView.tsx`, `Collapsible.tsx`, `ExternalLink.tsx`
+- **Modals**: `ChangePasswordModal.tsx` for authentication features
 
 ### Styling Patterns
 - Uses StyleSheet.create() with consistent color and spacing tokens
@@ -56,9 +76,10 @@ npm run reset-project
 - Border radius: md(12), lg(16), pill(999)
 
 ### Location & Maps
-- **Mapbox Integration**: Uses @rnmapbox/maps with download token in app.json
-- **Location Permissions**: Configured for "when in use" access in app.json
+- **Mapbox Integration**: Uses @rnmapbox/maps v10.1.40 with download token in app.json
+- **Location Permissions**: Configured for "when in use" access with user-friendly descriptions
 - **Distance Calculations**: Haversine formula implementation in useOffers.ts
+- **Location Features**: Used for showing nearby restaurants and food events on map interface
 
 ## Database Schema (Supabase)
 
@@ -106,9 +127,14 @@ Required environment variables:
 ## Build Configuration
 
 - **EAS Build**: Configured in `eas.json` with development, preview, and production profiles
+  - Development: Uses development client with internal distribution
+  - Preview: Internal distribution for testing
+  - Production: Auto-increment versioning enabled
 - **iOS Bundle ID**: com.jostinjarry1.gosholomobile
 - **App Scheme**: gosholomobile
 - **New Architecture**: Enabled for React Native
+- **EAS Project ID**: 2bab544a-7b3d-4844-8a22-4d92909ec243
+- **Platform Support**: iOS (with tablet support), Android (edge-to-edge), Web (static output)
 
 ## TypeScript Configuration
 

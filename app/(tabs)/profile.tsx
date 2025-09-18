@@ -1,122 +1,96 @@
-import { ChangePasswordModal } from '@/components/ChangePasswordModal';
-import { useMobileUser } from '@/hooks/useMobileUser';
-import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  ActivityIndicator,
-  Alert,
+  ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-  
+
+const COLORS = {
+  primary: '#FF6233',
+  ink: '#111827',
+  white: '#FFFFFF',
+  gray: '#F5F5F5',
+  darkGray: '#666666',
+  lightGray: '#9CA3AF',
+  teal: '#016167',
+};
+
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+};
+
 export default function ProfileScreen() {
-  const { profile, loading, error } = useMobileUser();
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-
-  const handleChangePassword = () => {
-    setShowChangePasswordModal(true);
-  };
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-              Alert.alert('Error', 'Failed to logout');
-            }
-            // Root layout will handle navigation
-          },
-        },
-      ]
-    );
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF6233" />
-          <Text style={styles.loadingText}>Loading profile...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load profile</Text>
-          <Text style={styles.errorDetails}>{error}</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
-
-
-      <View style={styles.content}>
-        {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {profile?.username?.charAt(0).toUpperCase() || '?'}
-            </Text>
-          </View>
-          
-          <View style={styles.userInfo}>
-            <Text style={styles.username}>@{profile?.username || 'Unknown'}</Text>
-            <Text style={styles.email}>{profile?.email || 'No email'}</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        {/* Icon Section */}
+        <View style={styles.iconContainer}>
+          <View style={styles.iconBackground}>
+            <Ionicons name="person-outline" size={64} color={COLORS.primary} />
           </View>
         </View>
 
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={handleChangePassword}
-          >
-            <Ionicons name="lock-closed-outline" size={20} color="#016167" />
-            <Text style={styles.menuText}>Change Password</Text>
-            <Ionicons name="chevron-forward" size={16} color="#CCCCCC" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="heart-outline" size={20} color="#016167" />
-            <Text style={styles.menuText}>My Favorites</Text>
-            <Text style={styles.comingSoon}>Coming Soon</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.menuItem, styles.logoutItem]} 
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={20} color="#FF6233" />
-            <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
-          </TouchableOpacity>
+        {/* Main Message */}
+        <View style={styles.messageSection}>
+          <Text style={styles.title}>Profile Coming Soon!</Text>
+          <Text style={styles.subtitle}>
+            We're working on an amazing profile experience for you.
+          </Text>
         </View>
-      </View>
 
-      <ChangePasswordModal
-        visible={showChangePasswordModal}
-        onClose={() => {
-          console.log('Profile: Closing change password modal');
-          setShowChangePasswordModal(false);
-        }}
-      />
+        {/* Features List */}
+        <View style={styles.featuresSection}>
+          <Text style={styles.featuresTitle}>Soon you'll be able to:</Text>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="heart" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Save your favorite offers and events</Text>
+          </View>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="bookmark" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Create a personal wishlist</Text>
+          </View>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="location" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Get personalized recommendations</Text>
+          </View>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="notifications" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Receive alerts for new offers near you</Text>
+          </View>
+
+          <View style={styles.featureItem}>
+            <View style={styles.featureIcon}>
+              <Ionicons name="person-circle" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={styles.featureText}>Customize your profile preferences</Text>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -124,117 +98,90 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#016167',
+  scrollView: {
+    flex: 1,
   },
   content: {
-    flex: 1,
-    padding: 20,
-  },
-  loadingContainer: {
-    flex: 1,
+    flexGrow: 1,
+    padding: SPACING.xl,
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.xxl * 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 16,
+  iconContainer: {
+    marginBottom: SPACING.xxl * 2,
+  },
+  iconBackground: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.gray,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  messageSection: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.ink,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+  },
+  subtitle: {
     fontSize: 16,
-    color: '#666666',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FF6233',
+    color: COLORS.darkGray,
     textAlign: 'center',
-    marginBottom: 8,
+    lineHeight: 24,
+    paddingHorizontal: SPACING.lg,
   },
-  errorDetails: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
+  featuresSection: {
+    width: '100%',
+    marginBottom: SPACING.xxl * 2,
   },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FF6233',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  username: {
+  featuresTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#016167',
-    marginBottom: 4,
+    color: COLORS.teal,
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
   },
-  email: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  menuSection: {
-    backgroundColor: '#FFFFFF',
-  },
-  menuItem: {
+  featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.gray,
+    borderRadius: 12,
   },
-  menuText: {
+  featureIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.lg,
+  },
+  featureText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
+    color: COLORS.ink,
     fontWeight: '500',
-    color: '#016167',
-    marginLeft: 12,
   },
-  comingSoon: {
-    fontSize: 12,
-    color: '#FF6233',
-    backgroundColor: '#FFF5F5',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
+  bottomMessage: {
+    paddingHorizontal: SPACING.lg,
   },
-  logoutItem: {
-    borderBottomWidth: 0,
-    marginTop: 8,
-  },
-  logoutText: {
-    color: '#FF6233',
+  bottomText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
 }); 

@@ -1,7 +1,9 @@
 import { EventCard } from '@/components/EventCard';
+import EventDetailModal from '@/components/EventDetailModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents } from '@/hooks/useEvents';
-import React from 'react';
+import { Event } from '@/lib/supabase';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -23,6 +25,23 @@ const COLORS = {
 
 export default function EventsScreen() {
   const { events, loading, error, refetch } = useEvents();
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleEventPress = (event: Event) => {
+    setSelectedEvent(event);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedEvent(null);
+  };
+
+  const handleFavoritePress = () => {
+    console.log('Favorite pressed for event:', selectedEvent?.id);
+    // TODO: Implement favorite functionality
+  };
 
   if (loading) {
     return (
@@ -78,11 +97,18 @@ export default function EventsScreen() {
           <EventCard
             key={event.id}
             event={event}
-            onPress={() => console.log('Event pressed:', event.id)}
+            onPress={() => handleEventPress(event)}
             onFavoritePress={() => console.log('Favorite pressed:', event.id)}
           />
         ))}
       </ScrollView>
+
+      <EventDetailModal
+        visible={showModal}
+        event={selectedEvent}
+        onClose={handleCloseModal}
+        onFavoritePress={handleFavoritePress}
+      />
     </SafeAreaView>
   );
 }

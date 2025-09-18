@@ -1,7 +1,9 @@
 import { OfferCard } from '@/components/OfferCard';
+import OfferDetailModal from '@/components/OfferDetailModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useOffers } from '@/hooks/useOffers';
-import React from 'react';
+import { Offer } from '@/lib/supabase';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -23,6 +25,23 @@ const COLORS = {
 
 export default function OffersScreen() {
   const { offers, loading, error, refetch } = useOffers();
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleOfferPress = (offer: Offer) => {
+    setSelectedOffer(offer);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedOffer(null);
+  };
+
+  const handleFavoritePress = () => {
+    console.log('Favorite pressed for offer:', selectedOffer?.id);
+    // TODO: Implement favorite functionality
+  };
 
   if (loading) {
     return (
@@ -78,11 +97,18 @@ export default function OffersScreen() {
           <OfferCard
             key={offer.id}
             offer={offer}
-            onPress={() => console.log('Offer pressed:', offer.id)}
+            onPress={() => handleOfferPress(offer)}
             onFavoritePress={() => console.log('Favorite pressed:', offer.id)}
           />
         ))}
       </ScrollView>
+
+      <OfferDetailModal
+        visible={showModal}
+        offer={selectedOffer}
+        onClose={handleCloseModal}
+        onFavoritePress={handleFavoritePress}
+      />
     </SafeAreaView>
   );
 }
