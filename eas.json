@@ -9,10 +9,11 @@
       "distribution": "internal",
       "ios": {
         "cache": {
-          "key": "pods-fix-dev-v1"
+          "key": "pods-fix-dev-v2"
         },
         "env": {
-          "EAS_BUILD_DISABLE_COCOAPODS_CACHE": "1"
+          "EAS_BUILD_DISABLE_COCOAPODS_CACHE": "1",
+          "RCT_NEW_ARCH_ENABLED": "1"
         }
       }
     },
@@ -20,10 +21,11 @@
       "distribution": "internal",
       "ios": {
         "cache": {
-          "key": "pods-fix-preview-v1"
+          "key": "pods-fix-preview-v2"
         },
         "env": {
-          "EAS_BUILD_DISABLE_COCOAPODS_CACHE": "1"
+          "EAS_BUILD_DISABLE_COCOAPODS_CACHE": "1",
+          "RCT_NEW_ARCH_ENABLED": "1"
         }
       }
     },
@@ -31,10 +33,11 @@
       "autoIncrement": true,
       "ios": {
         "cache": {
-          "key": "pods-fix-prod-v1"
+          "key": "pods-fix-prod-v2"
         },
         "env": {
-          "EAS_BUILD_DISABLE_COCOAPODS_CACHE": "1"
+          "EAS_BUILD_DISABLE_COCOAPODS_CACHE": "1",
+          "RCT_NEW_ARCH_ENABLED": "1"
         }
       }
     }
