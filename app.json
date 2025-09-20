@@ -7,7 +7,6 @@
     "icon": "./assets/images/ios-icon.png",
     "scheme": "gosholomobile",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jostinjarry1.gosholomobile",
