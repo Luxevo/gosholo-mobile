@@ -1,6 +1,7 @@
 import { HomeCardData } from '@/components/HomeCard';
 import { Ionicons } from '@expo/vector-icons';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
@@ -23,35 +24,6 @@ const SPACING = {
   xxl: 24,
 };
 
-const FEATURE_CARDS: HomeCardData[] = [
-  {
-    id: 'explore',
-    title: 'Explore Nearby',
-    subtitle: 'Find restaurants & events around you',
-    image: require('@/assets/images/ui/map.png'),
-    route: '/(tabs)',
-    hasButton: true,
-    buttonText: 'Open Map',
-  },
-  {
-    id: 'offers',
-    title: 'Special Offers',
-    subtitle: 'Discover amazing deals',
-    image: require('@/assets/images/ui/offers.png'),
-    route: '/(tabs)/offers',
-    hasButton: true,
-    buttonText: 'See Offers',
-  },
-  {
-    id: 'events',
-    title: 'Exciting Events',
-    subtitle: 'Find exciting events',
-    image: require('@/assets/images/ui/events.png'),
-    route: '/(tabs)/events',
-    hasButton: true,
-    buttonText: 'See Events',
-  },
-];
 
 interface WelcomeModalProps {
   visible: boolean;
@@ -59,6 +31,8 @@ interface WelcomeModalProps {
 }
 
 export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
+  const { t } = useTranslation();
+
   const handleGetStarted = () => {
     onClose(); // Close modal and stay on current tab
   };
@@ -96,7 +70,7 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
               resizeMode="contain"
             />
             <Text style={styles.tagline}>
-              Discover the best local experiences
+              {t('discover_local')}
             </Text>
           </View>
 
@@ -104,16 +78,16 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
 
           {/* Benefits Section */}
           <View style={styles.benefitsSection}>
-            <Text style={styles.sectionTitle}>Why Choose gosholo?</Text>
+            <Text style={styles.sectionTitle}>{t('why_choose_gosholo')}</Text>
 
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
                 <Ionicons name="location" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.benefitContent}>
-                <Text style={styles.benefitTitle}>Location-Based Discovery</Text>
+                <Text style={styles.benefitTitle}>{t('location_discovery')}</Text>
                 <Text style={styles.benefitDescription}>
-                  Find offers and events specifically near your location
+                  {t('location_discovery_desc')}
                 </Text>
               </View>
             </View>
@@ -123,9 +97,9 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
                 <Ionicons name="pricetag" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.benefitContent}>
-                <Text style={styles.benefitTitle}>Exclusive Deals</Text>
+                <Text style={styles.benefitTitle}>{t('exclusive_deals')}</Text>
                 <Text style={styles.benefitDescription}>
-                  Access special offers from local businesses
+                  {t('exclusive_deals_desc')}
                 </Text>
               </View>
             </View>
@@ -135,9 +109,9 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
                 <Ionicons name="calendar" size={24} color={COLORS.primary} />
               </View>
               <View style={styles.benefitContent}>
-                <Text style={styles.benefitTitle}>Local Events</Text>
+                <Text style={styles.benefitTitle}>{t('local_events')}</Text>
                 <Text style={styles.benefitDescription}>
-                  Stay updated with exciting events happening around you
+                  {t('local_events_desc')}
                 </Text>
               </View>
             </View>
@@ -149,7 +123,7 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
               style={styles.primaryButton}
               onPress={handleGetStarted}
             >
-              <Text style={styles.primaryButtonText}>Start Exploring</Text>
+              <Text style={styles.primaryButtonText}>{t('start_exploring')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

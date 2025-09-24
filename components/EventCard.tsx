@@ -1,6 +1,7 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { EventWithCommerce } from '@/hooks/useEvents';
 import React, { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const COLORS = {
@@ -37,9 +38,10 @@ interface EventCardProps {
 }
 
 export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFavoritePress }) => {
+  const { t } = useTranslation();
   // ——— utils ———
   const formatDateRange = () => {
-    if (!event.start_date) return 'Date TBD';
+    if (!event.start_date) return t('date_tbd');
     const start = new Date(event.start_date);
     const end = event.end_date ? new Date(event.end_date) : null;
 
@@ -69,7 +71,7 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFav
     return null;
   };
 
-  const locationText = event.custom_location || event.commerces?.address || 'Location TBD';
+  const locationText = event.custom_location || event.commerces?.address || t('location_tbd');
   const status = getStatus();
   const isEnded = status === 'ENDED';
 
@@ -166,7 +168,7 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFav
             style={[styles.primaryBtn, isEnded && styles.primaryBtnDisabled]}
             accessibilityRole="button"
           >
-            <Text style={styles.primaryText}>{isEnded ? 'Ended' : 'View Event'}</Text>
+            <Text style={styles.primaryText}>{isEnded ? t('ended') : t('view_event')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.secondaryBtn} accessibilityRole="button">

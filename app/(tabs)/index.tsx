@@ -1,6 +1,8 @@
+import CompactLanguageSwitcher from '@/components/CompactLanguageSwitcher';
 import HomeCard, { HomeCardData } from '@/components/HomeCard';
 import { router } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Platform,
   StatusBar,
@@ -26,51 +28,56 @@ const SPACING = {
   xl: 20,
 };
 
-// Card data configuration
-const HOME_CARDS: HomeCardData[] = [
-  {
-    id: 'explore',
-    title: 'Explore Nearby',
-    subtitle: 'Find restaurants & events around you',
-    image: require('@/assets/images/ui/map.png'),
-    route: '/compass',
-    hasButton: true,
-    buttonText: 'Open Map',
-  },
-  {
-    id: 'offers',
-    title: 'Special Offers',
-    subtitle: 'Discover amazing deals',
-    image: require('@/assets/images/ui/offers.png'),
-    route: '/offers',
-    hasButton: true,
-    buttonText: 'See Offers',
-  },
-  {
-    id: 'events',
-    title: 'Exciting Events',
-    subtitle: 'Find exciting events',
-    image: require('@/assets/images/ui/events.png'),
-    route: '/events',
-    hasButton: true,
-    buttonText: 'See Events',
-  },
-];
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
+
   const handleCardPress = (route: string) => {
     router.push(route as any);
   };
 
+  // Generate cards with translations
+  const HOME_CARDS: HomeCardData[] = [
+    {
+      id: 'explore',
+      title: t('explore_nearby'),
+      subtitle: t('explore_nearby_subtitle'),
+      image: require('@/assets/images/ui/map.png'),
+      route: '/compass',
+      hasButton: true,
+      buttonText: t('open_map'),
+    },
+    {
+      id: 'offers',
+      title: t('special_offers'),
+      subtitle: t('special_offers_subtitle'),
+      image: require('@/assets/images/ui/offers.png'),
+      route: '/offers',
+      hasButton: true,
+      buttonText: t('see_offers'),
+    },
+    {
+      id: 'events',
+      title: t('exciting_events'),
+      subtitle: t('exciting_events_subtitle'),
+      image: require('@/assets/images/ui/events.png'),
+      route: '/events',
+      hasButton: true,
+      buttonText: t('see_events'),
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-    
+
+      {/* Absolute Language Switcher */}
+      <CompactLanguageSwitcher style={styles.languageSwitcher} />
 
       {/* Welcome Section */}
       <View style={styles.welcomeSection}>
-        <Text style={styles.welcomeTitle}>Welcome!</Text>
-        <Text style={styles.welcomeSubtitle}>Where would you like to go?</Text>
+        <Text style={styles.welcomeTitle}>{t('welcome')}</Text>
+        <Text style={styles.welcomeSubtitle}>{t('welcome_subtitle')}</Text>
       </View>
 
       {/* Navigation Cards */}
@@ -92,12 +99,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
+  languageSwitcher: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 40 : SPACING.xl + 10,
+    right: SPACING.xl,
+    zIndex: 10,
   },
   profileButton: {
     width: 32,

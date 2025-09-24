@@ -4,14 +4,15 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useOffers } from '@/hooks/useOffers';
 import { Offer } from '@/lib/supabase';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-    ActivityIndicator,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,6 +25,7 @@ const COLORS = {
 };
 
 export default function OffersScreen() {
+  const { t } = useTranslation();
   const { offers, loading, error, refetch } = useOffers();
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -63,7 +65,7 @@ export default function OffersScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.text}>Loading offers...</Text>
+          <Text style={styles.text}>{t('loading_offers')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -74,9 +76,9 @@ export default function OffersScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
           <IconSymbol name="exclamationmark.triangle" size={48} color={COLORS.darkGray} />
-          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.title}>{t('something_wrong')}</Text>
           <TouchableOpacity style={styles.button} onPress={refetch}>
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text style={styles.buttonText}>{t('try_again')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -88,8 +90,8 @@ export default function OffersScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
           <IconSymbol name="tag" size={48} color={COLORS.darkGray} />
-          <Text style={styles.title}>No offers found</Text>
-          <Text style={styles.text}>Check back later for new deals!</Text>
+          <Text style={styles.title}>{t('no_offers_title')}</Text>
+          <Text style={styles.text}>{t('no_offers_sub')}</Text>
         </View>
       </SafeAreaView>
     );

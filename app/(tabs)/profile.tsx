@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   StyleSheet,
@@ -7,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const COLORS = {
   primary: '#FF6233',
@@ -28,6 +30,8 @@ const SPACING = {
 };
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -45,51 +49,54 @@ export default function ProfileScreen() {
 
         {/* Main Message */}
         <View style={styles.messageSection}>
-          <Text style={styles.title}>Profile Coming Soon!</Text>
+          <Text style={styles.title}>{t('profile_coming_soon')}</Text>
           <Text style={styles.subtitle}>
-            We're working on an amazing profile experience for you.
+            {t('profile_subtitle')}
           </Text>
         </View>
 
         {/* Features List */}
         <View style={styles.featuresSection}>
-          <Text style={styles.featuresTitle}>Soon you'll be able to:</Text>
+          <Text style={styles.featuresTitle}>{t('soon_you_can')}</Text>
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
               <Ionicons name="heart" size={20} color={COLORS.primary} />
             </View>
-            <Text style={styles.featureText}>Save your favorite offers and events</Text>
+            <Text style={styles.featureText}>{t('save_favorites')}</Text>
           </View>
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
               <Ionicons name="bookmark" size={20} color={COLORS.primary} />
             </View>
-            <Text style={styles.featureText}>Create a personal wishlist</Text>
+            <Text style={styles.featureText}>{t('create_wishlist')}</Text>
           </View>
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
               <Ionicons name="location" size={20} color={COLORS.primary} />
             </View>
-            <Text style={styles.featureText}>Get personalized recommendations</Text>
+            <Text style={styles.featureText}>{t('get_recommendations')}</Text>
           </View>
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
               <Ionicons name="notifications" size={20} color={COLORS.primary} />
             </View>
-            <Text style={styles.featureText}>Receive alerts for new offers near you</Text>
+            <Text style={styles.featureText}>{t('receive_alerts')}</Text>
           </View>
 
           <View style={styles.featureItem}>
             <View style={styles.featureIcon}>
               <Ionicons name="person-circle" size={20} color={COLORS.primary} />
             </View>
-            <Text style={styles.featureText}>Customize your profile preferences</Text>
+            <Text style={styles.featureText}>{t('customize_preferences')}</Text>
           </View>
         </View>
+
+        {/* Language Switcher */}
+        <LanguageSwitcher style={styles.languageSwitcher} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -183,5 +190,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     fontStyle: 'italic',
+  },
+  languageSwitcher: {
+    width: '100%',
+    marginTop: SPACING.xxl,
   },
 }); 

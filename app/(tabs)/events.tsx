@@ -4,6 +4,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents } from '@/hooks/useEvents';
 import { Event } from '@/lib/supabase';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     RefreshControl,
@@ -24,6 +25,7 @@ const COLORS = {
 };
 
 export default function EventsScreen() {
+  const { t } = useTranslation();
   const { events, loading, error, refetch } = useEvents();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -63,7 +65,7 @@ export default function EventsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.text}>Loading events...</Text>
+          <Text style={styles.text}>{t('loading_events')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -74,9 +76,9 @@ export default function EventsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
           <IconSymbol name="exclamationmark.triangle" size={48} color={COLORS.darkGray} />
-          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.title}>{t('something_wrong')}</Text>
           <TouchableOpacity style={styles.button} onPress={refetch}>
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text style={styles.buttonText}>{t('try_again')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -88,8 +90,8 @@ export default function EventsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
           <IconSymbol name="calendar" size={48} color={COLORS.darkGray} />
-          <Text style={styles.title}>No events found</Text>
-          <Text style={styles.text}>Check back later for new events!</Text>
+          <Text style={styles.title}>{t('no_events_title')}</Text>
+          <Text style={styles.text}>{t('no_events_sub')}</Text>
         </View>
       </SafeAreaView>
     );

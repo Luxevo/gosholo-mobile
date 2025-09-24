@@ -1,6 +1,7 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { OfferWithCommerce } from '@/hooks/useOffers';
 import React, { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const COLORS = {
@@ -37,6 +38,7 @@ interface OfferCardProps {
 }
 
 export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFavoritePress }) => {
+  const { t } = useTranslation();
   const getDiscountText = (title: string) => {
     const discountMatch = title.match(/(\d+)%/);
     if (discountMatch) return `${discountMatch[1]}% OFF`;
@@ -68,7 +70,7 @@ export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFav
     }
   };
 
-  const locationText = offer.custom_location || offer.commerces?.address || 'Location not specified';
+  const locationText = offer.custom_location || offer.commerces?.address || t('location_not_specified');
   const conditionText = offer.condition || null;
   const discount = getDiscountText(offer.title);
   const timeLeft = getTimeLeft();
@@ -156,7 +158,7 @@ export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFav
         {/* CTA */}
         <TouchableOpacity style={[styles.primaryBtn, isExpired && styles.primaryBtnDisabled]} onPress={onPress}>
           <Text style={[styles.primaryText, isExpired && styles.primaryTextDisabled]}>
-            {isExpired ? 'Expired' : 'View Offer'}
+            {isExpired ? t('expired') : t('view_offer')}
           </Text>
         </TouchableOpacity>
       </View>
