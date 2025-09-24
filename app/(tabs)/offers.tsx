@@ -3,15 +3,15 @@ import OfferDetailModal from '@/components/OfferDetailModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useOffers } from '@/hooks/useOffers';
 import { Offer } from '@/lib/supabase';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,6 +27,21 @@ export default function OffersScreen() {
   const { offers, loading, error, refetch } = useOffers();
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [showModal, setShowModal] = useState(false);
+
+  // Treats date-only (YYYY-MM-DD) as active through end of that day (UTC)
+  const isOfferActive = (end_date?: string | null, now: Date = new Date()) => {
+    if (!end_date) return true;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(end_date)) {
+      const end = new Date(`${end_date}T23:59:59Z`);
+      return end.getTime() >= now.getTime();
+    }
+    const end = new Date(end_date);
+    return !Number.isNaN(end.getTime()) && end.getTime() >= now.getTime();
+  };
+
+  const activeOffers = useMemo(() => {
+    return (offers ?? []).filter((o) => isOfferActive((o as any).end_date));
+  }, [offers]);
 
   const handleOfferPress = (offer: Offer) => {
     setSelectedOffer(offer);
@@ -68,7 +83,7 @@ export default function OffersScreen() {
     );
   }
 
-  if (offers.length === 0) {
+  if (activeOffers.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
@@ -93,7 +108,7 @@ export default function OffersScreen() {
           />
         }
       >
-        {offers.map((offer) => (
+        {activeOffers.map((offer) => (
           <OfferCard
             key={offer.id}
             offer={offer}

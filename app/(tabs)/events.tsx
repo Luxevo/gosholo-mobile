@@ -3,15 +3,15 @@ import EventDetailModal from '@/components/EventDetailModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents } from '@/hooks/useEvents';
 import { Event } from '@/lib/supabase';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,6 +27,21 @@ export default function EventsScreen() {
   const { events, loading, error, refetch } = useEvents();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showModal, setShowModal] = useState(false);
+
+  // Treats date-only (YYYY-MM-DD) as active through end of that day (UTC)
+  const isEventActive = (end_date?: string | null, now: Date = new Date()) => {
+    if (!end_date) return true;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(end_date)) {
+      const end = new Date(`${end_date}T23:59:59Z`);
+      return end.getTime() >= now.getTime();
+    }
+    const end = new Date(end_date);
+    return !Number.isNaN(end.getTime()) && end.getTime() >= now.getTime();
+  };
+
+  const activeEvents = useMemo(() => {
+    return (events ?? []).filter((e) => isEventActive((e as any).end_date));
+  }, [events]);
 
   const handleEventPress = (event: Event) => {
     setSelectedEvent(event);
@@ -68,7 +83,7 @@ export default function EventsScreen() {
     );
   }
 
-  if (events.length === 0) {
+  if (activeEvents.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
@@ -93,7 +108,7 @@ export default function EventsScreen() {
           />
         }
       >
-        {events.map((event) => (
+        {activeEvents.map((event) => (
           <EventCard
             key={event.id}
             event={event}
