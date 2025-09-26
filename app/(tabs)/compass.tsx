@@ -234,9 +234,12 @@ export default function CompassScreen() {
                     coordinate={[commerce.longitude, commerce.latitude]}
                     onSelected={() => handleBusinessPress(commerce)}
                   >
-                    <Text style={styles.markerTextOnly}>
-                      {commerce.name}
-                    </Text>
+                    <View collapsable={false} style={styles.markerPill}>
+                      <Text style={styles.markerTextOnly}>
+                        {commerce.name}
+                      </Text>
+                    </View>
+                  
                   </PointAnnotation>
                 );
               })}
@@ -317,9 +320,15 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     textAlign: 'center',
   },
+  markerPill: {
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    borderRadius: 16,
+  },
   markerTextOnly: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#000000',
+    textAlign: 'center',
   },
 });
