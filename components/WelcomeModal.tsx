@@ -1,7 +1,6 @@
-import { HomeCardData } from '@/components/HomeCard';
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
@@ -150,7 +149,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
     paddingBottom: SPACING.md,
   },
   closeButton: {
@@ -181,7 +179,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 280,
     height: 90,
-    marginBottom: SPACING.md,
   },
   tagline: {
     fontSize: 16,

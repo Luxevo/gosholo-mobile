@@ -37,7 +37,7 @@ interface EventCardProps {
   onFavoritePress?: () => void;
 }
 
-export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFavoritePress }) => {
+const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavoritePress }) => {
   const { t } = useTranslation();
   // ——— utils ———
   const formatDateRange = () => {
@@ -178,7 +178,10 @@ export const EventCard: React.FC<EventCardProps> = memo(({ event, onPress, onFav
       </View>
     </TouchableOpacity>
   );
-});
+};
+
+export const EventCard = memo(EventCardComponent);
+EventCard.displayName = 'EventCard';
 
 function getStatusPillStyle(status: string) {
   switch (status) {

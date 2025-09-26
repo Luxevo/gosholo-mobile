@@ -36,11 +36,14 @@ export const useOffers = (options: UseOffersOptions = {}) => {
       setLoading(true);
       setError(null);
 
-      // Get all active offers - RLS policy handles security
+      // Get all active offers that haven't expired - RLS policy handles security
+      const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+
       let offersQuery = supabase
         .from('offers')
         .select('*')
         .eq('is_active', true)
+        .or(`end_date.is.null,end_date.gt.${today}`) // Include offers with no end_date or end_date > today
         .order('boosted', { ascending: false }) // Boosted offers first
         .order('created_at', { ascending: false });
 

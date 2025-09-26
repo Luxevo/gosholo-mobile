@@ -37,7 +37,7 @@ interface OfferCardProps {
   onFavoritePress?: () => void;
 }
 
-export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFavoritePress }) => {
+const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress }) => {
   const { t } = useTranslation();
   const getDiscountText = (title: string) => {
     const discountMatch = title.match(/(\d+)%/);
@@ -164,7 +164,10 @@ export const OfferCard: React.FC<OfferCardProps> = memo(({ offer, onPress, onFav
       </View>
     </TouchableOpacity>
   );
-});
+};
+
+export const OfferCard = memo(OfferCardComponent);
+OfferCard.displayName = 'OfferCard';
 
 const styles = StyleSheet.create({
   card: {

@@ -36,11 +36,14 @@ export const useEvents = (options: UseEventsOptions = {}) => {
       setLoading(true);
       setError(null);
 
-      // Get all active events - RLS policy handles security
+      // Get all active events that haven't expired - RLS policy handles security
+      const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+
       let eventsQuery = supabase
         .from('events')
         .select('*')
         .eq('is_active', true)
+        .or(`end_date.is.null,end_date.gt.${today}`) // Include events with no end_date or end_date > today
         .order('boosted', { ascending: false }) // Boosted events first
         .order('start_date', { ascending: true }); // Upcoming events first
 
