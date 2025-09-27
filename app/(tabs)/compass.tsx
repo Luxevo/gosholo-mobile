@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Conditional import for Mapbox (native builds only)
 let Mapbox: any,
@@ -164,32 +163,8 @@ export default function CompassScreen() {
   const defaultCenter: LngLat = userLocation ?? [-74.006, 40.7128]; // fallback
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Map</Text>
-        <View style={styles.headerInfo}>
-          <Text style={styles.debugText}>
-            {commercesLoading
-              ? 'Loading...'
-              : commercesError
-              ? `Error: ${commercesError}`
-              : `${commerces.length} businesses`}
-          </Text>
-
-          <TouchableOpacity style={styles.toggleButton} onPress={toggleMapStyle}>
-            <IconSymbol name={is3D ? 'cube' : 'map'} size={24} color={COLORS.primary} />
-            <Text style={styles.toggleText}>{is3D ? '3D' : '2D'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.listButton} onPress={toggleBusinessList}>
-            <IconSymbol name="list.bullet" size={20} color={COLORS.white} />
-            <Text style={styles.listButtonText}>List</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       <View style={styles.mapContainer}>
         {/* Map */}
@@ -239,6 +214,35 @@ export default function CompassScreen() {
           </View>
         )}
       </View>
+
+      {/* Floating Info Cards */}
+      <View style={styles.floatingControls}>
+        {/* Business Count Pill */}
+        <TouchableOpacity
+          style={[styles.infoPill, styles.clickablePill]}
+          onPress={toggleBusinessList}
+          activeOpacity={0.8}
+        >
+          <View style={styles.pillContent}>
+            <IconSymbol name="list.bullet" size={14} color={COLORS.primary} />
+            <Text style={styles.infoPillText} numberOfLines={1}>
+              {commercesLoading
+                ? 'Loading...'
+                : commercesError
+                ? 'Error loading'
+                : `${commerces.length} businesses`}
+            </Text>
+            <IconSymbol name="chevron.right" size={12} color={COLORS.darkGray} />
+          </View>
+        </TouchableOpacity>
+
+        {/* 2D/3D Toggle Pill */}
+        <TouchableOpacity style={styles.togglePill} onPress={toggleMapStyle}>
+          <IconSymbol name={is3D ? 'cube' : 'map'} size={20} color={COLORS.primary} />
+          <Text style={styles.togglePillText}>{is3D ? '3D' : '2D'}</Text>
+        </TouchableOpacity>
+      </View>
+
 
       {/* Business List Overlay */}
       {showBusinessList && (
@@ -310,47 +314,75 @@ export default function CompassScreen() {
         business={selectedBusiness}
         onClose={handleCloseBusinessModal}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray,
-  },
-  headerInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  debugText: { fontSize: 12, color: COLORS.darkGray },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.black },
-  toggleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.gray,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  toggleText: { fontSize: 14, fontWeight: '600', color: COLORS.primary, marginLeft: 6 },
-  listButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 4,
-  },
-  listButtonText: { fontSize: 12, fontWeight: '600', color: COLORS.white },
+  container: { flex: 1, backgroundColor: COLORS.black },
   mapContainer: { flex: 1 },
   map: { flex: 1 },
   mapFallback: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   mapFallbackText: { fontSize: 16, color: COLORS.darkGray },
+  floatingControls: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    zIndex: 1000,
+  },
+  infoPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    minWidth: 160,
+    maxWidth: 220,
+  },
+  infoPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.black,
+    flex: 1,
+    textAlign: 'center',
+  },
+  clickablePill: {
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+  },
+  pillContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  togglePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    gap: 6,
+  },
+  togglePillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
   markerContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
@@ -389,15 +421,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    maxHeight: '60%',
+    maxHeight: '70%',
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 12,
+    zIndex: 999,
   },
   businessListHeader: {
     flexDirection: 'row',
