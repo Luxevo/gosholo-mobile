@@ -5,6 +5,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSafeAreaPadding } from '@/hooks/useSafeAreaPadding';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface TabBarProps {
   state: any;
@@ -16,6 +17,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { getTabBarPadding } = useSafeAreaPadding();
+  const { t } = useTranslation();
 
   const getIconName = (routeName: string, focused: boolean) => {
     switch (routeName) {
@@ -37,15 +39,15 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   const getTabTitle = (routeName: string) => {
     switch (routeName) {
       case 'index':
-        return 'Home';
+        return t('tab_home');
       case 'offers':
-        return 'Offers';
+        return t('tab_offers');
       case 'compass':
         return '';
       case 'events':
-        return 'Events';
+        return t('tab_events');
       case 'profile':
-        return 'Profile';
+        return t('tab_profile');
       default:
         return routeName;
     }

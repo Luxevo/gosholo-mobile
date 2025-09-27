@@ -3,7 +3,9 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
+  FlatList,
   StatusBar,
   StyleSheet,
   Text,
@@ -66,6 +68,7 @@ export default function CompassScreen() {
   const [showBusinessList, setShowBusinessList] = useState(false);
 
   const cameraRef = useRef<any>(null);
+  const { t } = useTranslation();
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
 
@@ -108,16 +111,7 @@ export default function CompassScreen() {
     }
   };
 
-  const onLocatePress = async () => {
-    const coord = await getCurrentLocation(true);
-    if (!coord && userLocation && cameraRef.current) {
-      cameraRef.current.setCamera({
-        centerCoordinate: userLocation,
-        zoomLevel: 15,
-        animationDuration: 800,
-      });
-    }
-  };
+
 
   const toggleMapStyle = () => setIs3D((v) => !v);
 
@@ -153,25 +147,19 @@ export default function CompassScreen() {
     []
   );
 
-  const categoryColors = useMemo(
-    () => ({
-      Restaurant: '#FF6233',
-      Café: '#8B4513',
-      Boulangerie: '#DEB887',
-      Épicerie: '#32CD32',
-      Commerce: '#4169E1',
-      Service: '#FF8C00',
-      Santé: '#DC143C',
-      Beauté: '#FF69B4',
-      Sport: '#00CED1',
-      Culture: '#9370DB',
-      Éducation: '#228B22',
-      Autre: '#696969',
-    }),
-    []
-  );
+
 
   const getCategoryIcon = (category: string) => categoryIcons[category as keyof typeof categoryIcons] || '📍';
+
+  const getBoostBadge = (commerce: Commerce) => {
+    if (!commerce.boosted) return null;
+    return t('boosted');
+  };
+
+  const getBoostBadgeColor = (commerce: Commerce) => {
+    if (!commerce.boosted) return null;
+    return '#FF6233'; // Primary color for visibility boost
+  };
 
   const defaultCenter: LngLat = userLocation ?? [-74.006, 40.7128]; // fallback
 
@@ -234,12 +222,13 @@ export default function CompassScreen() {
                     coordinate={[commerce.longitude, commerce.latitude]}
                     onSelected={() => handleBusinessPress(commerce)}
                   >
-                    <View collapsable={false} style={styles.markerPill}>
-                      <Text style={styles.markerTextOnly}>
+                    <View collapsable={false} style={[styles.markerPill,commerce.boosted&& {backgroundColor:"#FF6233"}]
+                    }>
+                      <Text style={[styles.markerTextOnly ,commerce.boosted && {fontSize:20,color:"white"}]}>
                         {commerce.name}
                       </Text>
                     </View>
-                  
+
                   </PointAnnotation>
                 );
               })}
@@ -250,6 +239,71 @@ export default function CompassScreen() {
           </View>
         )}
       </View>
+
+      {/* Business List Overlay */}
+      {showBusinessList && (
+        <View style={styles.businessListContainer}>
+          <View style={styles.businessListHeader}>
+            <Text style={styles.businessListTitle}>{t('businesses')}</Text>
+            <TouchableOpacity onPress={toggleBusinessList} style={styles.closeButton}>
+              <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={commerces}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.businessListContent}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.businessListItem,
+                  item.boosted && styles.businessListItemBoosted
+                ]}
+                onPress={() => {
+                  handleBusinessPress(item);
+                  setShowBusinessList(false);
+                }}
+              >
+                <View style={styles.businessItemContent}>
+                  <Text style={styles.businessItemCategory}>
+                    {getCategoryIcon(item.category)}
+                  </Text>
+                  <View style={styles.businessItemInfo}>
+                    <View style={styles.businessNameRow}>
+                      <Text style={styles.businessItemName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      {item.boosted && (
+                        <View style={[
+                          styles.listBoostBadge,
+                          { backgroundColor: getBoostBadgeColor(item) || COLORS.primary }
+                        ]}>
+                          <Text style={styles.listBoostBadgeText}>
+                            {getBoostBadge(item)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.businessItemAddress} numberOfLines={1}>
+                      {item.address || 'Address not available'}
+                    </Text>
+                    <Text style={styles.businessItemCategory}>
+                      {item.category}
+                    </Text>
+                  </View>
+                  <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
+                </View>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyListContainer}>
+                <Text style={styles.emptyListText}>No businesses found</Text>
+              </View>
+            }
+          />
+        </View>
+      )}
 
       <BusinessDetailModal
         visible={showBusinessModal}
@@ -326,9 +380,131 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   markerTextOnly: {
-    fontSize: 12,
     fontWeight: 'bold',
     color: '#000000',
     textAlign: 'center',
+  },
+  businessListContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    maxHeight: '60%',
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  businessListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  businessListTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.black,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  businessListContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  businessListItem: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: COLORS.gray,
+    overflow: 'hidden',
+  },
+  businessItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  businessItemInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  businessItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  businessItemAddress: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginBottom: 4,
+  },
+  businessItemCategory: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  emptyListContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyListText: {
+    fontSize: 16,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+  },
+  
+
+  boostBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  boostBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  businessListItemBoosted: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    backgroundColor: '#FFF5F3',
+  },
+  businessListItemFeatured: {
+    borderColor: '#FFD700',
+    backgroundColor: '#FFF9E6',
+  },
+  businessNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  listBoostBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  listBoostBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });

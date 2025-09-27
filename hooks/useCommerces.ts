@@ -20,6 +20,9 @@ export interface Commerce {
   status: string;
   created_at: string;
   updated_at: string;
+  boosted: boolean | null;
+  boosted_at: string | null;
+  boost_type: 'visibilite' | null;
 }
 
 export function useCommerces() {
@@ -42,7 +45,9 @@ export function useCommerces() {
         .select('*')
         .eq('status', 'active')
         .not('latitude', 'is', null)
-        .not('longitude', 'is', null);
+        .not('longitude', 'is', null)
+        .order('boosted', { ascending: false })
+        .order('boosted_at', { ascending: false, nullsFirst: false });
 
       console.log('🏪 Supabase response:', { data, error: supabaseError });
 

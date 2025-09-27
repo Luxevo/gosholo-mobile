@@ -42,7 +42,13 @@
   "start_exploring": "Découvrir maintenant",
   "location_tbd": "Lieu à Déterminer",
   "location_not_specified": "Lieu non spécifié",
-  "date_tbd": "Date à Déterminer"
+  "date_tbd": "Date à Déterminer",
+  "businesses": "Commerces",
+  "tab_home": "Accueil",
+  "tab_offers": "Offres",
+  "tab_events": "Événements",
+  "tab_profile": "Profil",
+  "boosted": "Boosté"
 }
 
 
