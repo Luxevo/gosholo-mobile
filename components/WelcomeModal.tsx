@@ -77,7 +77,6 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
 
           {/* Benefits Section */}
           <View style={styles.benefitsSection}>
-            <Text style={styles.sectionTitle}>{t('why_choose_gosholo')}</Text>
 
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>

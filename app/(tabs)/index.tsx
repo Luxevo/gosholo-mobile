@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Image,
   Platform,
   StatusBar,
   StyleSheet,
@@ -75,10 +76,16 @@ export default function HomeScreen() {
       <CompactLanguageSwitcher style={styles.languageSwitcher} />
 
       {/* Welcome Section */}
-      <View style={styles.welcomeSection}>
-        <Text style={styles.welcomeTitle}>{t('welcome')}</Text>
-        <Text style={styles.welcomeSubtitle}>{t('welcome_subtitle')}</Text>
-      </View>
+      <View style={styles.logoSection}>
+            <Image
+              source={require('@/assets/images/darker-logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.tagline}>
+              {t('welcome_subtitle')}
+            </Text>
+          </View>
 
       {/* Navigation Cards */}
       <View style={styles.cardsContainer}>
@@ -105,9 +112,22 @@ const styles = StyleSheet.create({
     right: SPACING.xl,
     zIndex: 10,
   },
+  logoSection: {
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
   profileButton: {
     width: 32,
     height: 32,
+  },
+  tagline: {
+    fontSize: 16,
+    color: COLORS.darkGray,
+    textAlign: 'center',
+  },
+  logo: {
+    width: 280,
+    height: 90,
   },
   avatar: {
     width: 32,
