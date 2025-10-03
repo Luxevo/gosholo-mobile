@@ -1,17 +1,27 @@
 import { Commerce } from '@/hooks/useCommerces';
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
-  primary: '#FF6233',
-  ink: '#111827',
-  white: '#FFFFFF',
-  gray: '#F5F5F5',
-  darkGray: '#666666',
-  lightGray: '#9CA3AF',
-  teal: '#016167',
-  success: '#B2FD9D',
+  light: {
+    primary: '#FF6233',
+    ink: '#111827',
+    inkLight: '#6B7280',
+    white: '#FFFFFF',
+    gray: '#E5E7EB',
+    bg: '#FFFFFF',
+    overlay: 'rgba(17,24,39,0.6)',
+  },
+  dark: {
+    primary: '#FF6233',
+    ink: '#F9FAFB',
+    inkLight: '#9CA3AF',
+    white: '#1F2937',
+    gray: '#374151',
+    bg: '#111827',
+    overlay: 'rgba(0,0,0,0.7)',
+  },
 };
 
 const SPACING = {
@@ -20,7 +30,6 @@ const SPACING = {
   md: 12,
   lg: 16,
   xl: 20,
-  xxl: 24,
 };
 
 interface BusinessDetailModalProps {
@@ -32,214 +41,112 @@ interface BusinessDetailModalProps {
 export default function BusinessDetailModal({
   visible,
   business,
-  onClose
+  onClose,
 }: BusinessDetailModalProps) {
+  const scheme = useColorScheme();
+  const theme = scheme === 'dark' ? COLORS.dark : COLORS.light;
   if (!business) return null;
 
-  const handleCall = () => {
-    if (business.phone) {
-      Linking.openURL(`tel:${business.phone}`);
-    }
+  const openUrl = (url?: string | null) => {
+    if (!url) return;
+    const prefixed = url.startsWith('http') ? url : `https://${url}`;
+    Linking.openURL(prefixed);
   };
 
-  const handleEmail = () => {
-    if (business.email) {
-      Linking.openURL(`mailto:${business.email}`);
-    }
-  };
+  const handleCall = () => business.phone && Linking.openURL(`tel:${business.phone}`);
+  const handleEmail = () => business.email && Linking.openURL(`mailto:${business.email}`);
+  const handleWebsite = () => business.website && openUrl(business.website);
+  const handleDirections = () =>
+    business.address && openUrl(`https://maps.google.com/?q=${encodeURIComponent(business.address)}`);
 
-  const handleWebsite = () => {
-    if (business.website) {
-      let url = business.website;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = `https://${url}`;
-      }
-      Linking.openURL(url);
-    }
-  };
-
-  const handleDirections = () => {
-    if (business.address) {
-      const query = encodeURIComponent(business.address);
-      Linking.openURL(`https://maps.google.com/?q=${query}`);
-    }
-  };
-
-  const handleSocialLink = (url?: string | null) => {
-    if (url) {
-      let validUrl = url;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        validUrl = `https://${url}`;
-      }
-      Linking.openURL(validUrl);
-    }
-  };
-
-  const getCategoryIcon = (category: string) => {
-    const icons = {
-      Restaurant: 'restaurant-outline',
-      Café: 'cafe-outline',
-      Boulangerie: 'storefront-outline',
-      Épicerie: 'basket-outline',
-      Commerce: 'bag-outline',
-      Service: 'construct-outline',
-      Santé: 'medical-outline',
-      Beauté: 'sparkles-outline',
-      Sport: 'fitness-outline',
-      Culture: 'library-outline',
-      Éducation: 'school-outline',
-    };
-    return icons[category as keyof typeof icons] || 'business-outline';
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors = {
-      Restaurant: '#FF6233',
-      Café: '#8B4513',
-      Boulangerie: '#DEB887',
-      Épicerie: '#32CD32',
-      Commerce: '#4169E1',
-      Service: '#FF8C00',
-      Santé: '#DC143C',
-      Beauté: '#FF69B4',
-      Sport: '#00CED1',
-      Culture: '#9370DB',
-      Éducation: '#228B22',
-    };
-    return colors[category as keyof typeof colors] || COLORS.primary;
+  const categoryEmojis: Record<string, string> = {
+    Restaurant: '🍽️',
+    Café: '☕',
+    Boulangerie: '🥖',
+    Épicerie: '🛒',
+    Service: '🔧',
+    Beauté: '💄',
+    Autre: '🏢',
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="formSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={onClose}
-          >
-            <Ionicons name="close" size={24} color={COLORS.darkGray} />
-          </TouchableOpacity>
-
-          {business.phone && (
-            <TouchableOpacity
-              style={styles.callButton}
-              onPress={handleCall}
-            >
-              <Ionicons name="call" size={20} color={COLORS.white} />
-              <Text style={styles.callButtonText}>Call</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={[styles.overlay, { backgroundColor: theme.overlay }]}>
+        <SafeAreaView style={[styles.sheet, { backgroundColor: theme.bg }]}>
+          {/* Header */}
+          <View style={[styles.header, { borderBottomColor: theme.gray }]}>
+            <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.gray }]} onPress={onClose}>
+              <Ionicons name="close" size={20} color={theme.ink} />
             </TouchableOpacity>
-          )}
-        </View>
+            {business.phone && (
+              <TouchableOpacity style={[styles.callButton, { backgroundColor: theme.primary }]} onPress={handleCall}>
+                <Ionicons name="call" size={18} color={theme.white} />
+                <Text style={styles.callText}>Appeler</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Header Info */}
-          <View style={styles.businessHeader}>
-            <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(business.category) }]}>
-              <Ionicons
-                name={getCategoryIcon(business.category) as any}
-                size={14}
-                color={COLORS.white}
-              />
-              <Text style={styles.categoryText}>{business.category}</Text>
+          {/* Content */}
+          <View style={styles.content}>
+            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+              <Text style={styles.badgeText}>
+                {categoryEmojis[business.category] || '🏪'} {business.category}
+              </Text>
             </View>
-            <Text style={styles.businessName}>{business.name}</Text>
+
+            <Text style={[styles.name, { color: theme.ink }]}>{business.name}</Text>
+
             {business.address && (
-              <View style={styles.addressContainer}>
-                <Ionicons name="location-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.addressText}>{business.address}</Text>
+              <View style={styles.addressRow}>
+                <Ionicons name="location-outline" size={14} color={theme.primary} />
+                <Text style={[styles.address, { color: theme.inkLight }]}>{business.address}</Text>
               </View>
             )}
-          </View>
 
-          {/* Description */}
-          {business.description && (
-            <Text style={styles.description} numberOfLines={2}>{business.description}</Text>
-          )}
+            {business.description && (
+              <Text style={[styles.description, { color: theme.inkLight }]} numberOfLines={4}>
+                {business.description}
+              </Text>
+            )}
 
-          {/* Quick Actions */}
-          <View style={styles.actionButtons}>
-            {business.address && (
-              <TouchableOpacity style={styles.actionButton} onPress={handleDirections}>
-                <Ionicons name="navigate-outline" size={18} color={COLORS.white} />
-                <Text style={styles.actionButtonText}>Directions</Text>
-              </TouchableOpacity>
-            )}
-            {business.phone && (
-              <TouchableOpacity style={styles.actionButton} onPress={handleCall}>
-                <Ionicons name="call-outline" size={18} color={COLORS.white} />
-                <Text style={styles.actionButtonText}>Call</Text>
-              </TouchableOpacity>
-            )}
-            {business.website && (
-              <TouchableOpacity style={styles.actionButton} onPress={handleWebsite}>
-                <Ionicons name="globe-outline" size={18} color={COLORS.white} />
-                <Text style={styles.actionButtonText}>Website</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Contact Info - Compact */}
-          <View style={styles.contactInfo}>
-            {business.phone && (
-              <TouchableOpacity style={styles.contactItem} onPress={handleCall}>
-                <Ionicons name="call-outline" size={16} color={COLORS.teal} />
-                <Text style={styles.contactText}>{business.phone}</Text>
-              </TouchableOpacity>
-            )}
-            {business.email && (
-              <TouchableOpacity style={styles.contactItem} onPress={handleEmail}>
-                <Ionicons name="mail-outline" size={16} color={COLORS.teal} />
-                <Text style={styles.contactText} numberOfLines={1}>{business.email}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Social Links - Compact */}
-          {(business.facebook_url || business.instagram_url || business.linkedin_url) && (
-            <View style={styles.socialButtons}>
-              {business.facebook_url && (
-                <TouchableOpacity
-                  style={[styles.socialButton, styles.facebookButton]}
-                  onPress={() => handleSocialLink(business.facebook_url)}
-                >
-                  <Ionicons name="logo-facebook" size={16} color={COLORS.white} />
-                </TouchableOpacity>
+            {/* Action buttons */}
+            <View style={styles.actions}>
+              {business.address && (
+                <Pressable style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={handleDirections}>
+                  <Ionicons name="navigate-outline" size={16} color={theme.white} />
+                  <Text style={styles.actionText}>Directions</Text>
+                </Pressable>
               )}
-              {business.instagram_url && (
-                <TouchableOpacity
-                  style={[styles.socialButton, styles.instagramButton]}
-                  onPress={() => handleSocialLink(business.instagram_url)}
-                >
-                  <Ionicons name="logo-instagram" size={16} color={COLORS.white} />
-                </TouchableOpacity>
+              {business.website && (
+                <Pressable style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={handleWebsite}>
+                  <Ionicons name="globe-outline" size={16} color={theme.white} />
+                  <Text style={styles.actionText}>Site Web</Text>
+                </Pressable>
               )}
-              {business.linkedin_url && (
-                <TouchableOpacity
-                  style={[styles.socialButton, styles.linkedinButton]}
-                  onPress={() => handleSocialLink(business.linkedin_url)}
-                >
-                  <Ionicons name="logo-linkedin" size={16} color={COLORS.white} />
-                </TouchableOpacity>
+              {business.email && (
+                <Pressable style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={handleEmail}>
+                  <Ionicons name="mail-outline" size={16} color={theme.white} />
+                  <Text style={styles.actionText}>Courriel</Text>
+                </Pressable>
               )}
             </View>
-          )}
-        </View>
-      </SafeAreaView>
+          </View>
+        </SafeAreaView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.white,
-    maxHeight: '60%',
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: SPACING.xl,
+    maxHeight: '70%',
   },
   header: {
     flexDirection: 'row',
@@ -248,125 +155,77 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.gray,
     justifyContent: 'center',
     alignItems: 'center',
   },
   callButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
+    borderRadius: 20,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 16,
-    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    gap: 4,
   },
-  callButtonText: {
-    fontSize: 12,
+  callText: {
+    color: COLORS.light.white,
+    fontSize: 13,
     fontWeight: '600',
-    color: COLORS.white,
   },
   content: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
   },
-  businessHeader: {
-    marginBottom: SPACING.sm,
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  badge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     marginBottom: SPACING.sm,
   },
-  categoryText: {
-    fontSize: 10,
+  badgeText: {
+    color: COLORS.light.white,
+    fontSize: 11,
     fontWeight: '600',
-    color: COLORS.white,
-    marginLeft: 4,
   },
-  businessName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.ink,
+  name: {
+    fontSize: 20,
+    fontWeight: '700',
     marginBottom: SPACING.xs,
   },
-  addressContainer: {
+  addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
-  addressText: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    marginLeft: SPACING.xs,
+  address: {
+    fontSize: 13,
+    marginLeft: 4,
   },
   description: {
     fontSize: 13,
-    color: COLORS.darkGray,
-    lineHeight: 16,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.lg,
+    lineHeight: 18,
   },
-  actionButtons: {
+  actions: {
     flexDirection: 'row',
-    gap: SPACING.xs,
-    marginBottom: SPACING.sm,
+    gap: SPACING.sm,
   },
-  actionButton: {
+  actionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.xs,
-    borderRadius: 6,
-    gap: SPACING.xs,
+    borderRadius: 10,
+    paddingVertical: SPACING.sm,
+    gap: 6,
   },
-  actionButtonText: {
+  actionText: {
+    color: COLORS.light.white,
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.white,
-  },
-  contactInfo: {
-    marginBottom: SPACING.xs,
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: SPACING.xs,
-  },
-  contactText: {
-    fontSize: 12,
-    color: COLORS.darkGray,
-    marginLeft: SPACING.xs,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    justifyContent: 'center',
-  },
-  socialButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  facebookButton: {
-    backgroundColor: '#1877F2',
-  },
-  instagramButton: {
-    backgroundColor: '#E4405F',
-  },
-  linkedinButton: {
-    backgroundColor: '#0077B5',
   },
 });
