@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { OfferWithCommerce } from '@/hooks/useOffers';
-import React, { memo, useMemo } from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -39,14 +39,6 @@ interface OfferCardProps {
 
 const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress }) => {
   const { t } = useTranslation();
-  const getDiscountText = (title: string) => {
-    const discountMatch = title.match(/(\d+)%/);
-    if (discountMatch) return `${discountMatch[1]}% OFF`;
-    if (title.toLowerCase().includes('free')) return 'FREE';
-    if (title.toLowerCase().includes('buy 1 get 1')) return 'BOGO';
-    if (title.toLowerCase().includes('2 for')) return '2 FOR 1';
-    return title.toUpperCase();
-  };
 
   const getTimeLeft = () => {
     if (!offer.end_date) return null;
@@ -61,29 +53,9 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
     return null;
   };
 
-  const getPriceLevel = () => {
-    switch (offer.commerces?.category) {
-      case 'Restaurant': return '$$';
-      case 'Café': return '$';
-      case 'Épicerie': return '$';
-      default: return '$$';
-    }
-  };
-
   const locationText = offer.custom_location || offer.commerces?.address || t('location_not_specified');
-  const conditionText = offer.condition || null;
-  const discount = getDiscountText(offer.title);
   const timeLeft = getTimeLeft();
   const isExpired = timeLeft === 'EXPIRED';
-
-  const offerTypeLabel = useMemo(() => {
-    switch (offer.offer_type) {
-      case 'both': return 'Online & In-Store';
-      case 'online': return 'Online Only';
-      case 'in_store': return 'In-Store Only';
-      default: return offer.offer_type || 'Offer';
-    }
-  }, [offer.offer_type]);
 
   return (
     <TouchableOpacity
@@ -96,7 +68,7 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
       disabled={isExpired}
       activeOpacity={0.9}
       accessibilityRole="button"
-      accessibilityLabel={`${discount} at ${offer.commerces?.name || 'Business'}`}
+      accessibilityLabel={`${offer.title} at ${offer.commerces?.name || 'Business'}`}
     >
       {/* Media */}
       <View style={styles.media}>
@@ -111,20 +83,16 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         )}
 
         {/* Top overlay */}
-        <View style={styles.mediaTop}>
-          <View style={styles.discountPill}>
-            <Text style={styles.discountText}>{discount}</Text>
-          </View>
-          
-          {offer.boosted && (
+        {offer.boosted && (
+          <View style={styles.mediaTop}>
             <View style={styles.boostBadge}>
               <IconSymbol name="star.fill" size={12} color="#FFD700" />
               <Text style={styles.boostText}>
                 {offer.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
               </Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Bottom bar */}
         <View style={styles.bar}>
@@ -139,21 +107,24 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
 
       {/* Content */}
       <View style={styles.body}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>
-              {offer.commerces?.name || 'Business'}
-            </Text>
-            <Text style={styles.sub} numberOfLines={1}>
-              {offer.commerces?.category} • {offerTypeLabel}
-            </Text>
-            {!!conditionText && <Text style={styles.condition} numberOfLines={1}>{conditionText}</Text>}
-          </View>
-
-          <View style={styles.pricePill}>
-            <Text style={styles.priceText}>{getPriceLevel()}</Text>
-          </View>
+        <View style={styles.headerRow}>
+          <Text style={styles.businessName} numberOfLines={1}>
+            {offer.commerces?.name || 'Business'}
+          </Text>
+          {offer.commerces?.category && (
+            <View style={styles.categoryChip}>
+              <Text style={styles.categoryText}>{offer.commerces.category}</Text>
+            </View>
+          )}
         </View>
+
+        <Text style={styles.offerTitle} numberOfLines={1}>
+          {offer.title}
+        </Text>
+
+        <Text style={styles.description} numberOfLines={2}>
+          {offer.description}
+        </Text>
 
         {/* CTA */}
         <TouchableOpacity style={[styles.primaryBtn, isExpired && styles.primaryBtnDisabled]} onPress={onPress}>
@@ -196,7 +167,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  media: { position: 'relative', aspectRatio: 16 / 6, backgroundColor: COLORS.bgMuted },
+  media: { position: 'relative', height: 220, backgroundColor: COLORS.bgMuted },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.teal },
@@ -209,14 +180,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-
-  discountPill: {
-    backgroundColor: COLORS.success,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RAD.pill,
-  },
-  discountText: { fontSize: 12, fontWeight: '700', color: COLORS.teal },
 
   boostBadge: {
     flexDirection: 'row',
@@ -270,33 +233,44 @@ const styles = StyleSheet.create({
   timeText: { fontSize: 11, fontWeight: '700', color: COLORS.white },
   timeTextExpired: { color: COLORS.white },
 
-  body: { padding: SPACING.md, gap: SPACING.sm, backgroundColor: COLORS.primary },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { fontSize: 16, fontWeight: '700', color: COLORS.white, marginBottom: 2 },
-  sub: { fontSize: 12, color: 'rgba(255,255,255,0.9)' },
-  condition: { fontSize: 12, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)' },
+  body: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.lg, gap: SPACING.sm, backgroundColor: COLORS.primary },
 
-  featuredChip: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  businessName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+    flexShrink: 1,
+  },
+  categoryChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
+    paddingVertical: SPACING.xs,
     borderRadius: RAD.md,
-    alignSelf: 'flex-start',
-    marginTop: SPACING.xs,
   },
-  featuredText: { fontSize: 10, fontWeight: '600', color: COLORS.white, marginLeft: 4 },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
 
-  pricePill: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.sm,
-    borderRadius: RAD.pill,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  offerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.white,
+    marginBottom: SPACING.xs,
   },
-  priceText: { fontSize: 12, fontWeight: '600', color: COLORS.teal },
+  description: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
+    marginBottom: SPACING.xs,
+  },
 
   primaryBtn: {
     backgroundColor: COLORS.white,

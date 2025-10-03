@@ -71,7 +71,6 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
     return null;
   };
 
-  const locationText = event.custom_location || event.commerces?.address || t('location_tbd');
   const status = getStatus();
   const isEnded = status === 'ENDED';
 
@@ -144,21 +143,24 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
 
       {/* Content */}
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{event.title}</Text>
-        <Text style={styles.sub} numberOfLines={1}>
-          {event.commerces?.name || 'Event'} • {event.commerces?.category || 'General'}
+        <View style={styles.headerRow}>
+          <Text style={styles.businessName} numberOfLines={1}>
+            {event.commerces?.name || 'Event'}
+          </Text>
+          {event.commerces?.category && (
+            <View style={styles.categoryChip}>
+              <Text style={styles.categoryText}>{event.commerces.category}</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.eventTitle} numberOfLines={1}>
+          {event.title}
         </Text>
 
-        <View style={styles.metaRow}>
-          <View style={styles.meta}>
-            <IconSymbol name="calendar" size={14} color={COLORS.primary} />
-            <Text style={styles.metaText} numberOfLines={1}>{formatDateRange()}</Text>
-          </View>
-          <View style={styles.meta}>
-            <IconSymbol name="mappin.and.ellipse" size={14} color={COLORS.inkDim} />
-            <Text style={styles.metaText} numberOfLines={1}>{locationText}</Text>
-          </View>
-        </View>
+        <Text style={styles.description} numberOfLines={2}>
+          {event.description}
+        </Text>
 
         {/* Actions */}
         <View style={styles.actions}>
@@ -243,7 +245,7 @@ const styles = StyleSheet.create({
   boostText: { fontSize: 10, fontWeight: '700', color: '#FFD700' },
 
   // media
-  media: { position: 'relative', aspectRatio: 16 / 6, backgroundColor: COLORS.bgMuted },
+  media: { position: 'relative', height: 220, backgroundColor: COLORS.bgMuted },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#8B5CF6' },
@@ -291,15 +293,48 @@ const styles = StyleSheet.create({
   },
 
   // body
-  body: { padding: SPACING.md, gap: SPACING.sm },
-  title: { fontSize: 16, fontWeight: '700', color: COLORS.ink },
-  sub: { fontSize: 12, color: COLORS.inkDim },
+  body: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.lg, gap: SPACING.sm },
 
-  metaRow: { flexDirection: 'row', gap: SPACING.md },
-  meta: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, gap: 6 },
-  metaText: { fontSize: 12, color: COLORS.inkDim, flexShrink: 1 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+  businessName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.ink,
+    flexShrink: 1,
+  },
+  categoryChip: {
+    backgroundColor: COLORS.bgMuted,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RAD.md,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.ink,
+  },
 
-  actions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm },
+  eventTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.ink,
+    marginBottom: SPACING.xs,
+  },
+  description: {
+    fontSize: 13,
+    color: COLORS.inkDim,
+    lineHeight: 18,
+    marginBottom: SPACING.xs,
+  },
+
+  actions: { flexDirection: 'row', gap: SPACING.sm },
   primaryBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: RAD.pill,
