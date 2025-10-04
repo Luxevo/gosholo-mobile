@@ -1,6 +1,7 @@
 import { Commerce } from '@/hooks/useCommerces';
 import { Ionicons } from '@expo/vector-icons';
-import { Linking, Modal, Pressable, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { Linking, Modal, Pressable, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLORS = {
@@ -12,6 +13,9 @@ const COLORS = {
     gray: '#E5E7EB',
     bg: '#FFFFFF',
     overlay: 'rgba(17,24,39,0.6)',
+    teal: '#016167',
+    success: '#B2FD9D',
+    lightBlue: '#5BC4DB',
   },
   dark: {
     primary: '#FF6233',
@@ -21,6 +25,9 @@ const COLORS = {
     gray: '#374151',
     bg: '#111827',
     overlay: 'rgba(0,0,0,0.7)',
+    teal: '#016167',
+    success: '#B2FD9D',
+    lightBlue: '#5BC4DB',
   },
 };
 
@@ -43,6 +50,7 @@ export default function BusinessDetailModal({
   business,
   onClose,
 }: BusinessDetailModalProps) {
+  const { t } = useTranslation();
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? COLORS.dark : COLORS.light;
   if (!business) return null;
@@ -58,6 +66,17 @@ export default function BusinessDetailModal({
   const handleWebsite = () => business.website && openUrl(business.website);
   const handleDirections = () =>
     business.address && openUrl(`https://maps.google.com/?q=${encodeURIComponent(business.address)}`);
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${business.name}${business.address ? `\n${business.address}` : ''}${business.website ? `\n${business.website}` : ''}`,
+        title: business.name,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const categoryEmojis: Record<string, string> = {
     Restaurant: '🍽️',
@@ -78,17 +97,22 @@ export default function BusinessDetailModal({
             <TouchableOpacity style={[styles.closeButton, { backgroundColor: theme.gray }]} onPress={onClose}>
               <Ionicons name="close" size={20} color={theme.ink} />
             </TouchableOpacity>
-            {business.phone && (
-              <TouchableOpacity style={[styles.callButton, { backgroundColor: theme.primary }]} onPress={handleCall}>
-                <Ionicons name="call" size={18} color={theme.white} />
-                <Text style={styles.callText}>Appeler</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity style={[styles.shareButton, { backgroundColor: theme.gray }]} onPress={handleShare}>
+                <Ionicons name="share-outline" size={18} color={theme.ink} />
               </TouchableOpacity>
-            )}
+              {business.phone && (
+                <TouchableOpacity style={[styles.callButton, { backgroundColor: theme.primary }]} onPress={handleCall}>
+                  <Ionicons name="call" size={18} color={theme.white} />
+                  <Text style={styles.callText}>{t('call')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Content */}
           <View style={styles.content}>
-            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+            <View style={styles.badge}>
               <Text style={styles.badgeText}>
                 {categoryEmojis[business.category] || '🏪'} {business.category}
               </Text>
@@ -97,9 +121,11 @@ export default function BusinessDetailModal({
             <Text style={[styles.name, { color: theme.ink }]}>{business.name}</Text>
 
             {business.address && (
-              <View style={styles.addressRow}>
-                <Ionicons name="location-outline" size={14} color={theme.primary} />
-                <Text style={[styles.address, { color: theme.inkLight }]}>{business.address}</Text>
+              <View style={styles.addressCard}>
+                <View style={styles.addressRow}>
+                  <Ionicons name="location-outline" size={16} color={theme.teal} />
+                  <Text style={[styles.address, { color: theme.ink }]}>{business.address}</Text>
+                </View>
               </View>
             )}
 
@@ -112,21 +138,21 @@ export default function BusinessDetailModal({
             {/* Action buttons */}
             <View style={styles.actions}>
               {business.address && (
-                <Pressable style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={handleDirections}>
-                  <Ionicons name="navigate-outline" size={16} color={theme.white} />
-                  <Text style={styles.actionText}>Directions</Text>
+                <Pressable style={[styles.actionBtn, styles.directionsBtn]} onPress={handleDirections}>
+                  <Ionicons name="navigate-outline" size={16} color={COLORS.light.white} />
+                  <Text style={styles.actionText}>{t('directions')}</Text>
                 </Pressable>
               )}
               {business.website && (
-                <Pressable style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={handleWebsite}>
-                  <Ionicons name="globe-outline" size={16} color={theme.white} />
-                  <Text style={styles.actionText}>Site Web</Text>
+                <Pressable style={[styles.actionBtn, styles.websiteBtn]} onPress={handleWebsite}>
+                  <Ionicons name="globe-outline" size={16} color={COLORS.light.white} />
+                  <Text style={styles.actionText}>{t('website')}</Text>
                 </Pressable>
               )}
               {business.email && (
-                <Pressable style={[styles.actionBtn, { backgroundColor: theme.primary }]} onPress={handleEmail}>
-                  <Ionicons name="mail-outline" size={16} color={theme.white} />
-                  <Text style={styles.actionText}>Courriel</Text>
+                <Pressable style={[styles.actionBtn, styles.emailBtn]} onPress={handleEmail}>
+                  <Ionicons name="mail-outline" size={16} color={COLORS.light.white} />
+                  <Text style={styles.actionText}>{t('email')}</Text>
                 </Pressable>
               )}
             </View>
@@ -147,6 +173,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingBottom: SPACING.xl,
     maxHeight: '70%',
+    borderTopWidth: 3,
+    borderTopColor: COLORS.light.primary,
   },
   header: {
     flexDirection: 'row',
@@ -157,6 +185,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  shareButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -185,25 +225,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginBottom: SPACING.sm,
+    backgroundColor: 'rgba(91, 196, 219, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(91, 196, 219, 0.3)',
   },
   badgeText: {
-    color: COLORS.light.white,
+    color: COLORS.light.lightBlue,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   name: {
     fontSize: 20,
     fontWeight: '700',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  addressCard: {
+    backgroundColor: 'rgba(178, 253, 157, 0.12)',
+    padding: SPACING.md,
+    borderRadius: 12,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(178, 253, 157, 0.35)',
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    gap: SPACING.xs,
   },
   address: {
     fontSize: 13,
-    marginLeft: 4,
+    fontWeight: '500',
+    flex: 1,
   },
   description: {
     fontSize: 13,
@@ -227,5 +279,14 @@ const styles = StyleSheet.create({
     color: COLORS.light.white,
     fontSize: 12,
     fontWeight: '600',
+  },
+  directionsBtn: {
+    backgroundColor: COLORS.light.success,
+  },
+  websiteBtn: {
+    backgroundColor: COLORS.light.primary,
+  },
+  emailBtn: {
+    backgroundColor: COLORS.light.teal,
   },
 });

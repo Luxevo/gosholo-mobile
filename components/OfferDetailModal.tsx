@@ -1,7 +1,11 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useCommerces } from '@/hooks/useCommerces';
 import { Offer } from '@/lib/supabase';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BusinessDetailModal from './BusinessDetailModal';
 
 const COLORS = {
   primary: '#FF6233',
@@ -42,7 +46,14 @@ export default function OfferDetailModal({
   onClose,
   onFavoritePress
 }: OfferDetailModalProps) {
+  const { t } = useTranslation();
+  const [businessModalVisible, setBusinessModalVisible] = useState(false);
+  const { commerces } = useCommerces();
+  
   if (!offer) return null;
+
+  // Find the business from the useCommerces hook that matches the offer's commerce
+  const business = offer.commerces ? commerces.find(c => c.id === offer.commerces?.id) || null : null;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -61,18 +72,18 @@ export default function OfferDetailModal({
     const diff = end.getTime() - now.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
 
-    if (days < 0) return { text: 'Expired', color: COLORS.inkLight };
-    if (days === 0) return { text: 'Ends Today', color: COLORS.primary };
-    if (days === 1) return { text: '1 Day Left', color: COLORS.primary };
-    if (days <= 7) return { text: `${days} Days Left`, color: COLORS.teal };
+    if (days < 0) return { text: t('expired'), color: COLORS.inkLight };
+    if (days === 0) return { text: t('ends_today'), color: COLORS.primary };
+    if (days === 1) return { text: t('one_day_left'), color: COLORS.primary };
+    if (days <= 7) return { text: t('days_left', { days }), color: COLORS.teal };
     return null;
   };
 
   const getOfferTypeText = (type: string) => {
     switch (type) {
-      case 'in_store': return 'In-Store Only';
-      case 'online': return 'Online Only';
-      case 'both': return 'In-Store & Online';
+      case 'in_store': return t('in_store_only');
+      case 'online': return t('online_only');
+      case 'both': return t('in_store_and_online');
       default: return type;
     }
   };
@@ -89,7 +100,7 @@ export default function OfferDetailModal({
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          bounces={true}
         >
           {/* Hero Image */}
           <View style={styles.heroContainer}>
@@ -123,7 +134,7 @@ export default function OfferDetailModal({
               <View style={styles.heroBoostBadge}>
                 <IconSymbol name="star.fill" size={12} color={COLORS.success} />
                 <Text style={styles.heroBoostText}>
-                  {offer.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
+                  {offer.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
                 </Text>
               </View>
             )}
@@ -136,12 +147,16 @@ export default function OfferDetailModal({
 
             {/* Business & Category */}
             <View style={styles.businessRow}>
-              <View style={styles.businessInfo}>
+              <TouchableOpacity
+                style={styles.businessInfo}
+                onPress={() => setBusinessModalVisible(true)}
+                activeOpacity={0.7}
+              >
                 <IconSymbol name="storefront.fill" size={16} color={COLORS.teal} />
                 <Text style={styles.businessName} numberOfLines={1}>
-                  {offer.commerces?.name || 'Business'}
+                  {offer.commerces?.name || t('business')}
                 </Text>
-              </View>
+              </TouchableOpacity>
               {offer.commerces?.category && (
                 <View style={styles.categoryPill}>
                   <Text style={styles.categoryText}>{offer.commerces.category}</Text>
@@ -159,14 +174,14 @@ export default function OfferDetailModal({
             <View style={styles.infoGrid}>
               <View style={styles.infoCard}>
                 <IconSymbol name="tag.fill" size={18} color={COLORS.primary} />
-                <Text style={styles.infoCardLabel}>Type</Text>
+                <Text style={styles.infoCardLabel}>{t('type')}</Text>
                 <Text style={styles.infoCardValue}>{getOfferTypeText(offer.offer_type)}</Text>
               </View>
 
               {getTimeRemaining() && (
                 <View style={[styles.infoCard, styles.infoCardHighlight]}>
                   <IconSymbol name="clock.fill" size={18} color={getTimeRemaining()!.color} />
-                  <Text style={styles.infoCardLabel}>Time Left</Text>
+                  <Text style={styles.infoCardLabel}>{t('time_left')}</Text>
                   <Text style={[styles.infoCardValue, { color: getTimeRemaining()!.color }]}>
                     {getTimeRemaining()!.text}
                   </Text>
@@ -179,7 +194,7 @@ export default function OfferDetailModal({
               <View style={styles.locationCard}>
                 <View style={styles.locationHeader}>
                   <IconSymbol name="mappin.circle.fill" size={20} color={COLORS.teal} />
-                  <Text style={styles.locationLabel}>Location</Text>
+                  <Text style={styles.locationLabel}>{t('location')}</Text>
                 </View>
                 <Text style={styles.locationText}>
                   {offer.uses_commerce_location ? offer.commerces?.address : offer.custom_location}
@@ -192,12 +207,12 @@ export default function OfferDetailModal({
               <View style={styles.validityCard}>
                 <View style={styles.validityRow}>
                   <View style={styles.validityItem}>
-                    <Text style={styles.validityLabel}>Valid From</Text>
+                    <Text style={styles.validityLabel}>{t('valid_from')}</Text>
                     <Text style={styles.validityValue}>{offer.start_date ? formatDate(offer.start_date) : '—'}</Text>
                   </View>
                   <View style={styles.validitySeparator} />
                   <View style={styles.validityItem}>
-                    <Text style={styles.validityLabel}>Valid Until</Text>
+                    <Text style={styles.validityLabel}>{t('valid_until')}</Text>
                     <Text style={styles.validityValue}>{offer.end_date ? formatDate(offer.end_date) : '—'}</Text>
                   </View>
                 </View>
@@ -209,7 +224,7 @@ export default function OfferDetailModal({
               <View style={styles.conditionsCard}>
                 <View style={styles.conditionsHeader}>
                   <IconSymbol name="info.circle.fill" size={18} color={COLORS.inkDim} />
-                  <Text style={styles.conditionsLabel}>Terms & Conditions</Text>
+                  <Text style={styles.conditionsLabel}>{t('terms_conditions')}</Text>
                 </View>
                 <Text style={styles.conditionsText}>{offer.condition}</Text>
               </View>
@@ -217,6 +232,13 @@ export default function OfferDetailModal({
           </View>
         </ScrollView>
       </View>
+
+      {/* Business Detail Modal */}
+      <BusinessDetailModal
+        visible={businessModalVisible}
+        business={business}
+        onClose={() => setBusinessModalVisible(false)}
+      />
     </Modal>
   );
 }
@@ -236,7 +258,7 @@ const styles = StyleSheet.create({
   // Hero section
   heroContainer: {
     position: 'relative',
-    height: 240,
+    height: 180,
     backgroundColor: COLORS.teal,
   },
   heroImage: {
@@ -246,7 +268,7 @@ const styles = StyleSheet.create({
   heroPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.teal,
+    backgroundColor: COLORS.primary,
   },
   heroGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -305,12 +327,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xxl,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.xxl,
+    borderTopWidth: 3,
+    borderTopColor: COLORS.primary,
   },
 
   dragHandle: {
     width: 40,
     height: 4,
-    backgroundColor: COLORS.line,
+    backgroundColor: COLORS.primary,
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: SPACING.xxl,
@@ -335,15 +359,17 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   categoryPill: {
-    backgroundColor: COLORS.bgMuted,
+    backgroundColor: 'rgba(91, 196, 219, 0.15)',
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(91, 196, 219, 0.3)',
   },
   categoryText: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.inkDim,
+    color: COLORS.lightBlue,
     letterSpacing: 0.3,
   },
 
@@ -395,10 +421,12 @@ const styles = StyleSheet.create({
 
   // Location Card
   locationCard: {
-    backgroundColor: COLORS.bgMuted,
+    backgroundColor: 'rgba(178, 253, 157, 0.12)',
     padding: SPACING.lg,
     borderRadius: 16,
     marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(178, 253, 157, 0.35)',
   },
   locationHeader: {
     flexDirection: 'row',
@@ -409,7 +437,7 @@ const styles = StyleSheet.create({
   locationLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.ink,
+    color: COLORS.teal,
   },
   locationText: {
     fontSize: 15,
@@ -419,10 +447,12 @@ const styles = StyleSheet.create({
 
   // Validity Card
   validityCard: {
-    backgroundColor: COLORS.bgMuted,
+    backgroundColor: 'rgba(1, 97, 103, 0.08)',
     padding: SPACING.lg,
     borderRadius: 16,
     marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(1, 97, 103, 0.2)',
   },
   validityRow: {
     flexDirection: 'row',
@@ -435,7 +465,7 @@ const styles = StyleSheet.create({
   validityLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.inkLight,
+    color: COLORS.teal,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -447,7 +477,7 @@ const styles = StyleSheet.create({
   validitySeparator: {
     width: 1,
     height: '100%',
-    backgroundColor: COLORS.line,
+    backgroundColor: 'rgba(1, 97, 103, 0.3)',
     marginHorizontal: SPACING.lg,
   },
 

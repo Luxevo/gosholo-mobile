@@ -2,7 +2,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { OfferWithCommerce } from '@/hooks/useOffers';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const COLORS = {
   primary: '#FF6233',
@@ -40,6 +40,17 @@ interface OfferCardProps {
 const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress }) => {
   const { t } = useTranslation();
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${offer.title}${offer.commerces?.name ? `\n${offer.commerces.name}` : ''}${offer.description ? `\n${offer.description}` : ''}`,
+        title: offer.title,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const getTimeLeft = () => {
     if (!offer.end_date) return null;
     const end = new Date(offer.end_date);
@@ -47,15 +58,15 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
     const diff = end.getTime() - now.getTime();
     const hrs = Math.ceil(diff / (1000 * 3600));
     const days = Math.ceil(diff / (1000 * 3600 * 24));
-    if (hrs <= 0) return 'EXPIRED';
-    if (hrs < 24) return `Ends in ${hrs}h`;
-    if (days <= 7) return `Ends in ${days}d`;
+    if (hrs <= 0) return t('expired_caps');
+    if (hrs < 24) return t('ends_in_hours', { hours: hrs });
+    if (days <= 7) return t('ends_in_days', { days });
     return null;
   };
 
   const locationText = offer.custom_location || offer.commerces?.address || t('location_not_specified');
   const timeLeft = getTimeLeft();
-  const isExpired = timeLeft === 'EXPIRED';
+  const isExpired = timeLeft === t('expired_caps');
 
   return (
     <TouchableOpacity
@@ -68,7 +79,7 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
       disabled={isExpired}
       activeOpacity={0.9}
       accessibilityRole="button"
-      accessibilityLabel={`${offer.title} at ${offer.commerces?.name || 'Business'}`}
+      accessibilityLabel={`${offer.title} at ${offer.commerces?.name || t('business')}`}
     >
       {/* Media */}
       <View style={styles.media}>
@@ -88,7 +99,7 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
             <View style={styles.boostBadge}>
               <IconSymbol name="star.fill" size={12} color="#FFD700" />
               <Text style={styles.boostText}>
-                {offer.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
+                {offer.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
               </Text>
             </View>
           </View>
@@ -109,7 +120,7 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
       <View style={styles.body}>
         <View style={styles.headerRow}>
           <Text style={styles.businessName} numberOfLines={1}>
-            {offer.commerces?.name || 'Business'}
+            {offer.commerces?.name || t('business')}
           </Text>
           {offer.commerces?.category && (
             <View style={styles.categoryChip}>
@@ -127,11 +138,17 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         </Text>
 
         {/* CTA */}
-        <TouchableOpacity style={[styles.primaryBtn, isExpired && styles.primaryBtnDisabled]} onPress={onPress}>
-          <Text style={[styles.primaryText, isExpired && styles.primaryTextDisabled]}>
-            {isExpired ? t('expired') : t('view_offer')}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actions}>
+          <TouchableOpacity style={[styles.primaryBtn, isExpired && styles.primaryBtnDisabled]} onPress={onPress}>
+            <Text style={[styles.primaryText, isExpired && styles.primaryTextDisabled]}>
+              {isExpired ? t('expired') : t('view_offer')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare} accessibilityRole="button">
+            <Text style={styles.secondaryText}>{t('share')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -272,6 +289,11 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
 
+  actions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+
   primaryBtn: {
     backgroundColor: COLORS.white,
     borderRadius: RAD.pill,
@@ -279,9 +301,21 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    flex: 1,
   },
   primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
   primaryText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
   primaryTextDisabled: { color: COLORS.inkDim },
+
+  secondaryBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: RAD.pill,
+    paddingHorizontal: SPACING.lg,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  secondaryText: { fontSize: 13, fontWeight: '600', color: COLORS.white },
 });

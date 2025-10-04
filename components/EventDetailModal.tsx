@@ -1,8 +1,11 @@
 import { Event } from '@/lib/supabase';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Image, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import BusinessDetailModal from './BusinessDetailModal';
 
 const COLORS = {
   primary: '#FF6233',
@@ -43,6 +46,8 @@ export default function EventDetailModal({
   onClose,
   onFavoritePress
 }: EventDetailModalProps) {
+  const { t } = useTranslation();
+  const [businessModalVisible, setBusinessModalVisible] = useState(false);
   if (!event) return null;
 
   const formatDate = (dateString?: string) => {
@@ -61,13 +66,13 @@ export default function EventDetailModal({
     const start = new Date(event.start_date);
     const end = event.end_date ? new Date(event.end_date) : start;
 
-    if (now > end) return { text: 'Ended', color: COLORS.inkLight };
-    if (now >= start && now <= end) return { text: 'Happening Now', color: COLORS.success };
+    if (now > end) return { text: t('ended'), color: COLORS.inkLight };
+    if (now >= start && now <= end) return { text: t('happening_now'), color: COLORS.success };
 
     const daysUntil = Math.ceil((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (daysUntil === 0) return { text: 'Today', color: COLORS.primary };
-    if (daysUntil === 1) return { text: 'Tomorrow', color: COLORS.primary };
-    if (daysUntil <= 7) return { text: `In ${daysUntil} Days`, color: COLORS.lightBlue };
+    if (daysUntil === 0) return { text: t('today_caps'), color: COLORS.primary };
+    if (daysUntil === 1) return { text: t('tomorrow_caps'), color: COLORS.primary };
+    if (daysUntil <= 7) return { text: t('in_days', { days: daysUntil }), color: COLORS.lightBlue };
 
     return null;
   };
@@ -90,7 +95,7 @@ export default function EventDetailModal({
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          bounces={true}
         >
           {/* Hero Image */}
           <View style={styles.heroContainer}>
@@ -124,7 +129,7 @@ export default function EventDetailModal({
               <View style={styles.heroBoostBadge}>
                 <IconSymbol name="star.fill" size={12} color={COLORS.success} />
                 <Text style={styles.heroBoostText}>
-                  {event.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
+                  {event.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
                 </Text>
               </View>
             )}
@@ -137,12 +142,16 @@ export default function EventDetailModal({
 
             {/* Business & Category */}
             <View style={styles.businessRow}>
-              <View style={styles.businessInfo}>
+              <TouchableOpacity
+                style={styles.businessInfo}
+                onPress={() => setBusinessModalVisible(true)}
+                activeOpacity={0.7}
+              >
                 <IconSymbol name="building.2.fill" size={16} color={COLORS.lightBlue} />
                 <Text style={styles.businessName} numberOfLines={1}>
-                  {event.commerces?.name || 'Event'}
+                  {event.commerces?.name || t('event')}
                 </Text>
-              </View>
+              </TouchableOpacity>
               {event.commerces?.category && (
                 <View style={styles.categoryPill}>
                   <Text style={styles.categoryText}>{event.commerces.category}</Text>
@@ -171,7 +180,7 @@ export default function EventDetailModal({
               {(event.start_date || event.end_date) && (
                 <View style={styles.infoCard}>
                   <IconSymbol name="calendar" size={18} color={COLORS.primary} />
-                  <Text style={styles.infoCardLabel}>Date</Text>
+                  <Text style={styles.infoCardLabel}>{t('date')}</Text>
                   <Text style={styles.infoCardValue}>
                     {event.start_date ? formatDate(event.start_date) : formatDate(event.end_date || '')}
                   </Text>
@@ -184,7 +193,7 @@ export default function EventDetailModal({
               <View style={styles.locationCard}>
                 <View style={styles.locationHeader}>
                   <IconSymbol name="mappin.circle.fill" size={20} color={COLORS.lightBlue} />
-                  <Text style={styles.locationLabel}>Location</Text>
+                  <Text style={styles.locationLabel}>{t('location')}</Text>
                 </View>
                 <Text style={styles.locationText}>
                   {event.uses_commerce_location ? event.commerces?.address : event.custom_location}
@@ -197,12 +206,12 @@ export default function EventDetailModal({
               <View style={styles.validityCard}>
                 <View style={styles.validityRow}>
                   <View style={styles.validityItem}>
-                    <Text style={styles.validityLabel}>Starts</Text>
+                    <Text style={styles.validityLabel}>{t('starts')}</Text>
                     <Text style={styles.validityValue}>{formatDate(event.start_date)}</Text>
                   </View>
                   <View style={styles.validitySeparator} />
                   <View style={styles.validityItem}>
-                    <Text style={styles.validityLabel}>Ends</Text>
+                    <Text style={styles.validityLabel}>{t('ends')}</Text>
                     <Text style={styles.validityValue}>{formatDate(event.end_date)}</Text>
                   </View>
                 </View>
@@ -214,7 +223,7 @@ export default function EventDetailModal({
               <View style={styles.socialCard}>
                 <View style={styles.socialHeader}>
                   <IconSymbol name="link" size={18} color={COLORS.inkDim} />
-                  <Text style={styles.socialLabel}>Follow this event</Text>
+                  <Text style={styles.socialLabel}>{t('follow_this_event')}</Text>
                 </View>
                 <View style={styles.socialButtons}>
                   {event.facebook_url && (
@@ -256,7 +265,7 @@ export default function EventDetailModal({
               <View style={styles.conditionsCard}>
                 <View style={styles.conditionsHeader}>
                   <IconSymbol name="info.circle.fill" size={18} color={COLORS.inkDim} />
-                  <Text style={styles.conditionsLabel}>Event Details</Text>
+                  <Text style={styles.conditionsLabel}>{t('event_details')}</Text>
                 </View>
                 <Text style={styles.conditionsText}>{event.condition}</Text>
               </View>
@@ -264,6 +273,13 @@ export default function EventDetailModal({
           </View>
         </ScrollView>
       </View>
+
+      {/* Business Detail Modal */}
+      <BusinessDetailModal
+        visible={businessModalVisible}
+        business={event.commerces}
+        onClose={() => setBusinessModalVisible(false)}
+      />
     </Modal>
   );
 }

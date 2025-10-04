@@ -290,7 +290,7 @@ export default function CompassScreen() {
                       )}
                     </View>
                     <Text style={styles.businessItemAddress} numberOfLines={1}>
-                      {item.address || 'Address not available'}
+                      {item.address || t('address_not_available')}
                     </Text>
                     <Text style={styles.businessItemCategory}>
                       {item.category}

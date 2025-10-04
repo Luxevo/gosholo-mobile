@@ -2,7 +2,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { EventWithCommerce } from '@/hooks/useEvents';
 import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const COLORS = {
   primary: '#FF6233',
@@ -39,6 +39,18 @@ interface EventCardProps {
 
 const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavoritePress }) => {
   const { t } = useTranslation();
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${event.title}${event.commerces?.name ? `\n${event.commerces.name}` : ''}${event.description ? `\n${event.description}` : ''}`,
+        title: event.title,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   // ——— utils ———
   const formatDateRange = () => {
     if (!event.start_date) return t('date_tbd');
@@ -63,20 +75,20 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
     const eventDay = new Date(start);
     eventDay.setHours(0, 0, 0, 0);
 
-    if (now > end) return 'ENDED';
-    if (now >= start && now <= end) return 'HAPPENING NOW';
-    if (+today === +eventDay) return 'TODAY';
+    if (now > end) return t('ended_caps');
+    if (now >= start && now <= end) return t('happening_now');
+    if (+today === +eventDay) return t('today_caps');
     const tmr = new Date(today); tmr.setDate(tmr.getDate() + 1);
-    if (+tmr === +eventDay) return 'TOMORROW';
+    if (+tmr === +eventDay) return t('tomorrow_caps');
     return null;
   };
 
   const status = getStatus();
-  const isEnded = status === 'ENDED';
+  const isEnded = status === t('ended_caps');
 
   const followOrShare = useMemo(
-    () => (event.facebook_url || event.instagram_url ? 'Follow' : 'Share'),
-    [event.facebook_url, event.instagram_url]
+    () => (event.facebook_url || event.instagram_url ? t('follow') : t('share')),
+    [event.facebook_url, event.instagram_url, t]
   );
 
   // ——— render ———
@@ -98,7 +110,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
         <View style={styles.boostChip}>
           <IconSymbol name="star.fill" size={12} color="#FFD700" />
           <Text style={styles.boostText}>
-            {event.boost_type === 'en_vedette' ? 'Featured' : 'Promoted'}
+            {event.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
           </Text>
         </View>
       )}
@@ -134,7 +146,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             onPress={onFavoritePress}
             style={styles.favBtn}
             accessibilityRole="button"
-            accessibilityLabel="Save to favorites"
+            accessibilityLabel={t('save_to_favorites')}
           >
             <IconSymbol name="heart" size={16} color={COLORS.ink} />
           </TouchableOpacity>
@@ -145,7 +157,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
       <View style={styles.body}>
         <View style={styles.headerRow}>
           <Text style={styles.businessName} numberOfLines={1}>
-            {event.commerces?.name || 'Event'}
+            {event.commerces?.name || t('event')}
           </Text>
           {event.commerces?.category && (
             <View style={styles.categoryChip}>
@@ -173,7 +185,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             <Text style={styles.primaryText}>{isEnded ? t('ended') : t('view_event')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryBtn} accessibilityRole="button">
+          <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare} accessibilityRole="button">
             <Text style={styles.secondaryText}>{followOrShare}</Text>
           </TouchableOpacity>
         </View>
@@ -186,18 +198,20 @@ export const EventCard = memo(EventCardComponent);
 EventCard.displayName = 'EventCard';
 
 function getStatusPillStyle(status: string) {
-  switch (status) {
-    case 'HAPPENING NOW':
-      return { backgroundColor: 'rgba(178,253,157,0.95)' };
-    case 'TODAY':
-      return { backgroundColor: 'rgba(255,98,51,0.95)' };
-    case 'TOMORROW':
-      return { backgroundColor: 'rgba(1,97,103,0.9)' };
-    case 'ENDED':
-      return { backgroundColor: 'rgba(17,24,39,0.7)' };
-    default:
-      return { backgroundColor: 'rgba(17,24,39,0.7)' };
+  // Status values are now translated, so we check against common patterns
+  if (status.includes('COURS') || status.includes('NOW')) {
+    return { backgroundColor: 'rgba(178,253,157,0.95)' };
   }
+  if (status.includes('AUJOURD') || status.includes('TODAY')) {
+    return { backgroundColor: 'rgba(255,98,51,0.95)' };
+  }
+  if (status.includes('DEMAIN') || status.includes('TOMORROW')) {
+    return { backgroundColor: 'rgba(1,97,103,0.9)' };
+  }
+  if (status.includes('TERMIN') || status.includes('ENDED')) {
+    return { backgroundColor: 'rgba(17,24,39,0.7)' };
+  }
+  return { backgroundColor: 'rgba(17,24,39,0.7)' };
 }
 
 const styles = StyleSheet.create({
