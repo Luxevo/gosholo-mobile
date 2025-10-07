@@ -1,10 +1,10 @@
-import { Event } from '@/lib/supabase';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Event } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
 import BusinessDetailModal from './BusinessDetailModal';
 
 const COLORS = {
@@ -342,8 +342,8 @@ const styles = StyleSheet.create({
 
   heroBoostBadge: {
     position: 'absolute',
-    bottom: SPACING.xl,
-    left: SPACING.xl,
+    bottom: 35,
+    left: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.88)',

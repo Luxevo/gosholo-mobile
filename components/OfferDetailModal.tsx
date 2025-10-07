@@ -301,8 +301,8 @@ const styles = StyleSheet.create({
 
   heroBoostBadge: {
     position: 'absolute',
-    bottom: SPACING.xl,
-    left: SPACING.xl,
+    bottom: 35,
+    left: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.88)',

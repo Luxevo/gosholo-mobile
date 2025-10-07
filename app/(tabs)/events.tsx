@@ -1,5 +1,9 @@
 import { EventCard } from '@/components/EventCard';
 import EventDetailModal from '@/components/EventDetailModal';
+import { AppHeader } from '@/components/shared/AppHeader';
+import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
+import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
+import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents } from '@/hooks/useEvents';
 import { Event } from '@/lib/supabase';
@@ -11,7 +15,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -25,18 +28,18 @@ const COLORS = {
   black: '#000000',
 };
 
-const CATEGORIES = [
-  { id: 'all', label: 'All' },
-  { id: 'music', label: 'Music' },
-  { id: 'sports', label: 'Sports' },
-  { id: 'art', label: 'Art' },
+const getCategoriesConfig = (t: any): Category[] => [
+  { id: 'all', label: t('all'), icon: 'calendar' },
+  { id: 'music', label: t('music'), icon: 'music.note' },
+  { id: 'sports', label: t('sports'), icon: 'sportscourt' },
+  { id: 'art', label: t('art'), icon: 'paintbrush' },
 ];
 
-const FILTERS = [
-  { id: 'filters', label: 'Filters' },
-  { id: 'near-me', label: 'Near Me' },
-  { id: 'this-week', label: 'This Week' },
-  { id: 'free', label: 'Free' },
+const getFiltersConfig = (t: any): Filter[] => [
+  { id: 'filters', label: t('filters') },
+  { id: 'near-me', label: t('near_me') },
+  { id: 'this-week', label: t('this_week') },
+  { id: 'free', label: t('free') },
 ];
 
 export default function EventsScreen() {
@@ -136,93 +139,34 @@ export default function EventsScreen() {
         }
       >
         {/* Header */}
-        <View style={styles.headerContainer}>
-          <View style={styles.logoRow}>
-            <Text style={styles.logoText}>olo</Text>
-            <TouchableOpacity style={styles.locationChip}>
-              <IconSymbol name="mappin.and.ellipse" size={14} color={COLORS.primary} />
-              <Text style={styles.locationText}>New York</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity style={styles.profileAvatarContainer}>
-            <View style={styles.avatarCircle}>
-              <IconSymbol name="person.crop.circle.fill" size={28} color={COLORS.primary} />
-            </View>
-          </TouchableOpacity>
-        </View>
+        <AppHeader
+          location="Montréal"
+          onLocationPress={() => console.log('Location pressed')}
+          onNotificationPress={() => console.log('Notifications pressed')}
+          onProfilePress={() => console.log('Profile pressed')}
+        />
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color={COLORS.darkGray} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search concerts, exhibitions, or activities..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor={COLORS.darkGray}
-            />
-          </View>
-        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder={t('search_placeholder_events')}
+        />
 
         {/* Categories */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Categories</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesContainer}
-          >
-            {CATEGORIES.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryChip,
-                  category.id === selectedCategory && styles.selectedCategoryChip,
-                  category.id === 'all' && styles.allCategoryChip,
-                ]}
-                onPress={() => handleCategoryPress(category.id)}
-              >
-                <Text
-                  style={[
-                    styles.categoryChipText,
-                    category.id === selectedCategory && styles.selectedCategoryChipText,
-                  ]}
-                >
-                  {category.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        <CategoriesSection
+          categories={getCategoriesConfig(t)}
+          selectedCategory={selectedCategory}
+          onCategoryPress={handleCategoryPress}
+          onSeeAllPress={() => console.log('See all categories')}
+        />
 
         {/* Filters */}
-        <View style={styles.filtersContainer}>
-          {FILTERS.map((filter) => (
-            <TouchableOpacity
-              key={filter.id}
-              style={[
-                styles.filterChip,
-                selectedFilter === filter.id && styles.selectedFilterChip,
-              ]}
-              onPress={() => handleFilterPress(filter.id)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedFilter === filter.id && styles.selectedFilterChipText,
-                ]}
-              >
-                {filter.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <FiltersSection
+          filters={getFiltersConfig(t)}
+          selectedFilter={selectedFilter}
+          onFilterPress={handleFilterPress}
+        />
 
         {/* Event List */}
         {activeEvents.map((event) => (
@@ -248,98 +192,6 @@ export default function EventsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   scrollView: { flex: 1 },
-
-  /* Header */
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray,
-  },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoText: { fontSize: 24, fontWeight: 'bold', color: COLORS.primary, letterSpacing: -0.5 },
-  locationChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E6F8F1',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  locationText: { marginLeft: 5, fontSize: 13, fontWeight: '500', color: COLORS.primary },
-  profileAvatarContainer: { alignItems: 'center', justifyContent: 'center' },
-  avatarCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.gray,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  /* Search Bar */
-  searchContainer: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: COLORS.white },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.gray,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchIcon: { marginRight: 12 },
-  searchInput: { flex: 1, fontSize: 16, color: COLORS.black },
-
-  /* Categories */
-  sectionContainer: { paddingHorizontal: 16, paddingVertical: 8 },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
-  seeAllText: { fontSize: 14, color: COLORS.primary, fontWeight: '600' },
-  categoriesContainer: { paddingBottom: 8 },
-  categoryChip: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.gray,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-  },
-  allCategoryChip: { borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },
-  selectedCategoryChip: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  categoryChipText: { fontSize: 14, color: COLORS.darkGray },
-  selectedCategoryChipText: { color: COLORS.white },
-
-  /* Filters */
-  filtersContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    flexWrap: 'wrap',
-  },
-  filterChip: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.gray,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  selectedFilterChip: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  filterChipText: { fontSize: 12, color: COLORS.darkGray },
-  selectedFilterChipText: { color: COLORS.white },
 
   /* States */
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },

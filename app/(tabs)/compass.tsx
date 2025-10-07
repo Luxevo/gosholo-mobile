@@ -5,10 +5,12 @@ import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   FlatList,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -22,7 +24,9 @@ let Mapbox: any,
   PointAnnotation: any,
   RasterDemSource: any,
   Terrain: any,
-  SkyLayer: any;
+  SkyLayer: any,
+  ShapeSource: any,
+  LineLayer: any;
 
 try {
   const MapboxMaps = require('@rnmapbox/maps');
@@ -35,6 +39,8 @@ try {
   RasterDemSource = MapboxMaps.RasterDemSource;
   Terrain = MapboxMaps.Terrain;
   SkyLayer = MapboxMaps.SkyLayer;
+  ShapeSource = MapboxMaps.ShapeSource;
+  LineLayer = MapboxMaps.LineLayer;
 } catch (error) {
   console.log('Mapbox not available in Expo Go (use a dev build).');
 }
@@ -65,11 +71,28 @@ export default function CompassScreen() {
   const [selectedBusiness, setSelectedBusiness] = useState<Commerce | null>(null);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
   const [showBusinessList, setShowBusinessList] = useState(false);
+  const [routeCoordinates, setRouteCoordinates] = useState<LngLat[] | null>(null);
+  const [routeDistance, setRouteDistance] = useState<number | null>(null);
+  const [routeDuration, setRouteDuration] = useState<number | null>(null);
+  const [isAlertShowing, setIsAlertShowing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const cameraRef = useRef<any>(null);
   const { t } = useTranslation();
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
+
+  // Filter commerces based on search query
+  const filteredCommerces = useMemo(() => {
+    if (!searchQuery.trim()) return commerces;
+
+    const query = searchQuery.toLowerCase();
+    return commerces.filter((commerce) =>
+      commerce.name?.toLowerCase().includes(query) ||
+      commerce.category?.toLowerCase().includes(query) ||
+      commerce.address?.toLowerCase().includes(query)
+    );
+  }, [commerces, searchQuery]);
 
   useEffect(() => {
     requestLocationPermission();
@@ -110,18 +133,90 @@ export default function CompassScreen() {
     }
   };
 
+  const fetchDirections = async (destination: LngLat) => {
+    if (!userLocation) {
+      console.log('User location not available');
+      return;
+    }
 
+    try {
+      const accessToken = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+      const start = `${userLocation[0]},${userLocation[1]}`;
+      const end = `${destination[0]},${destination[1]}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?geometries=geojson&access_token=${accessToken}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const coordinates = route.geometry.coordinates;
+        const distance = route.distance; // in meters
+        const duration = route.duration; // in seconds
+
+        setRouteCoordinates(coordinates);
+        setRouteDistance(distance);
+        setRouteDuration(duration);
+
+        // Fit camera to show the entire route with extra bottom padding for route info pill
+        if (cameraRef.current && userLocation) {
+          cameraRef.current.fitBounds(
+            userLocation,
+            destination,
+            [80, 50, 200, 50], // padding [top, right, bottom, left] - extra bottom for route pill
+            1000 // animation duration
+          );
+        }
+      }
+    } catch (error) {
+      console.log('Error fetching directions:', error);
+    }
+  };
+
+  const clearRoute = () => {
+    setRouteCoordinates(null);
+    setRouteDistance(null);
+    setRouteDuration(null);
+  };
 
   const toggleMapStyle = () => setIs3D((v) => !v);
 
   const handleBusinessPress = (commerce: Commerce) => {
-    setSelectedBusiness(commerce);
-    setShowBusinessModal(true);
+    // Prevent multiple alerts
+    if (isAlertShowing) return;
+
+    // Ask if user wants navigation
+    if (commerce.latitude && commerce.longitude) {
+      setIsAlertShowing(true);
+      Alert.alert(
+        t('directions'),
+        `${t('get_directions_to')} ${commerce.name}?`,
+        [
+          {
+            text: t('cancel'),
+            style: 'cancel',
+            onPress: () => setIsAlertShowing(false),
+          },
+          {
+            text: t('yes'),
+            onPress: () => {
+              if (commerce.longitude && commerce.latitude) {
+                const destination: LngLat = [commerce.longitude, commerce.latitude];
+                fetchDirections(destination);
+              }
+              setIsAlertShowing(false);
+            },
+          },
+        ],
+        { onDismiss: () => setIsAlertShowing(false) }
+      );
+    }
   };
 
   const handleCloseBusinessModal = () => {
     setShowBusinessModal(false);
     setSelectedBusiness(null);
+    clearRoute();
   };
 
   const toggleBusinessList = () => {
@@ -186,9 +281,34 @@ export default function CompassScreen() {
               <LocationPuck puckBearing="heading" puckBearingEnabled visible />
             )}
 
+            {/* Route Line */}
+            {ShapeSource && LineLayer && routeCoordinates && (
+              <ShapeSource
+                id="routeSource"
+                shape={{
+                  type: 'Feature',
+                  properties: {},
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: routeCoordinates,
+                  },
+                }}
+              >
+                <LineLayer
+                  id="routeLine"
+                  style={{
+                    lineColor: '#5BC4DB',
+                    lineWidth: 4,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+              </ShapeSource>
+            )}
+
             {/* Markers with name always visible */}
             {PointAnnotation &&
-              commerces.map((commerce: Commerce) => {
+              filteredCommerces.map((commerce: Commerce) => {
                 if (!commerce.latitude || !commerce.longitude) return null;
                 return (
                   <PointAnnotation
@@ -215,30 +335,44 @@ export default function CompassScreen() {
         )}
       </View>
 
-      {/* Floating Info Cards */}
-      <View style={styles.floatingControls}>
-        {/* Business Count Pill */}
-        <TouchableOpacity
-          style={[styles.infoPill, styles.clickablePill]}
-          onPress={toggleBusinessList}
-          activeOpacity={0.8}
-        >
-          <View style={styles.pillContent}>
-            <IconSymbol name="list.bullet" size={14} color={COLORS.primary} />
-            <Text style={styles.infoPillText} numberOfLines={1}>
-              {commercesLoading
-                ? 'Loading...'
-                : commercesError
-                ? 'Error loading'
-                : `${commerces.length} businesses`}
-            </Text>
-            <IconSymbol name="chevron.right" size={12} color={COLORS.darkGray} />
-          </View>
-        </TouchableOpacity>
+      {/* Search Pill */}
+      <View style={styles.searchPillContainer}>
+        <View style={styles.searchPill}>
+          <IconSymbol name="magnifyingglass" size={16} color={COLORS.darkGray} />
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t('search_placeholder_businesses')}
+            placeholderTextColor={COLORS.darkGray}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <IconSymbol name="xmark.circle.fill" size={16} color={COLORS.darkGray} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
-        {/* 2D/3D Toggle Pill */}
+      {/* Route Info Pill */}
+      {routeDistance && routeDuration && (
+        <View style={styles.routeInfoContainer}>
+          <View style={styles.routeInfoPill}>
+            <IconSymbol name="car.fill" size={18} color={COLORS.blue} />
+            <Text style={styles.routeInfoText}>
+              {(routeDistance / 1000).toFixed(1)} km • {Math.round(routeDuration / 60)} min
+            </Text>
+            <TouchableOpacity onPress={clearRoute} style={styles.closeRouteButton}>
+              <IconSymbol name="xmark.circle.fill" size={18} color={COLORS.darkGray} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* 2D/3D Toggle Pill - Under Search Bar */}
+      <View style={styles.topLeftControls}>
         <TouchableOpacity style={styles.togglePill} onPress={toggleMapStyle}>
-          <IconSymbol name={is3D ? 'cube' : 'map'} size={20} color={COLORS.primary} />
+          <IconSymbol name={is3D ? 'cube' : 'map'} size={18} color={COLORS.primary} />
           <Text style={styles.togglePillText}>{is3D ? '3D' : '2D'}</Text>
         </TouchableOpacity>
       </View>
@@ -254,7 +388,7 @@ export default function CompassScreen() {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={commerces}
+            data={filteredCommerces}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.businessListContent}
@@ -324,14 +458,37 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   mapFallback: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   mapFallbackText: { fontSize: 16, color: COLORS.darkGray },
-  floatingControls: {
+  searchPillContainer: {
     position: 'absolute',
     top: 60,
-    left: 20,
-    right: 20,
+    left: 16,
+    right: 16,
+    zIndex: 1001,
+  },
+  searchPill: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.black,
+    padding: 0,
+  },
+  topLeftControls: {
+    position: 'absolute',
+    top: 125,
+    left: 20,
     zIndex: 1000,
   },
   infoPill: {
@@ -368,8 +525,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 20,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
@@ -379,7 +536,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   togglePillText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.primary,
   },
@@ -539,5 +696,37 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: COLORS.white,
+  },
+  routeInfoContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    zIndex: 999,
+  },
+  routeInfoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    gap: 12,
+    borderWidth: 2,
+    borderColor: COLORS.blue,
+  },
+  routeInfoText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.black,
+    flex: 1,
+  },
+  closeRouteButton: {
+    padding: 2,
   },
 });

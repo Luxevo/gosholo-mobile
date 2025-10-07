@@ -109,7 +109,32 @@
   "online_only": "Online Only",
   "in_store_and_online": "In-Store & Online",
   "type": "Type",
-  "location": "Location"
+  "location": "Location",
+  "categories": "Categories",
+  "see_all": "See All",
+  "all": "All",
+  "fast_food": "Fast Food",
+  "italian": "Italian",
+  "asian": "Asian",
+  "music": "Music",
+  "sports": "Sports",
+  "art": "Art",
+  "filters": "Filters",
+  "near_me": "Near Me",
+  "highly_rated": "Highly Rated",
+  "open_now": "Open Now",
+  "this_week": "This Week",
+  "free": "Free",
+  "notifications": "Notifications",
+  "search_placeholder_offers": "Search restaurants, cuisines, or events...",
+  "search_placeholder_events": "Search concerts, exhibitions, or activities...",
+  "promo_heading": "Get up to 40% OFF!",
+  "promo_subtext": "Limited time deals at your favorite restaurants in Montréal",
+  "see_deals": "See Deals",
+  "get_directions_to": "Get directions to",
+  "cancel": "Cancel",
+  "yes": "Yes",
+  "search_placeholder_businesses": "Search businesses, categories..."
 }
 
 

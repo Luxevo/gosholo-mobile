@@ -155,24 +155,26 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
 
       {/* Content */}
       <View style={styles.body}>
-        <View style={styles.headerRow}>
-          <Text style={styles.businessName} numberOfLines={1}>
-            {event.commerces?.name || t('event')}
+        <View style={styles.contentSection}>
+          <View style={styles.headerRow}>
+            <Text style={styles.businessName} numberOfLines={1}>
+              {event.commerces?.name || t('event')}
+            </Text>
+            {event.commerces?.category && (
+              <View style={styles.categoryChip}>
+                <Text style={styles.categoryText}>{event.commerces.category}</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.eventTitle} numberOfLines={1}>
+            {event.title}
           </Text>
-          {event.commerces?.category && (
-            <View style={styles.categoryChip}>
-              <Text style={styles.categoryText}>{event.commerces.category}</Text>
-            </View>
-          )}
+
+          <Text style={styles.description} numberOfLines={2}>
+            {event.description}
+          </Text>
         </View>
-
-        <Text style={styles.eventTitle} numberOfLines={1}>
-          {event.title}
-        </Text>
-
-        <Text style={styles.description} numberOfLines={2}>
-          {event.description}
-        </Text>
 
         {/* Actions */}
         <View style={styles.actions}>
@@ -185,8 +187,8 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             <Text style={styles.primaryText}>{isEnded ? t('ended') : t('view_event')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare} accessibilityRole="button">
-            <Text style={styles.secondaryText}>{followOrShare}</Text>
+          <TouchableOpacity style={styles.shareBtn} onPress={handleShare} accessibilityRole="button">
+            <IconSymbol name="square.and.arrow.up" size={20} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -223,12 +225,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 0.5,
     borderColor: COLORS.line,
-    // softer, platform-friendly shadow
+    width: 356,
+    height: 480,
+    // Modern subtle shadow
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cardDisabled: { opacity: 0.6 },
   
@@ -246,7 +250,7 @@ const styles = StyleSheet.create({
   boostChip: {
     position: 'absolute',
     zIndex: 3,
-    top: SPACING.sm,
+    top: SPACING.lg,
     left: SPACING.sm,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     flexDirection: 'row',
@@ -259,7 +263,7 @@ const styles = StyleSheet.create({
   boostText: { fontSize: 10, fontWeight: '700', color: '#FFD700' },
 
   // media
-  media: { position: 'relative', height: 220, backgroundColor: COLORS.bgMuted },
+  media: { position: 'relative', height: 267, backgroundColor: COLORS.bgMuted },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#8B5CF6' },
@@ -307,7 +311,16 @@ const styles = StyleSheet.create({
   },
 
   // body
-  body: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.lg, gap: SPACING.sm },
+  body: {
+    height: 213,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.lg,
+    justifyContent: 'space-between',
+  },
+
+  contentSection: {
+    gap: SPACING.sm,
+  },
 
   headerRow: {
     flexDirection: 'row',
@@ -348,26 +361,27 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
 
-  actions: { flexDirection: 'row', gap: SPACING.sm },
+  actions: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'center' },
   primaryBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: RAD.pill,
     paddingHorizontal: SPACING.lg,
-    height: 36,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    flexGrow: 0,
+    flex: 1,
   },
   primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
-  primaryText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
+  primaryText: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
 
-  secondaryBtn: {
-    backgroundColor: COLORS.bgMuted,
+  shareBtn: {
+    width: 40,
+    height: 40,
     borderRadius: RAD.pill,
-    paddingHorizontal: SPACING.lg,
-    height: 36,
-    alignItems: 'center',
+    backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.line,
   },
-  secondaryText: { color: COLORS.primary, fontSize: 13, fontWeight: '700' },
 });

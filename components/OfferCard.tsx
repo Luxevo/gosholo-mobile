@@ -118,24 +118,26 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
 
       {/* Content */}
       <View style={styles.body}>
-        <View style={styles.headerRow}>
-          <Text style={styles.businessName} numberOfLines={1}>
-            {offer.commerces?.name || t('business')}
+        <View style={styles.contentSection}>
+          <View style={styles.headerRow}>
+            <Text style={styles.businessName} numberOfLines={1}>
+              {offer.commerces?.name || t('business')}
+            </Text>
+            {offer.commerces?.category && (
+              <View style={styles.categoryChip}>
+                <Text style={styles.categoryText}>{offer.commerces.category}</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.offerTitle} numberOfLines={1}>
+            {offer.title}
           </Text>
-          {offer.commerces?.category && (
-            <View style={styles.categoryChip}>
-              <Text style={styles.categoryText}>{offer.commerces.category}</Text>
-            </View>
-          )}
+
+          <Text style={styles.description} numberOfLines={2}>
+            {offer.description}
+          </Text>
         </View>
-
-        <Text style={styles.offerTitle} numberOfLines={1}>
-          {offer.title}
-        </Text>
-
-        <Text style={styles.description} numberOfLines={2}>
-          {offer.description}
-        </Text>
 
         {/* CTA */}
         <View style={styles.actions}>
@@ -145,8 +147,8 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryBtn} onPress={handleShare} accessibilityRole="button">
-            <Text style={styles.secondaryText}>{t('share')}</Text>
+          <TouchableOpacity style={styles.shareBtn} onPress={handleShare} accessibilityRole="button">
+            <IconSymbol name="square.and.arrow.up" size={20} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -166,11 +168,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 0.5,
     borderColor: COLORS.line,
+    width: 356,
+    height: 480,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   cardDisabled: { opacity: 0.6 },
   
@@ -184,7 +188,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  media: { position: 'relative', height: 220, backgroundColor: COLORS.bgMuted },
+  media: { position: 'relative', height: 267, backgroundColor: COLORS.bgMuted },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.teal },
@@ -192,7 +196,7 @@ const styles = StyleSheet.create({
 
   mediaTop: {
     position: 'absolute',
-    top: SPACING.sm, left: SPACING.sm, right: SPACING.sm,
+    top: SPACING.lg, left: SPACING.sm, right: SPACING.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -250,7 +254,17 @@ const styles = StyleSheet.create({
   timeText: { fontSize: 11, fontWeight: '700', color: COLORS.white },
   timeTextExpired: { color: COLORS.white },
 
-  body: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.lg, gap: SPACING.sm, backgroundColor: COLORS.primary },
+  body: {
+    height: 213,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.lg,
+    backgroundColor: COLORS.white,
+    justifyContent: 'space-between',
+  },
+
+  contentSection: {
+    gap: SPACING.sm,
+  },
 
   headerRow: {
     flexDirection: 'row',
@@ -261,30 +275,32 @@ const styles = StyleSheet.create({
   businessName: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.white,
+    color: COLORS.ink,
     flexShrink: 1,
   },
   categoryChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: COLORS.bgMuted,
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: RAD.md,
+    borderWidth: 1,
+    borderColor: COLORS.line,
   },
   categoryText: {
     fontSize: 10,
     fontWeight: '600',
-    color: COLORS.white,
+    color: COLORS.ink,
   },
 
   offerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.white,
+    color: COLORS.ink,
     marginBottom: SPACING.xs,
   },
   description: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
+    color: COLORS.inkDim,
     lineHeight: 18,
     marginBottom: SPACING.xs,
   },
@@ -292,30 +308,30 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: SPACING.sm,
+    alignItems: 'center',
   },
 
   primaryBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.primary,
     borderRadius: RAD.pill,
     paddingHorizontal: SPACING.lg,
-    height: 36,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
     flex: 1,
   },
   primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
-  primaryText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+  primaryText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
   primaryTextDisabled: { color: COLORS.inkDim },
 
-  secondaryBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  shareBtn: {
+    width: 40,
+    height: 40,
     borderRadius: RAD.pill,
-    paddingHorizontal: SPACING.lg,
-    height: 36,
+    backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: COLORS.line,
   },
-  secondaryText: { fontSize: 13, fontWeight: '600', color: COLORS.white },
 });
