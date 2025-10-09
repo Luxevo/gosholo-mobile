@@ -1,4 +1,5 @@
 import BusinessDetailModal from '@/components/BusinessDetailModal';
+import { LOGO_BASE64 } from '@/components/LogoBase64';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import * as Location from 'expo-location';
@@ -7,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   FlatList,
+  Image,
   StatusBar,
   StyleSheet,
   Text,
@@ -22,6 +24,7 @@ let Mapbox: any,
   LocationPuck: any,
   FillExtrusionLayer: any,
   PointAnnotation: any,
+  MarkerView: any,
   RasterDemSource: any,
   Terrain: any,
   SkyLayer: any,
@@ -36,6 +39,7 @@ try {
   LocationPuck = MapboxMaps.LocationPuck;
   FillExtrusionLayer = MapboxMaps.FillExtrusionLayer;
   PointAnnotation = MapboxMaps.PointAnnotation;
+  MarkerView = MapboxMaps.MarkerView;
   RasterDemSource = MapboxMaps.RasterDemSource;
   Terrain = MapboxMaps.Terrain;
   SkyLayer = MapboxMaps.SkyLayer;
@@ -306,25 +310,38 @@ export default function CompassScreen() {
               </ShapeSource>
             )}
 
-            {/* Markers with name always visible */}
-            {PointAnnotation &&
+            {/* Markers with logo */}
+            {MarkerView &&
               filteredCommerces.map((commerce: Commerce) => {
                 if (!commerce.latitude || !commerce.longitude) return null;
+                const isBoosted = commerce.boosted;
                 return (
-                  <PointAnnotation
+                  <MarkerView
                     key={commerce.id}
                     id={commerce.id}
                     coordinate={[commerce.longitude, commerce.latitude]}
-                    onSelected={() => handleBusinessPress(commerce)}
                   >
-                    <View collapsable={false} style={[styles.markerPill,commerce.boosted&& {backgroundColor:"#FF6233"}]
-                    }>
-                      <Text style={[styles.markerTextOnly ,commerce.boosted && {fontSize:20,color:"white"}]}>
-                        {commerce.name}
-                      </Text>
-                    </View>
-
-                  </PointAnnotation>
+                    <TouchableOpacity
+                      onPress={() => handleBusinessPress(commerce)}
+                      activeOpacity={0.8}
+                      style={styles.markerContainer}
+                    >
+                      {isBoosted && <View style={styles.boostGlow} />}
+                      <View style={[
+                        styles.markerPin,
+                        isBoosted && styles.markerPinBoosted
+                      ]}>
+                        <Image
+                          source={{ uri: LOGO_BASE64 }}
+                          style={[
+                            styles.markerLogo,
+                            isBoosted && styles.markerLogoBoosted
+                          ]}
+                          resizeMode="contain"
+                        />
+                      </View>
+                    </TouchableOpacity>
+                  </MarkerView>
                 );
               })}
           </MapView>
@@ -541,37 +558,56 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   markerContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.15)',
+    width: 70,
+    height: 70,
     alignItems: 'center',
     justifyContent: 'center',
-    maxWidth: 140,
-    minWidth: 60,
-    shadowColor: '#000000',
+  },
+  markerPin: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: '#F0F0F0',
+  },
+  markerPinBoosted: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+  markerLogo: {
+    width: 30,
+    height: 30,
+  },
+  markerLogoBoosted: {
+    width: 42,
+    height: 42,
   },
   markerText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.black,
-    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '900',
+    color: 'rgb(1,111,115)',
   },
-  markerPill: {
-    backgroundColor: '#FFFFFF',
-    padding: 10,
-    borderRadius: 16,
+  markerTextBoosted: {
+    fontSize: 34,
   },
-  markerTextOnly: {
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
+  boostGlow: {
+    position: 'absolute',
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: 'rgb(178,253,157)',
+    opacity: 0.35,
+    top: 2,
+    left: 2,
   },
   businessListContainer: {
     position: 'absolute',

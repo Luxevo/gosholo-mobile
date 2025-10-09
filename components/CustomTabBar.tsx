@@ -4,8 +4,10 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useSafeAreaPadding } from '@/hooks/useSafeAreaPadding';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const ACTIVE_TAB_COLOR = 'rgb(1,111,115)';
 
 interface TabBarProps {
   state: any;
@@ -98,13 +100,13 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
                 <IconSymbol
                   name={getIconName(route.name, isFocused)}
                   size={isFocused ? 26 : 22}
-                  color={isFocused ? '#FF6B35' : colors.tabIconDefault}
+                  color={isFocused ? ACTIVE_TAB_COLOR : colors.tabIconDefault}
                 />
                 <Text
                   style={[
                     styles.tabLabel,
                     {
-                      color: isFocused ? '#FF6B35' : colors.tabIconDefault,
+                      color: isFocused ? ACTIVE_TAB_COLOR : colors.tabIconDefault,
                       fontWeight: isFocused ? '600' : '400',
                     },
                   ]}

@@ -115,6 +115,11 @@ const styles = StyleSheet.create({
   logoSection: {
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
+    ...Platform.select({
+      android: {
+        paddingTop: SPACING.xl,
+      },
+    }),
   },
   profileButton: {
     width: 32,
@@ -124,6 +129,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.darkGray,
     textAlign: 'center',
+    ...Platform.select({
+      android: {
+        marginBottom: SPACING.md,
+      },
+    }),
   },
   logo: {
     width: 280,
@@ -161,8 +171,17 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     flex: 1,
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
+    ...Platform.select({
+      ios: {
+        paddingHorizontal: SPACING.xl,
+        paddingTop: SPACING.lg,
+      },
+      android: {
+        paddingHorizontal: SPACING.xl,
+        paddingTop: SPACING.lg,
+      },
+    }),
+
   },
   card: {
     borderRadius: 16,

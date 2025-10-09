@@ -2,7 +2,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { OfferWithCommerce } from '@/hooks/useOffers';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImageBackground, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const COLORS = {
   primary: '#FF6233',
@@ -11,7 +11,7 @@ const COLORS = {
   bg: '#FFFFFF',
   bgMuted: '#F6F7F9',
   line: 'rgba(0,0,0,0.08)',
-  teal: '#016167',
+  teal: 'rgb(1,111,115)',
   success: '#B2FD9D',
   white: '#FFFFFF',
   overlay: 'rgba(0,0,0,0.55)',
@@ -148,7 +148,7 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.shareBtn} onPress={handleShare} accessibilityRole="button">
-            <IconSymbol name="square.and.arrow.up" size={20} color={COLORS.primary} />
+            <IconSymbol name="paperplane.fill" size={18} color={COLORS.teal} />
           </TouchableOpacity>
         </View>
       </View>
@@ -163,18 +163,20 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.bg,
     borderRadius: RAD.lg,
-    marginHorizontal: SPACING.lg,
-    marginVertical: SPACING.sm,
+    marginHorizontal: Platform.OS === 'android' ? 0 : SPACING.lg,
+    marginTop: SPACING.sm,
+    marginBottom: Platform.OS === 'android' ? 4 : SPACING.sm,
     overflow: 'hidden',
     borderWidth: 0.5,
     borderColor: COLORS.line,
-    width: 356,
-    height: 480,
+    width: Platform.OS === 'android' ? 340 : 356,
+    height: Platform.OS === 'android' ? 460 : 480,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    ...(Platform.OS === 'android' && { alignSelf: 'center' }),
   },
   cardDisabled: { opacity: 0.6 },
   
@@ -188,7 +190,11 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  media: { position: 'relative', height: 267, backgroundColor: COLORS.bgMuted },
+  media: { 
+    position: 'relative', 
+    height: Platform.OS === 'android' ? 250 : 267, 
+    backgroundColor: COLORS.bgMuted 
+  },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.teal },
@@ -255,7 +261,7 @@ const styles = StyleSheet.create({
   timeTextExpired: { color: COLORS.white },
 
   body: {
-    height: 213,
+    height: Platform.OS === 'android' ? 210 : 213,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.lg,
     backgroundColor: COLORS.white,
@@ -331,7 +337,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderWidth: 2,
+    borderColor: COLORS.teal,
   },
 });

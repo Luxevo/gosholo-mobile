@@ -18,7 +18,7 @@ const COLORS = {
   bgMuted: '#F9FAFB',
   line: 'rgba(0,0,0,0.06)',
   overlay: 'rgba(17,24,39,0.75)',
-  teal: '#016167',
+  teal: 'rgb(1,111,115)',
   success: '#B2FD9D',
   lightBlue: '#5BC4DB',
 };
@@ -122,10 +122,10 @@ export default function OfferDetailModal({
             {/* Floating header buttons */}
             <SafeAreaView edges={['top']} style={styles.floatingHeader}>
               <TouchableOpacity style={styles.iconButton} onPress={onClose} activeOpacity={0.7}>
-                <IconSymbol name="xmark" size={18} color={COLORS.ink} />
+                <Text style={styles.closeText}>×</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton} onPress={onFavoritePress} activeOpacity={0.7}>
-                <IconSymbol name="heart" size={18} color={COLORS.primary} />
+                <IconSymbol name="heart" size={20} color={COLORS.teal} />
               </TouchableOpacity>
             </SafeAreaView>
 
@@ -286,17 +286,26 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.teal,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 5,
+  },
+  closeText: {
+    fontSize: 28,
+    fontWeight: '300',
+    color: COLORS.teal,
+    lineHeight: 28,
+    marginTop: -2,
   },
 
   heroBoostBadge: {
@@ -359,17 +368,17 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   categoryPill: {
-    backgroundColor: 'rgba(91, 196, 219, 0.15)',
+    backgroundColor: 'rgba(1, 111, 115, 0.15)',
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(91, 196, 219, 0.3)',
+    borderColor: 'rgba(1, 111, 115, 0.3)',
   },
   categoryText: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.lightBlue,
+    color: COLORS.teal,
     letterSpacing: 0.3,
   },
 

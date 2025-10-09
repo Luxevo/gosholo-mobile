@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { G, Path, Defs, Filter, FeFlood, FeColorMatrix, FeOffset, FeGaussianBlur, FeBlend } from 'react-native-svg';
+import Svg, { Defs, FeBlend, FeColorMatrix, FeFlood, FeGaussianBlur, FeOffset, Filter, G, Path } from 'react-native-svg';
 
 interface ButtonSvgProps {
   width?: number;

@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 
 const COLORS = {
   primary: '#FF6233',
+  teal: 'rgb(1,111,115)',
   green: '#10B981',
   white: '#FFFFFF',
   gray: '#F5F5F5',
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    color: COLORS.primary,
+    color: COLORS.teal,
     fontWeight: '600',
   },
   scrollContent: {
@@ -134,8 +135,8 @@ const styles = StyleSheet.create({
     // All categories now use pill shape by default
   },
   selectedCategoryChip: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.teal,
+    borderColor: COLORS.teal,
   },
   categoryIcon: {
     // Icon styling if needed

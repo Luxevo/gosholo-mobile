@@ -9,6 +9,8 @@ const COLORS = {
   darkGray: '#666666',
   green: '#10B981',
   greenBg: '#ECFDF5',
+  teal: 'rgb(1,111,115)',
+  lightGreen: 'rgb(178,253,157)',
 };
 
 interface AppHeaderProps {
@@ -39,7 +41,7 @@ export function AppHeader({
           accessibilityRole="button"
           accessibilityLabel={`Location: ${location}`}
         >
-          <IconSymbol name="mappin" size={14} color={COLORS.green} />
+          <IconSymbol name="mappin" size={14} color={COLORS.teal} />
           <Text style={styles.locationText}>{location}</Text>
         </TouchableOpacity>
       </View>
@@ -89,7 +91,7 @@ const styles = StyleSheet.create({
   locationChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.greenBg,
+    backgroundColor: COLORS.lightGreen,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 13,
     fontWeight: '500',
-    color: COLORS.green,
+    color: COLORS.teal,
   },
   rightSection: {
     flexDirection: 'row',

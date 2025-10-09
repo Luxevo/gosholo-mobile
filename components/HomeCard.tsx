@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 // Card data type
 export interface HomeCardData {
@@ -44,9 +44,9 @@ export default function HomeCard({ card, onPress }: { card: HomeCardData, onPres
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: Platform.OS === 'android' ? 14 : 16,
     overflow: 'hidden',
-    height: 160,
+    height: Platform.OS === 'android' ? 140 : 160,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -67,31 +67,31 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.58)',
     borderRadius: 16,
-    padding: 16,
+    padding: Platform.OS === 'android' ? 14 : 16,
     justifyContent: 'center',
   },
   cardContent: {
     alignItems: 'center',
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: Platform.OS === 'android' ? 19 : 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 4,
     textAlign: 'center',
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: Platform.OS === 'android' ? 14 : 14,
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: Platform.OS === 'android' ? 14 : 16,
   },
   cardButton: {
     backgroundColor: '#FF6233',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: Platform.OS === 'android' ? 15 : 16,
+    paddingVertical: Platform.OS === 'android' ? 7 : 8,
     borderRadius: 20,
   },
   cardButtonText: {

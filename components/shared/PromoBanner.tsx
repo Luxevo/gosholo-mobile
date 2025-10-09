@@ -7,6 +7,7 @@ const COLORS = {
   primary: '#FF6233',
   white: '#FFFFFF',
   lightGreen: '#B2FD9D',
+  teal: 'rgb(1,111,115)',
 };
 
 interface PromoBannerProps {
@@ -46,7 +47,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   banner: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.teal,
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   button: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.lightGreen,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: COLORS.teal,
   },
   iconContainer: {
     position: 'absolute',

@@ -1,3 +1,4 @@
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -5,10 +6,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const COLORS = {
   primary: '#FF6233',
@@ -17,7 +17,7 @@ const COLORS = {
   gray: '#F5F5F5',
   darkGray: '#666666',
   lightGray: '#9CA3AF',
-  teal: '#016167',
+  teal: 'rgb(1,111,115)',
 };
 
 const SPACING = {
@@ -33,7 +33,7 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -111,11 +111,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flexGrow: 1,
     padding: SPACING.xl,
     paddingTop: SPACING.xxl,
-    paddingBottom: SPACING.xxl * 2,
-    justifyContent: 'center',
+    paddingBottom: SPACING.sm,
     alignItems: 'center',
   },
   iconContainer: {

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,7 +16,7 @@ const COLORS = {
   gray: '#F5F5F5',
   darkGray: '#666666',
   lightGray: '#9CA3AF',
-  teal: '#016167',
+  teal: 'rgb(1,111,115)',
 };
 
 const SPACING = {
@@ -36,8 +37,8 @@ export default function LanguageSwitcher({ style }: LanguageSwitcherProps) {
   const currentLanguage = i18n.language;
 
   const languages = [
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'en', name: 'English', flag: require('../assets/images/flags/canada.png') },
+    { code: 'fr', name: 'Français', flag: require('../assets/images/flags/quebec.png') },
   ];
 
   const handleLanguageChange = (languageCode: string) => {
@@ -48,7 +49,7 @@ export default function LanguageSwitcher({ style }: LanguageSwitcherProps) {
     <View style={[styles.container, style]}>
       <View style={styles.titleContainer}>
         <View style={styles.titleIcon}>
-          <Ionicons name="language" size={20} color={COLORS.primary} />
+          <Ionicons name="language" size={20} color={COLORS.teal} />
         </View>
         <Text style={styles.titleText}>{t('language')}</Text>
       </View>
@@ -64,7 +65,7 @@ export default function LanguageSwitcher({ style }: LanguageSwitcherProps) {
             onPress={() => handleLanguageChange(lang.code)}
             activeOpacity={0.7}
           >
-            <Text style={styles.flag}>{lang.flag}</Text>
+            <Image source={lang.flag} style={styles.flag} />
             <Text
               style={[
                 styles.languageName,
@@ -74,7 +75,7 @@ export default function LanguageSwitcher({ style }: LanguageSwitcherProps) {
               {lang.name}
             </Text>
             {currentLanguage === lang.code && (
-              <Ionicons name="checkmark" size={20} color={COLORS.primary} />
+              <Ionicons name="checkmark" size={20} color={COLORS.teal} />
             )}
           </TouchableOpacity>
         ))}
@@ -124,10 +125,11 @@ const styles = StyleSheet.create({
   },
   languageOptionActive: {
     backgroundColor: COLORS.white,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.teal,
   },
   flag: {
-    fontSize: 24,
+    width: 26,
+    height: 18,
     marginRight: SPACING.lg,
   },
   languageName: {
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
   },
   languageNameActive: {
-    color: COLORS.primary,
+    color: COLORS.teal,
     fontWeight: '600',
   },
 });

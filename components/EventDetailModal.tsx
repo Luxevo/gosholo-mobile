@@ -18,7 +18,7 @@ const COLORS = {
   bgMuted: '#F9FAFB',
   line: 'rgba(0,0,0,0.06)',
   overlay: 'rgba(17,24,39,0.75)',
-  teal: '#016167',
+  teal: 'rgb(1,111,115)',
   success: '#B2FD9D',
   lightBlue: '#5BC4DB',
 };
@@ -67,12 +67,12 @@ export default function EventDetailModal({
     const end = event.end_date ? new Date(event.end_date) : start;
 
     if (now > end) return { text: t('ended'), color: COLORS.inkLight };
-    if (now >= start && now <= end) return { text: t('happening_now'), color: COLORS.success };
+    if (now >= start && now <= end) return { text: t('happening_now'), color: COLORS.teal };
 
     const daysUntil = Math.ceil((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     if (daysUntil === 0) return { text: t('today_caps'), color: COLORS.primary };
     if (daysUntil === 1) return { text: t('tomorrow_caps'), color: COLORS.primary };
-    if (daysUntil <= 7) return { text: t('in_days', { days: daysUntil }), color: COLORS.lightBlue };
+    if (daysUntil <= 7) return { text: t('in_days', { days: daysUntil }), color: COLORS.teal };
 
     return null;
   };
@@ -117,10 +117,10 @@ export default function EventDetailModal({
             {/* Floating header buttons */}
             <SafeAreaView edges={['top']} style={styles.floatingHeader}>
               <TouchableOpacity style={styles.iconButton} onPress={onClose} activeOpacity={0.7}>
-                <IconSymbol name="xmark" size={18} color={COLORS.ink} />
+                <Text style={styles.closeText}>×</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton} onPress={onFavoritePress} activeOpacity={0.7}>
-                <IconSymbol name="heart" size={18} color={COLORS.primary} />
+                <IconSymbol name="heart" size={20} color={COLORS.teal} />
               </TouchableOpacity>
             </SafeAreaView>
 
@@ -147,7 +147,7 @@ export default function EventDetailModal({
                 onPress={() => setBusinessModalVisible(true)}
                 activeOpacity={0.7}
               >
-                <IconSymbol name="building.2.fill" size={16} color={COLORS.lightBlue} />
+                <IconSymbol name="building.2.fill" size={16} color={COLORS.teal} />
                 <Text style={styles.businessName} numberOfLines={1}>
                   {event.commerces?.name || t('event')}
                 </Text>
@@ -192,7 +192,7 @@ export default function EventDetailModal({
             {(event.uses_commerce_location ? event.commerces?.address : event.custom_location) && (
               <View style={styles.locationCard}>
                 <View style={styles.locationHeader}>
-                  <IconSymbol name="mappin.circle.fill" size={20} color={COLORS.lightBlue} />
+                  <IconSymbol name="mappin.circle.fill" size={20} color={COLORS.teal} />
                   <Text style={styles.locationLabel}>{t('location')}</Text>
                 </View>
                 <Text style={styles.locationText}>
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   heroContainer: {
     position: 'relative',
     height: 240,
-    backgroundColor: COLORS.lightBlue,
+    backgroundColor: COLORS.teal,
   },
   heroImage: {
     width: '100%',
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   heroPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.lightBlue,
+    backgroundColor: COLORS.teal,
   },
   heroGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -327,17 +327,26 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.teal,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 5,
+  },
+  closeText: {
+    fontSize: 28,
+    fontWeight: '300',
+    color: COLORS.teal,
+    lineHeight: 28,
+    marginTop: -2,
   },
 
   heroBoostBadge: {
@@ -394,7 +403,7 @@ const styles = StyleSheet.create({
   businessName: {
     fontSize: 14,
     fontWeight: '600',
-    color: COLORS.lightBlue,
+    color: COLORS.teal,
     flexShrink: 1,
   },
   categoryPill: {

@@ -126,9 +126,10 @@ export default function OffersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />
         }
@@ -176,6 +177,7 @@ export default function OffersScreen() {
             onPress={() => handleOfferPress(offer)}
             onFavoritePress={() => console.log('Favorite pressed:', offer.id)}
           />
+          
         ))}
       </ScrollView>
 
@@ -196,6 +198,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 4,
   },
 
   /* Loading & Error */
