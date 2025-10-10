@@ -53,7 +53,15 @@ export default function BusinessDetailModal({
   const { t } = useTranslation();
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? COLORS.dark : COLORS.light;
-  if (!business) return null;
+  
+  console.log('📱 Modal rendering:', { visible, hasBusiness: !!business, name: business?.name });
+  
+  if (!business) {
+    console.log('❌ Modal: No business provided');
+    return null;
+  }
+  
+  console.log('✅ Modal: Rendering with business:', business.name);
 
   const openUrl = (url?: string | null) => {
     if (!url) return;

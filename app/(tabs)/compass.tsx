@@ -78,7 +78,6 @@ export default function CompassScreen() {
   const [routeCoordinates, setRouteCoordinates] = useState<LngLat[] | null>(null);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDuration, setRouteDuration] = useState<number | null>(null);
-  const [isAlertShowing, setIsAlertShowing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const cameraRef = useRef<any>(null);
@@ -186,35 +185,11 @@ export default function CompassScreen() {
   const toggleMapStyle = () => setIs3D((v) => !v);
 
   const handleBusinessPress = (commerce: Commerce) => {
-    // Prevent multiple alerts
-    if (isAlertShowing) return;
-
-    // Ask if user wants navigation
-    if (commerce.latitude && commerce.longitude) {
-      setIsAlertShowing(true);
-      Alert.alert(
-        t('directions'),
-        `${t('get_directions_to')} ${commerce.name}?`,
-        [
-          {
-            text: t('cancel'),
-            style: 'cancel',
-            onPress: () => setIsAlertShowing(false),
-          },
-          {
-            text: t('yes'),
-            onPress: () => {
-              if (commerce.longitude && commerce.latitude) {
-                const destination: LngLat = [commerce.longitude, commerce.latitude];
-                fetchDirections(destination);
-              }
-              setIsAlertShowing(false);
-            },
-          },
-        ],
-        { onDismiss: () => setIsAlertShowing(false) }
-      );
-    }
+    // Open business detail modal
+    console.log('🔥 PRESS DETECTED! Commerce:', commerce.name);
+    setSelectedBusiness(commerce);
+    setShowBusinessModal(true);
+    console.log('🔥 States updated - should show modal');
   };
 
   const handleCloseBusinessModal = () => {
@@ -320,17 +295,25 @@ export default function CompassScreen() {
                     key={commerce.id}
                     id={commerce.id}
                     coordinate={[commerce.longitude, commerce.latitude]}
+                    allowOverlap={true}
+                    anchor={{ x: 0.5, y: 0.5 }}
                   >
                     <TouchableOpacity
-                      onPress={() => handleBusinessPress(commerce)}
-                      activeOpacity={0.8}
+                      onPress={() => {
+                        Alert.alert('TEST', `Clic détecté sur: ${commerce.name}`);
+                        handleBusinessPress(commerce);
+                      }}
+                      activeOpacity={0.7}
                       style={styles.markerContainer}
                     >
-                      {isBoosted && <View style={styles.boostGlow} />}
-                      <View style={[
-                        styles.markerPin,
-                        isBoosted && styles.markerPinBoosted
-                      ]}>
+                      {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
+                      <View 
+                        style={[
+                          styles.markerPin,
+                          isBoosted && styles.markerPinBoosted
+                        ]}
+                        pointerEvents="none"
+                      >
                         <Image
                           source={{ uri: LOGO_BASE64 }}
                           style={[
