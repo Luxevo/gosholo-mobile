@@ -3,7 +3,7 @@ import { LOGO_BASE64 } from '@/components/LogoBase64';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import * as Location from 'expo-location';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -200,6 +200,8 @@ export default function CompassScreen() {
     setRouteCoordinates(null);
     setRouteDistance(null);
     setRouteDuration(null);
+    // Clear URL params to prevent useEffect from re-triggering
+    router.setParams({ destination: undefined, type: undefined });
   };
 
   const toggleMapStyle = () => setIs3D((v) => !v);
