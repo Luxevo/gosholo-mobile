@@ -7,6 +7,7 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents } from '@/hooks/useEvents';
 import { Event } from '@/lib/supabase';
+import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -185,6 +186,28 @@ export default function EventsScreen() {
         event={selectedEvent}
         onClose={handleCloseModal}
         onFavoritePress={handleFavoritePress}
+        onNavigateToMap={(address, coordinates) => {
+          // Naviguer vers la carte avec l'itinéraire
+          if (coordinates) {
+            router.push({
+              pathname: '/compass',
+              params: { 
+                destination: `${coordinates[0]},${coordinates[1]}`,
+                type: 'coordinates'
+              }
+            });
+          } else if (address) {
+            router.push({
+              pathname: '/compass',
+              params: { 
+                destination: address,
+                type: 'address'
+              }
+            });
+          } else {
+            router.push('/compass');
+          }
+        }}
       />
     </SafeAreaView>
   );

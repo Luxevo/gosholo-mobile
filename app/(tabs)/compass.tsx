@@ -3,6 +3,7 @@ import { LOGO_BASE64 } from '@/components/LogoBase64';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import * as Location from 'expo-location';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -81,6 +82,7 @@ export default function CompassScreen() {
 
   const cameraRef = useRef<any>(null);
   const { t } = useTranslation();
+  const params = useLocalSearchParams();
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
 
@@ -99,6 +101,25 @@ export default function CompassScreen() {
   useEffect(() => {
     requestLocationPermission();
   }, []);
+
+  // Handle navigation from offers/events
+  useEffect(() => {
+    if (params.destination && userLocation) {
+      const destination = params.destination as string;
+      const type = params.type as string;
+      
+      if (type === 'coordinates') {
+        // Parse coordinates: "longitude,latitude"
+        const [lng, lat] = destination.split(',').map(Number);
+        if (!isNaN(lng) && !isNaN(lat)) {
+          fetchDirections([lng, lat]);
+        }
+      } else if (type === 'address') {
+        // TODO: Implement geocoding for address
+        console.log('Geocoding needed for address:', destination);
+      }
+    }
+  }, [params, userLocation]);
 
   const requestLocationPermission = async () => {
     try {
@@ -191,7 +212,6 @@ export default function CompassScreen() {
   const handleCloseBusinessModal = () => {
     setShowBusinessModal(false);
     setSelectedBusiness(null);
-    clearRoute();
   };
 
   const toggleBusinessList = () => {
@@ -309,10 +329,7 @@ export default function CompassScreen() {
                       >
                         <Image
                           source={{ uri: LOGO_BASE64 }}
-                          style={[
-                            styles.markerLogo,
-                            isBoosted && styles.markerLogoBoosted
-                          ]}
+                          style={styles.markerLogo}
                           resizeMode="contain"
                         />
                       </View>
@@ -539,10 +556,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   markerContainer: {
-    width: 70,
-    height: 70,
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   markerPin: {
     width: 40,
@@ -563,6 +581,10 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   markerLogo: {
     width: 30,
@@ -582,13 +604,11 @@ const styles = StyleSheet.create({
   },
   boostGlow: {
     position: 'absolute',
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: 'rgb(178,253,157)',
-    opacity: 0.35,
-    top: 2,
-    left: 2,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgb(70,130,195)',
+    opacity: 0.6,
   },
   businessListContainer: {
     position: 'absolute',

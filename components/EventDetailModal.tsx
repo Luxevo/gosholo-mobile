@@ -38,13 +38,15 @@ interface EventDetailModalProps {
   event: Event | null;
   onClose: () => void;
   onFavoritePress?: () => void;
+  onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
 }
 
 export default function EventDetailModal({
   visible,
   event,
   onClose,
-  onFavoritePress
+  onFavoritePress,
+  onNavigateToMap
 }: EventDetailModalProps) {
   const { t } = useTranslation();
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
@@ -80,6 +82,31 @@ export default function EventDetailModal({
   const handleSocialLink = (url?: string) => {
     if (url) {
       Linking.openURL(url);
+    }
+  };
+
+  const handleLocationPress = () => {
+    if (!onNavigateToMap || !event) return;
+    
+    let coordinates: [number, number] | undefined;
+    let address: string | undefined;
+    
+    // 1. Priorité aux coordonnées directes de l'événement
+    if (event.latitude && event.longitude) {
+      coordinates = [event.longitude, event.latitude];
+    }
+    // 2. Sinon, coordonnées du commerce
+    else if (event.uses_commerce_location && event.commerces?.longitude && event.commerces?.latitude) {
+      coordinates = [event.commerces.longitude, event.commerces.latitude];
+    }
+    // 3. Sinon, adresse personnalisée (géocodage)
+    else if (event.custom_location) {
+      address = event.custom_location;
+    }
+    
+    if (coordinates || address) {
+      onClose(); // Fermer le modal
+      onNavigateToMap(address || '', coordinates); // Naviguer vers la carte
     }
   };
 
@@ -190,15 +217,16 @@ export default function EventDetailModal({
 
             {/* Location Card */}
             {(event.uses_commerce_location ? event.commerces?.address : event.custom_location) && (
-              <View style={styles.locationCard}>
+              <TouchableOpacity style={styles.locationCard} onPress={handleLocationPress} activeOpacity={0.7}>
                 <View style={styles.locationHeader}>
                   <IconSymbol name="mappin.circle.fill" size={20} color={COLORS.teal} />
                   <Text style={styles.locationLabel}>{t('location')}</Text>
+                  <IconSymbol name="chevron.right" size={16} color={COLORS.teal} style={styles.locationChevron} />
                 </View>
                 <Text style={styles.locationText}>
                   {event.uses_commerce_location ? event.commerces?.address : event.custom_location}
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
 
             {/* Validity Period */}
@@ -487,6 +515,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.inkDim,
     lineHeight: 22,
+  },
+  locationChevron: {
+    marginLeft: 'auto',
   },
 
   // Validity Card

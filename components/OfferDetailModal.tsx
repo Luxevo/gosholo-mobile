@@ -38,13 +38,15 @@ interface OfferDetailModalProps {
   offer: Offer | null;
   onClose: () => void;
   onFavoritePress?: () => void;
+  onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
 }
 
 export default function OfferDetailModal({
   visible,
   offer,
   onClose,
-  onFavoritePress
+  onFavoritePress,
+  onNavigateToMap
 }: OfferDetailModalProps) {
   const { t } = useTranslation();
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
@@ -85,6 +87,31 @@ export default function OfferDetailModal({
       case 'online': return t('online_only');
       case 'both': return t('in_store_and_online');
       default: return type;
+    }
+  };
+
+  const handleLocationPress = () => {
+    if (!onNavigateToMap || !offer) return;
+    
+    let coordinates: [number, number] | undefined;
+    let address: string | undefined;
+    
+    // 1. Priorité aux coordonnées directes de l'offre
+    if (offer.latitude && offer.longitude) {
+      coordinates = [offer.longitude, offer.latitude];
+    }
+    // 2. Sinon, coordonnées du commerce
+    else if (offer.uses_commerce_location && offer.commerces?.longitude && offer.commerces?.latitude) {
+      coordinates = [offer.commerces.longitude, offer.commerces.latitude];
+    }
+    // 3. Sinon, adresse personnalisée (géocodage)
+    else if (offer.custom_location) {
+      address = offer.custom_location;
+    }
+    
+    if (coordinates || address) {
+      onClose(); // Fermer le modal
+      onNavigateToMap(address || '', coordinates); // Naviguer vers la carte
     }
   };
 
@@ -191,15 +218,16 @@ export default function OfferDetailModal({
 
             {/* Location Card */}
             {(offer.uses_commerce_location ? offer.commerces?.address : offer.custom_location) && (
-              <View style={styles.locationCard}>
+              <TouchableOpacity style={styles.locationCard} onPress={handleLocationPress} activeOpacity={0.7}>
                 <View style={styles.locationHeader}>
                   <IconSymbol name="mappin.circle.fill" size={20} color={COLORS.teal} />
                   <Text style={styles.locationLabel}>{t('location')}</Text>
+                  <IconSymbol name="chevron.right" size={16} color={COLORS.teal} style={styles.locationChevron} />
                 </View>
                 <Text style={styles.locationText}>
                   {offer.uses_commerce_location ? offer.commerces?.address : offer.custom_location}
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
 
             {/* Validity Period */}
@@ -452,6 +480,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.inkDim,
     lineHeight: 22,
+  },
+  locationChevron: {
+    marginLeft: 'auto',
   },
 
   // Validity Card

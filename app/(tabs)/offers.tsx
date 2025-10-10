@@ -8,16 +8,17 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useOffers } from '@/hooks/useOffers';
 import { Offer } from '@/lib/supabase';
+import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -186,6 +187,28 @@ export default function OffersScreen() {
         offer={selectedOffer}
         onClose={handleCloseModal}
         onFavoritePress={handleFavoritePress}
+        onNavigateToMap={(address, coordinates) => {
+          // Naviguer vers la carte avec l'itinéraire
+          if (coordinates) {
+            router.push({
+              pathname: '/compass',
+              params: { 
+                destination: `${coordinates[0]},${coordinates[1]}`,
+                type: 'coordinates'
+              }
+            });
+          } else if (address) {
+            router.push({
+              pathname: '/compass',
+              params: { 
+                destination: address,
+                type: 'address'
+              }
+            });
+          } else {
+            router.push('/compass');
+          }
+        }}
       />
     </SafeAreaView>
   );
