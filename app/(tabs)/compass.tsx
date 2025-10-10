@@ -6,7 +6,6 @@ import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
   FlatList,
   Image,
   StatusBar,
@@ -185,11 +184,8 @@ export default function CompassScreen() {
   const toggleMapStyle = () => setIs3D((v) => !v);
 
   const handleBusinessPress = (commerce: Commerce) => {
-    // Open business detail modal
-    console.log('🔥 PRESS DETECTED! Commerce:', commerce.name);
     setSelectedBusiness(commerce);
     setShowBusinessModal(true);
-    console.log('🔥 States updated - should show modal');
   };
 
   const handleCloseBusinessModal = () => {
@@ -299,10 +295,7 @@ export default function CompassScreen() {
                     anchor={{ x: 0.5, y: 0.5 }}
                   >
                     <TouchableOpacity
-                      onPress={() => {
-                        Alert.alert('TEST', `Clic détecté sur: ${commerce.name}`);
-                        handleBusinessPress(commerce);
-                      }}
+                      onPress={() => handleBusinessPress(commerce)}
                       activeOpacity={0.7}
                       style={styles.markerContainer}
                     >
@@ -447,6 +440,11 @@ export default function CompassScreen() {
         visible={showBusinessModal}
         business={selectedBusiness}
         onClose={handleCloseBusinessModal}
+        onGetDirections={(business) => {
+          if (business.latitude && business.longitude) {
+            fetchDirections([business.longitude, business.latitude]);
+          }
+        }}
       />
     </View>
   );

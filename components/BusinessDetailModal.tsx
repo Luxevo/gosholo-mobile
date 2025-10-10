@@ -43,25 +43,22 @@ interface BusinessDetailModalProps {
   visible: boolean;
   business: Commerce | null;
   onClose: () => void;
+  onGetDirections?: (business: Commerce) => void;
 }
 
 export default function BusinessDetailModal({
   visible,
   business,
   onClose,
+  onGetDirections,
 }: BusinessDetailModalProps) {
   const { t } = useTranslation();
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? COLORS.dark : COLORS.light;
   
-  console.log('📱 Modal rendering:', { visible, hasBusiness: !!business, name: business?.name });
-  
   if (!business) {
-    console.log('❌ Modal: No business provided');
     return null;
   }
-  
-  console.log('✅ Modal: Rendering with business:', business.name);
 
   const openUrl = (url?: string | null) => {
     if (!url) return;
@@ -72,8 +69,6 @@ export default function BusinessDetailModal({
   const handleCall = () => business.phone && Linking.openURL(`tel:${business.phone}`);
   const handleEmail = () => business.email && Linking.openURL(`mailto:${business.email}`);
   const handleWebsite = () => business.website && openUrl(business.website);
-  const handleDirections = () =>
-    business.address && openUrl(`https://maps.google.com/?q=${encodeURIComponent(business.address)}`);
 
   const handleShare = async () => {
     try {
@@ -145,8 +140,8 @@ export default function BusinessDetailModal({
 
             {/* Action buttons */}
             <View style={styles.actions}>
-              {business.address && (
-                <Pressable style={[styles.actionBtn, styles.directionsBtn]} onPress={handleDirections}>
+              {business.latitude && business.longitude && onGetDirections && (
+                <Pressable style={[styles.actionBtn, styles.directionsBtn]} onPress={() => onGetDirections(business)}>
                   <Ionicons name="navigate-outline" size={16} color={COLORS.light.white} />
                   <Text style={styles.actionText}>{t('directions')}</Text>
                 </Pressable>
