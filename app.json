@@ -19,7 +19,8 @@
     },
     "android": {
       "edgeToEdgeEnabled": true,
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "package": "com.jostinjarry1.gosholomobile"
     },
     "web": {
       "bundler": "metro",

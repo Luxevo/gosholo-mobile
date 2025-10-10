@@ -307,6 +307,12 @@ export default function EventDetailModal({
         visible={businessModalVisible}
         business={event.commerces}
         onClose={() => setBusinessModalVisible(false)}
+        onNavigateToMap={(address, coordinates) => {
+          setBusinessModalVisible(false);
+          if (onNavigateToMap) {
+            onNavigateToMap(address, coordinates);
+          }
+        }}
       />
     </Modal>
   );

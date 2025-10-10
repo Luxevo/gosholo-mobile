@@ -44,6 +44,7 @@ interface BusinessDetailModalProps {
   business: Commerce | null;
   onClose: () => void;
   onGetDirections?: (business: Commerce) => void;
+  onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
 }
 
 export default function BusinessDetailModal({
@@ -51,6 +52,7 @@ export default function BusinessDetailModal({
   business,
   onClose,
   onGetDirections,
+  onNavigateToMap,
 }: BusinessDetailModalProps) {
   const { t } = useTranslation();
   const scheme = useColorScheme();
@@ -67,6 +69,17 @@ export default function BusinessDetailModal({
   };
 
   const handleCall = () => business.phone && Linking.openURL(`tel:${business.phone}`);
+
+  const handleAddressPress = () => {
+    if (!onNavigateToMap || !business.address) return;
+    
+    const coordinates: [number, number] | undefined = 
+      business.longitude && business.latitude 
+        ? [business.longitude, business.latitude] 
+        : undefined;
+    
+    onNavigateToMap(business.address, coordinates);
+  };
   const handleEmail = () => business.email && Linking.openURL(`mailto:${business.email}`);
   const handleWebsite = () => business.website && openUrl(business.website);
 
@@ -124,12 +137,20 @@ export default function BusinessDetailModal({
             <Text style={[styles.name, { color: theme.ink }]}>{business.name}</Text>
 
             {business.address && (
-              <View style={styles.addressCard}>
+              <TouchableOpacity 
+                style={styles.addressCard} 
+                onPress={handleAddressPress}
+                activeOpacity={onNavigateToMap ? 0.7 : 1}
+                disabled={!onNavigateToMap}
+              >
                 <View style={styles.addressRow}>
                   <Ionicons name="location-outline" size={16} color={theme.teal} />
                   <Text style={[styles.address, { color: theme.ink }]}>{business.address}</Text>
+                  {onNavigateToMap && (
+                    <Ionicons name="chevron-forward" size={16} color={theme.inkLight} style={styles.addressChevron} />
+                  )}
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
 
             {business.description && (
@@ -260,6 +281,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
+  addressChevron: {
+    marginLeft: SPACING.xs,
+  },
   description: {
     fontSize: 13,
     marginBottom: SPACING.lg,
@@ -284,7 +308,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   directionsBtn: {
-    backgroundColor: COLORS.light.success,
+    backgroundColor: COLORS.light.teal,
   },
   websiteBtn: {
     backgroundColor: COLORS.light.primary,

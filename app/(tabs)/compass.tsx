@@ -4,6 +4,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Speech from 'expo-speech';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -79,6 +80,24 @@ export default function CompassScreen() {
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDuration, setRouteDuration] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Navigation states
+  const [navigationSteps, setNavigationSteps] = useState<any[]>([]);
+  const [alternativeRoutes, setAlternativeRoutes] = useState<any[]>([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+  const [routingProfile, setRoutingProfile] = useState<'driving-traffic' | 'driving' | 'walking' | 'cycling'>('driving-traffic');
+  const [showNavigationInstructions, setShowNavigationInstructions] = useState(false);
+  const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [trafficData, setTrafficData] = useState<any>(null);
+  const [voiceNavigationEnabled, setVoiceNavigationEnabled] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [followUserLocation, setFollowUserLocation] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [destinationMarker, setDestinationMarker] = useState<LngLat | null>(null);
 
   const cameraRef = useRef<any>(null);
   const { t } = useTranslation();
@@ -91,11 +110,18 @@ export default function CompassScreen() {
     if (!searchQuery.trim()) return commerces;
 
     const query = searchQuery.toLowerCase();
-    return commerces.filter((commerce) =>
+    const filtered = commerces.filter((commerce) =>
       commerce.name?.toLowerCase().includes(query) ||
       commerce.category?.toLowerCase().includes(query) ||
       commerce.address?.toLowerCase().includes(query)
     );
+    
+    // If we have matching commerces, show search results
+    if (filtered.length > 0 && searchQuery.length >= 2) {
+      setShowSearchResults(true);
+    }
+    
+    return filtered;
   }, [commerces, searchQuery]);
 
   useEffect(() => {
@@ -113,13 +139,16 @@ export default function CompassScreen() {
         const [lng, lat] = destination.split(',').map(Number);
         if (!isNaN(lng) && !isNaN(lat)) {
           fetchDirections([lng, lat]);
+          // Nettoyer les paramètres après utilisation pour éviter les re-déclenchements
+          router.setParams({ destination: undefined, type: undefined });
         }
       } else if (type === 'address') {
         // TODO: Implement geocoding for address
         console.log('Geocoding needed for address:', destination);
+        router.setParams({ destination: undefined, type: undefined });
       }
     }
-  }, [params, userLocation]);
+  }, [params.destination, params.type, userLocation]);
 
   const requestLocationPermission = async () => {
     try {
@@ -156,30 +185,72 @@ export default function CompassScreen() {
     }
   };
 
-  const fetchDirections = async (destination: LngLat) => {
+  const fetchDirections = async (destination: LngLat, profile?: 'driving' | 'driving-traffic' | 'walking' | 'cycling') => {
     if (!userLocation) {
       console.log('User location not available');
       return;
     }
 
+    const selectedProfile = profile || routingProfile;
+
     try {
       const accessToken = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
       const start = `${userLocation[0]},${userLocation[1]}`;
       const end = `${destination[0]},${destination[1]}`;
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?geometries=geojson&access_token=${accessToken}`;
+      
+      // Paramètres avancés pour navigation style Google Maps/Waze
+      const params = new URLSearchParams({
+        geometries: 'geojson',
+        steps: 'true', // Instructions turn-by-turn
+        banner_instructions: 'true', // Instructions visuelles
+        voice_instructions: 'true', // Instructions vocales
+        alternatives: 'true', // Routes alternatives (jusqu'à 2)
+        language: 'fr', // Instructions en français
+        overview: 'full', // Vue complète de la route
+        annotations: 'distance,duration,speed,congestion', // Infos de trafic
+        continue_straight: 'true',
+        access_token: accessToken || '',
+      });
+
+      const url = `https://api.mapbox.com/directions/v5/mapbox/${selectedProfile}/${start};${end}?${params.toString()}`;
 
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.routes && data.routes.length > 0) {
+        // Route principale
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates;
         const distance = route.distance; // in meters
         const duration = route.duration; // in seconds
 
+        // Stocker les données de navigation complètes
         setRouteCoordinates(coordinates);
         setRouteDistance(distance);
         setRouteDuration(duration);
+        
+        // Set destination marker
+        setDestinationMarker(destination);
+
+        // Stocker les instructions turn-by-turn
+        if (route.legs && route.legs[0].steps) {
+          setNavigationSteps(route.legs[0].steps);
+          setCurrentStepIndex(0);
+          console.log('📍 Instructions:', route.legs[0].steps.length, 'étapes');
+        }
+
+        // Stocker les données de trafic/annotations
+        if (route.legs && route.legs[0].annotation) {
+          setTrafficData(route.legs[0].annotation);
+        }
+
+        // Stocker les routes alternatives (max 2)
+        if (data.routes.length > 1) {
+          setAlternativeRoutes(data.routes.slice(1));
+          console.log('🔀 Routes alternatives:', data.routes.length - 1);
+        } else {
+          setAlternativeRoutes([]);
+        }
 
         // Fit camera to show the entire route with extra bottom padding for route info pill
         if (cameraRef.current && userLocation) {
@@ -187,9 +258,11 @@ export default function CompassScreen() {
             userLocation,
             destination,
             [80, 50, 200, 50], // padding [top, right, bottom, left] - extra bottom for route pill
-            1000 // animation duration
+            500 // animation duration - reduced for better responsiveness
           );
         }
+      } else if (data.code === 'NoRoute') {
+        console.log('❌ Aucune route trouvée');
       }
     } catch (error) {
       console.log('Error fetching directions:', error);
@@ -200,11 +273,154 @@ export default function CompassScreen() {
     setRouteCoordinates(null);
     setRouteDistance(null);
     setRouteDuration(null);
+    setNavigationSteps([]);
+    setAlternativeRoutes([]);
+    setCurrentStepIndex(0);
+    setTrafficData(null);
+    setShowNavigationInstructions(false);
+    setVoiceNavigationEnabled(false);
+    setDestinationMarker(null);
+    stopSpeaking();
     // Clear URL params to prevent useEffect from re-triggering
     router.setParams({ destination: undefined, type: undefined });
   };
 
   const toggleMapStyle = () => setIs3D((v) => !v);
+
+  const recenterOnUser = async () => {
+    if (!userLocation || !cameraRef.current) return;
+    
+    setFollowUserLocation(true);
+    cameraRef.current.setCamera({
+      centerCoordinate: userLocation,
+      zoomLevel: isNavigating ? 17 : 15,
+      animationDuration: 500,
+    });
+  };
+
+  const toggleFollowMode = () => {
+    const newFollowState = !followUserLocation;
+    setFollowUserLocation(newFollowState);
+    if (newFollowState) {
+      recenterOnUser();
+    }
+  };
+
+  // Search addresses using Mapbox Geocoding API
+  const searchAddress = async (query: string) => {
+    if (!query || query.length < 3) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearchingAddress(true);
+
+    try {
+      const accessToken = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+      // Montreal as default proximity for Quebec/Canada searches
+      const proximity = userLocation ? `${userLocation[0]},${userLocation[1]}` : '-73.567,45.501';
+      
+      // Build URL with Canada/Quebec specific parameters
+      const params = new URLSearchParams({
+        access_token: accessToken || '',
+        proximity: proximity,
+        country: 'CA', // Canada only
+        language: 'fr', // French language
+        limit: '8', // More results for better coverage
+        types: 'address,poi,place,postcode,locality,neighborhood',
+        autocomplete: 'true',
+      });
+      
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?${params.toString()}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.features && data.features.length > 0) {
+        // Filter to prioritize Quebec results if needed
+        const results = data.features;
+        setSearchResults(results);
+        setShowSearchResults(true);
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    } catch (error) {
+      console.log('Error searching address:', error);
+      setSearchResults([]);
+      setShowSearchResults(false);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  const handleAddressSelect = (feature: any) => {
+    const [lng, lat] = feature.center;
+    setSearchQuery(feature.place_name);
+    setShowSearchResults(false);
+    
+    // Center map on selected location
+    if (cameraRef.current) {
+      cameraRef.current.setCamera({
+        centerCoordinate: [lng, lat],
+        zoomLevel: 16,
+        animationDuration: 1000,
+      });
+    }
+    
+    // Optionally start navigation to this location
+    fetchDirections([lng, lat]);
+  };
+
+  const handleCommerceSelect = (commerce: Commerce) => {
+    if (!commerce.latitude || !commerce.longitude) return;
+    
+    setSearchQuery(commerce.name || '');
+    setShowSearchResults(false);
+    
+    // Center map on commerce
+    if (cameraRef.current) {
+      cameraRef.current.setCamera({
+        centerCoordinate: [commerce.longitude, commerce.latitude],
+        zoomLevel: 16,
+        animationDuration: 1000,
+      });
+    }
+    
+    // Open commerce modal or start navigation
+    handleBusinessPress(commerce);
+  };
+
+  // Debounce search - combine commerces and addresses
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim().length >= 2) {
+        // Combine local commerces with Mapbox addresses
+        const query = searchQuery.toLowerCase();
+        const matchingCommerces = commerces.filter((commerce) =>
+          commerce.name?.toLowerCase().includes(query) ||
+          commerce.category?.toLowerCase().includes(query) ||
+          commerce.address?.toLowerCase().includes(query)
+        );
+        
+        // Also search addresses if query is long enough
+        if (searchQuery.trim().length >= 3) {
+          searchAddress(searchQuery);
+        }
+        
+        // Show results if we have matching commerces
+        if (matchingCommerces.length > 0) {
+          setShowSearchResults(true);
+        }
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, commerces]);
 
   const handleBusinessPress = (commerce: Commerce) => {
     setSelectedBusiness(commerce);
@@ -219,6 +435,113 @@ export default function CompassScreen() {
   const toggleBusinessList = () => {
     setShowBusinessList(!showBusinessList);
   };
+
+  // Get color based on traffic congestion level
+  const getTrafficColor = (congestion?: string) => {
+    if (!congestion) return COLORS.blue; // Default blue
+    switch (congestion) {
+      case 'low':
+        return '#4CAF50'; // Green
+      case 'moderate':
+        return '#FFC107'; // Yellow/Orange
+      case 'heavy':
+        return '#FF5722'; // Red
+      case 'severe':
+        return '#B71C1C'; // Dark Red
+      default:
+        return COLORS.blue;
+    }
+  };
+
+  // Create route segments with traffic colors
+  const routeSegments = useMemo(() => {
+    if (!routeCoordinates || !trafficData?.congestion) return null;
+    
+    const segments: any[] = [];
+    const congestion = trafficData.congestion;
+    
+    for (let i = 0; i < routeCoordinates.length - 1; i++) {
+      const congestionLevel = congestion[i] || 'unknown';
+      segments.push({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [routeCoordinates[i], routeCoordinates[i + 1]],
+        },
+        properties: {
+          congestion: congestionLevel,
+          color: getTrafficColor(congestionLevel),
+        },
+      });
+    }
+    
+    return segments;
+  }, [routeCoordinates, trafficData]);
+
+  // Voice navigation functions
+  const speakInstruction = async (instruction: string) => {
+    if (!voiceNavigationEnabled) return;
+    
+    try {
+      setIsSpeaking(true);
+      await Speech.speak(instruction, {
+        language: 'fr-FR',
+        pitch: 1.0,
+        rate: 0.9,
+        onDone: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+    } catch (error) {
+      console.log('Error speaking instruction:', error);
+      setIsSpeaking(false);
+    }
+  };
+
+  const stopSpeaking = () => {
+    Speech.stop();
+    setIsSpeaking(false);
+  };
+
+  const toggleVoiceNavigation = () => {
+    const newState = !voiceNavigationEnabled;
+    setVoiceNavigationEnabled(newState);
+    
+    if (newState && navigationSteps.length > 0 && currentStepIndex < navigationSteps.length) {
+      // Speak the current instruction
+      const currentStep = navigationSteps[currentStepIndex];
+      speakInstruction(currentStep.maneuver?.instruction || 'Continuer tout droit');
+    } else if (!newState) {
+      stopSpeaking();
+    }
+  };
+
+  // Auto-speak when step changes
+  useEffect(() => {
+    if (voiceNavigationEnabled && navigationSteps.length > 0 && currentStepIndex < navigationSteps.length) {
+      const currentStep = navigationSteps[currentStepIndex];
+      speakInstruction(currentStep.maneuver?.instruction || 'Continuer tout droit');
+    }
+  }, [currentStepIndex, voiceNavigationEnabled]);
+
+  // Follow user location in real-time when in navigation mode
+  useEffect(() => {
+    if (!followUserLocation || !userLocation || !cameraRef.current) return;
+
+    if (isNavigating) {
+      // In navigation mode: follow user with smooth tracking
+      cameraRef.current.setCamera({
+        centerCoordinate: userLocation,
+        zoomLevel: 17,
+        animationDuration: 1000,
+        heading: 0, // You can add heading based on user movement direction
+      });
+    }
+  }, [userLocation, followUserLocation, isNavigating]);
+
+  // Update navigation state when route is set
+  useEffect(() => {
+    setIsNavigating(!!routeCoordinates);
+  }, [routeCoordinates]);
 
   const categoryIcons = useMemo(
     () => ({
@@ -264,6 +587,12 @@ export default function CompassScreen() {
           <MapView
             style={styles.map}
             styleURL={Mapbox?.StyleURL?.Streets ?? 'mapbox://styles/mapbox/streets-v12'}
+            onTouchStart={() => {
+              // Disable follow mode when user manually moves the map
+              if (followUserLocation) {
+                setFollowUserLocation(false);
+              }
+            }}
           >
             <Camera
               ref={cameraRef}
@@ -280,27 +609,51 @@ export default function CompassScreen() {
 
             {/* Route Line */}
             {ShapeSource && LineLayer && routeCoordinates && (
-              <ShapeSource
-                id="routeSource"
-                shape={{
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: routeCoordinates,
-                  },
-                }}
-              >
-                <LineLayer
-                  id="routeLine"
-                  style={{
-                    lineColor: '#5BC4DB',
-                    lineWidth: 4,
-                    lineCap: 'round',
-                    lineJoin: 'round',
-                  }}
-                />
-              </ShapeSource>
+              <>
+                {/* Base route (always visible as fallback) */}
+                {!routeSegments && (
+                  <ShapeSource
+                    id="routeSource"
+                    shape={{
+                      type: 'Feature',
+                      properties: {},
+                      geometry: {
+                        type: 'LineString',
+                        coordinates: routeCoordinates,
+                      },
+                    }}
+                  >
+                    <LineLayer
+                      id="routeLine"
+                      style={{
+                        lineColor: COLORS.blue,
+                        lineWidth: 5,
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                      }}
+                    />
+                  </ShapeSource>
+                )}
+                
+                {/* Traffic segments (colored by congestion) */}
+                {routeSegments && routeSegments.map((segment, index) => (
+                  <ShapeSource
+                    key={`segment-${index}`}
+                    id={`routeSegment-${index}`}
+                    shape={segment}
+                  >
+                    <LineLayer
+                      id={`routeSegmentLine-${index}`}
+                      style={{
+                        lineColor: segment.properties.color,
+                        lineWidth: 5,
+                        lineCap: 'round',
+                        lineJoin: 'round',
+                      }}
+                    />
+                  </ShapeSource>
+                ))}
+              </>
             )}
 
             {/* Markers with logo */}
@@ -339,6 +692,22 @@ export default function CompassScreen() {
                   </MarkerView>
                 );
               })}
+            
+            {/* Destination Marker */}
+            {MarkerView && destinationMarker && (
+              <MarkerView
+                id="destination-marker"
+                coordinate={destinationMarker}
+                allowOverlap={true}
+                anchor={{ x: 0.5, y: 1 }}
+              >
+                <View style={styles.destinationMarkerContainer}>
+                  <View style={styles.destinationMarkerPin}>
+                    <IconSymbol name="mappin.circle.fill" size={40} color={COLORS.primary} />
+                  </View>
+                </View>
+              </MarkerView>
+            )}
           </MapView>
         ) : (
           <View style={styles.mapFallback}>
@@ -355,29 +724,203 @@ export default function CompassScreen() {
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder={t('search_placeholder_businesses')}
+            placeholder="Chercher une adresse ou un commerce"
             placeholderTextColor={COLORS.darkGray}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={() => {
+              setSearchQuery('');
+              setSearchResults([]);
+              setShowSearchResults(false);
+            }}>
               <IconSymbol name="xmark.circle.fill" size={16} color={COLORS.darkGray} />
             </TouchableOpacity>
           )}
         </View>
+        
+        {/* Search Results Dropdown */}
+        {showSearchResults && (filteredCommerces.length > 0 || searchResults.length > 0) && (
+          <View style={styles.searchResultsContainer}>
+            <FlatList
+              data={[
+                // First: Local commerces (marked with a flag)
+                ...filteredCommerces.slice(0, 5).map((commerce) => ({ 
+                  type: 'commerce', 
+                  data: commerce,
+                  id: `commerce-${commerce.id}` 
+                })),
+                // Then: Mapbox addresses
+                ...searchResults.slice(0, 5).map((result) => ({ 
+                  type: 'address', 
+                  data: result,
+                  id: `address-${result.id}` 
+                })),
+              ]}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                if (item.type === 'commerce') {
+                  const commerce = item.data as Commerce;
+                  return (
+                    <TouchableOpacity
+                      style={styles.searchResultItem}
+                      onPress={() => handleCommerceSelect(commerce)}
+                    >
+                      <IconSymbol 
+                        name="storefront.fill" 
+                        size={20} 
+                        color={COLORS.teal} 
+                      />
+                      <View style={styles.searchResultTextContainer}>
+                        <Text style={styles.searchResultText} numberOfLines={1}>
+                          {commerce.name}
+                        </Text>
+                        <Text style={styles.searchResultSubtext} numberOfLines={1}>
+                          {commerce.category} • {commerce.address}
+                        </Text>
+                      </View>
+                      <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
+                    </TouchableOpacity>
+                  );
+                } else {
+                  const address = item.data as any;
+                  return (
+                    <TouchableOpacity
+                      style={styles.searchResultItem}
+                      onPress={() => handleAddressSelect(address)}
+                    >
+                      <IconSymbol 
+                        name={address.properties?.category === 'address' ? 'mappin.circle.fill' : 'building.2.fill'} 
+                        size={20} 
+                        color={COLORS.primary} 
+                      />
+                      <View style={styles.searchResultTextContainer}>
+                        <Text style={styles.searchResultText} numberOfLines={1}>
+                          {address.text}
+                        </Text>
+                        <Text style={styles.searchResultSubtext} numberOfLines={1}>
+                          {address.place_name}
+                        </Text>
+                      </View>
+                      <IconSymbol name="arrow.up.left" size={16} color={COLORS.darkGray} />
+                    </TouchableOpacity>
+                  );
+                }
+              }}
+              style={styles.searchResultsList}
+            />
+          </View>
+        )}
       </View>
 
       {/* Route Info Pill */}
       {routeDistance && routeDuration && (
         <View style={styles.routeInfoContainer}>
           <View style={styles.routeInfoPill}>
-            <IconSymbol name="car.fill" size={18} color={COLORS.blue} />
+            <TouchableOpacity onPress={() => setShowProfileSwitcher(!showProfileSwitcher)} style={styles.profileIconButton}>
+              <IconSymbol 
+                name={routingProfile === 'driving-traffic' || routingProfile === 'driving' ? 'car.fill' : routingProfile === 'walking' ? 'figure.walk' : 'bicycle'} 
+                size={18} 
+                color={COLORS.blue} 
+              />
+            </TouchableOpacity>
             <Text style={styles.routeInfoText}>
               {(routeDistance / 1000).toFixed(1)} km • {Math.round(routeDuration / 60)} min
             </Text>
+            
+            {/* Voice Navigation Button */}
+            {navigationSteps.length > 0 && (
+              <TouchableOpacity onPress={toggleVoiceNavigation} style={styles.voiceButton}>
+                <IconSymbol 
+                  name={voiceNavigationEnabled ? 'speaker.wave.3.fill' : 'speaker.slash.fill'} 
+                  size={18} 
+                  color={voiceNavigationEnabled ? COLORS.teal : COLORS.darkGray} 
+                />
+              </TouchableOpacity>
+            )}
+            
+            {alternativeRoutes.length > 0 && (
+              <TouchableOpacity onPress={() => setShowNavigationInstructions(true)} style={styles.alternativesButton}>
+                <Text style={styles.alternativesText}>+{alternativeRoutes.length}</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={clearRoute} style={styles.closeRouteButton}>
-              <IconSymbol name="xmark.circle.fill" size={18} color={COLORS.darkGray} />
+              <IconSymbol name="xmark.circle.fill" size={24} color={COLORS.darkGray} />
             </TouchableOpacity>
           </View>
+          
+          {/* Profile Switcher Dropdown */}
+          {showProfileSwitcher && (
+            <View style={styles.profileSwitcher}>
+              <TouchableOpacity 
+                style={[styles.profileOption, routingProfile === 'driving-traffic' && styles.profileOptionActive]}
+                onPress={() => {
+                  setRoutingProfile('driving-traffic');
+                  setShowProfileSwitcher(false);
+                  if (routeCoordinates) {
+                    // Re-fetch with new profile
+                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+                    fetchDirections(lastCoord, 'driving-traffic');
+                  }
+                }}
+              >
+                <IconSymbol name="car.fill" size={20} color={routingProfile === 'driving-traffic' ? COLORS.teal : COLORS.darkGray} />
+                <Text style={[styles.profileOptionText, routingProfile === 'driving-traffic' && styles.profileOptionTextActive]}>
+                  Voiture (trafic)
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.profileOption, routingProfile === 'driving' && styles.profileOptionActive]}
+                onPress={() => {
+                  setRoutingProfile('driving');
+                  setShowProfileSwitcher(false);
+                  if (routeCoordinates) {
+                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+                    fetchDirections(lastCoord, 'driving');
+                  }
+                }}
+              >
+                <IconSymbol name="car" size={20} color={routingProfile === 'driving' ? COLORS.teal : COLORS.darkGray} />
+                <Text style={[styles.profileOptionText, routingProfile === 'driving' && styles.profileOptionTextActive]}>
+                  Voiture (rapide)
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.profileOption, routingProfile === 'walking' && styles.profileOptionActive]}
+                onPress={() => {
+                  setRoutingProfile('walking');
+                  setShowProfileSwitcher(false);
+                  if (routeCoordinates) {
+                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+                    fetchDirections(lastCoord, 'walking');
+                  }
+                }}
+              >
+                <IconSymbol name="figure.walk" size={20} color={routingProfile === 'walking' ? COLORS.teal : COLORS.darkGray} />
+                <Text style={[styles.profileOptionText, routingProfile === 'walking' && styles.profileOptionTextActive]}>
+                  Marche
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.profileOption, routingProfile === 'cycling' && styles.profileOptionActive]}
+                onPress={() => {
+                  setRoutingProfile('cycling');
+                  setShowProfileSwitcher(false);
+                  if (routeCoordinates) {
+                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+                    fetchDirections(lastCoord, 'cycling');
+                  }
+                }}
+              >
+                <IconSymbol name="bicycle" size={20} color={routingProfile === 'cycling' ? COLORS.teal : COLORS.darkGray} />
+                <Text style={[styles.profileOptionText, routingProfile === 'cycling' && styles.profileOptionTextActive]}>
+                  Vélo
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -386,6 +929,20 @@ export default function CompassScreen() {
         <TouchableOpacity style={styles.togglePill} onPress={toggleMapStyle}>
           <IconSymbol name={is3D ? 'cube' : 'map'} size={18} color={COLORS.primary} />
           <Text style={styles.togglePillText}>{is3D ? '3D' : '2D'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Recenter Button - Bottom Right */}
+      <View style={[styles.bottomRightControls, routeDistance ? { bottom: 100 } : null]}>
+        <TouchableOpacity 
+          style={[styles.recenterButton, followUserLocation && styles.recenterButtonActive]} 
+          onPress={recenterOnUser}
+        >
+          <IconSymbol 
+            name="location.fill" 
+            size={24} 
+            color={followUserLocation ? COLORS.teal : COLORS.darkGray} 
+          />
         </TouchableOpacity>
       </View>
 
@@ -455,14 +1012,89 @@ export default function CompassScreen() {
         </View>
       )}
 
+      {/* Navigation Instructions Panel */}
+      {showNavigationInstructions && navigationSteps.length > 0 && (
+        <View style={styles.navigationPanel}>
+          <View style={styles.navigationHeader}>
+            <Text style={styles.navigationTitle}>Instructions</Text>
+            <TouchableOpacity onPress={() => setShowNavigationInstructions(false)}>
+              <IconSymbol name="xmark.circle.fill" size={24} color={COLORS.darkGray} />
+            </TouchableOpacity>
+          </View>
+          
+          <FlatList
+            data={navigationSteps}
+            keyExtractor={(item, index) => `step-${index}`}
+            renderItem={({ item, index }) => (
+              <View style={[styles.navigationStep, index === currentStepIndex && styles.navigationStepActive]}>
+                <View style={styles.navigationStepIcon}>
+                  <Text style={styles.navigationStepNumber}>{index + 1}</Text>
+                </View>
+                <View style={styles.navigationStepContent}>
+                  <Text style={styles.navigationStepText}>{item.maneuver?.instruction || 'Continuer'}</Text>
+                  <Text style={styles.navigationStepDistance}>
+                    {item.distance < 1000 
+                      ? `${Math.round(item.distance)} m` 
+                      : `${(item.distance / 1000).toFixed(1)} km`}
+                  </Text>
+                </View>
+              </View>
+            )}
+          />
+          
+          {/* Alternative Routes */}
+          {alternativeRoutes.length > 0 && (
+            <View style={styles.alternativeRoutesSection}>
+              <Text style={styles.alternativeRoutesTitle}>Routes alternatives</Text>
+              {alternativeRoutes.map((route, index) => (
+                <TouchableOpacity
+                  key={`alt-${index}`}
+                  style={styles.alternativeRoute}
+                  onPress={() => {
+                    // Switch to alternative route
+                    setRouteCoordinates(route.geometry.coordinates);
+                    setRouteDistance(route.distance);
+                    setRouteDuration(route.duration);
+                    if (route.legs && route.legs[0].steps) {
+                      setNavigationSteps(route.legs[0].steps);
+                    }
+                    setShowNavigationInstructions(false);
+                  }}
+                >
+                  <Text style={styles.alternativeRouteText}>
+                    Route {index + 2}: {(route.distance / 1000).toFixed(1)} km • {Math.round(route.duration / 60)} min
+                  </Text>
+                  {route.duration < routeDuration! && (
+                    <Text style={styles.alternativeRouteFaster}>Plus rapide!</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
       <BusinessDetailModal
         visible={showBusinessModal}
         business={selectedBusiness}
         onClose={handleCloseBusinessModal}
         onGetDirections={(business) => {
           if (business.latitude && business.longitude) {
+            handleCloseBusinessModal(); // Fermer le modal d'abord
             fetchDirections([business.longitude, business.latitude]);
           }
+        }}
+        onNavigateToMap={(address, coordinates) => {
+          handleCloseBusinessModal(); // Fermer le modal d'abord
+          
+          setTimeout(() => {
+            if (coordinates) {
+              fetchDirections(coordinates);
+            } else {
+              // Géocodage si pas de coordonnées
+              console.log('Geocoding needed for:', address);
+            }
+          }, 100);
         }}
       />
     </View>
@@ -766,6 +1398,228 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   closeRouteButton: {
-    padding: 2,
+    padding: 8,
+    marginLeft: 4,
+  },
+  profileIconButton: {
+    marginRight: 8,
+    padding: 4,
+  },
+  voiceButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  alternativesButton: {
+    backgroundColor: COLORS.teal,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  alternativesText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  profileSwitcher: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 16,
+    padding: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  profileOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  profileOptionActive: {
+    backgroundColor: 'rgba(1, 97, 103, 0.1)',
+  },
+  profileOptionText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    marginLeft: 12,
+    fontWeight: '500',
+  },
+  profileOptionTextActive: {
+    color: COLORS.teal,
+    fontWeight: '600',
+  },
+  navigationPanel: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    maxHeight: '60%',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 12,
+    zIndex: 1000,
+  },
+  navigationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  navigationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.black,
+  },
+  navigationStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    marginBottom: 8,
+    backgroundColor: COLORS.gray,
+    borderRadius: 12,
+  },
+  navigationStepActive: {
+    backgroundColor: 'rgba(1, 97, 103, 0.1)',
+    borderWidth: 2,
+    borderColor: COLORS.teal,
+  },
+  navigationStepIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.teal,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  navigationStepNumber: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  navigationStepContent: {
+    flex: 1,
+  },
+  navigationStepText: {
+    fontSize: 14,
+    color: COLORS.black,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  navigationStepDistance: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+  },
+  alternativeRoutesSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray,
+  },
+  alternativeRoutesTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 12,
+  },
+  alternativeRoute: {
+    padding: 12,
+    backgroundColor: COLORS.gray,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  alternativeRouteText: {
+    fontSize: 14,
+    color: COLORS.black,
+    fontWeight: '500',
+  },
+  alternativeRouteFaster: {
+    fontSize: 12,
+    color: COLORS.teal,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  bottomRightControls: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    zIndex: 1000,
+  },
+  recenterButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  recenterButtonActive: {
+    backgroundColor: 'rgba(1, 97, 103, 0.15)',
+    borderWidth: 2,
+    borderColor: COLORS.teal,
+  },
+  searchResultsContainer: {
+    marginTop: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 16,
+    maxHeight: 300,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  searchResultsList: {
+    maxHeight: 300,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  searchResultTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  searchResultText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  searchResultSubtext: {
+    fontSize: 12,
+    color: COLORS.darkGray,
+  },
+  destinationMarkerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  destinationMarkerPin: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });

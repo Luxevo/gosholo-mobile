@@ -188,26 +188,32 @@ export default function OffersScreen() {
         onClose={handleCloseModal}
         onFavoritePress={handleFavoritePress}
         onNavigateToMap={(address, coordinates) => {
-          // Naviguer vers la carte avec l'itinéraire
-          if (coordinates) {
-            router.push({
-              pathname: '/compass',
-              params: { 
-                destination: `${coordinates[0]},${coordinates[1]}`,
-                type: 'coordinates'
-              }
-            });
-          } else if (address) {
-            router.push({
-              pathname: '/compass',
-              params: { 
-                destination: address,
-                type: 'address'
-              }
-            });
-          } else {
-            router.push('/compass');
-          }
+          // Fermer la modal avant de naviguer
+          handleCloseModal();
+          
+          // Petit délai pour laisser la modal se fermer
+          setTimeout(() => {
+            // Naviguer vers la carte avec l'itinéraire
+            if (coordinates) {
+              router.push({
+                pathname: '/compass',
+                params: { 
+                  destination: `${coordinates[0]},${coordinates[1]}`,
+                  type: 'coordinates'
+                }
+              });
+            } else if (address) {
+              router.push({
+                pathname: '/compass',
+                params: { 
+                  destination: address,
+                  type: 'address'
+                }
+              });
+            } else {
+              router.push('/compass');
+            }
+          }, 100);
         }}
       />
     </SafeAreaView>

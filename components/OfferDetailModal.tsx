@@ -266,6 +266,12 @@ export default function OfferDetailModal({
         visible={businessModalVisible}
         business={business}
         onClose={() => setBusinessModalVisible(false)}
+        onNavigateToMap={(address, coordinates) => {
+          setBusinessModalVisible(false);
+          if (onNavigateToMap) {
+            onNavigateToMap(address, coordinates);
+          }
+        }}
       />
     </Modal>
   );
