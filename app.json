@@ -8,7 +8,7 @@
     "scheme": "gosholomobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.jostinjarry1.gosholomobile",
       "buildNumber": "2",
       "infoPlist": {
