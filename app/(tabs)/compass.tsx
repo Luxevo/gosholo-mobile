@@ -514,31 +514,7 @@ export default function CompassScreen() {
     }
   };
 
-  // Memoized route segments with traffic colors - optimized
-  const routeSegments = useMemo(() => {
-    if (!routeCoordinates || !trafficData?.congestion || routeCoordinates.length < 2) return null;
-    
-    const segments: any[] = [];
-    const congestion = trafficData.congestion;
-    const maxSegments = Math.min(routeCoordinates.length - 1, 100); // Limit segments for performance
-    
-    for (let i = 0; i < maxSegments; i++) {
-      const congestionLevel = congestion[i] || 'unknown';
-      segments.push({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [routeCoordinates[i], routeCoordinates[i + 1]],
-        },
-        properties: {
-          congestion: congestionLevel,
-          color: getTrafficColor(congestionLevel),
-        },
-      });
-    }
-    
-    return segments;
-  }, [routeCoordinates, trafficData]);
+  // Simple route line - no traffic segments for maximum performance
 
   // Optimized voice navigation functions
   const speakInstruction = useCallback(async (instruction: string) => {
@@ -688,53 +664,29 @@ export default function CompassScreen() {
               <LocationPuck puckBearing="heading" puckBearingEnabled visible />
             )}
 
-            {/* Route Line */}
+            {/* Simple Route Line - Default Blue */}
             {ShapeSource && LineLayer && routeCoordinates && (
-              <>
-                {/* Base route (always visible as fallback) */}
-                {!routeSegments && (
-                  <ShapeSource
-                    id="routeSource"
-                    shape={{
-                      type: 'Feature',
-                      properties: {},
-                      geometry: {
-                        type: 'LineString',
-                        coordinates: routeCoordinates,
-                      },
-                    }}
-                  >
-                    <LineLayer
-                      id="routeLine"
-                      style={{
-                        lineColor: COLORS.blue,
-                        lineWidth: 5,
-                        lineCap: 'round',
-                        lineJoin: 'round',
-                      }}
-                    />
-                  </ShapeSource>
-                )}
-                
-                {/* Traffic segments (colored by congestion) */}
-                {routeSegments && routeSegments.map((segment, index) => (
-                  <ShapeSource
-                    key={`segment-${index}`}
-                    id={`routeSegment-${index}`}
-                    shape={segment}
-                  >
-                    <LineLayer
-                      id={`routeSegmentLine-${index}`}
-                      style={{
-                        lineColor: segment.properties.color,
-                        lineWidth: 5,
-                        lineCap: 'round',
-                        lineJoin: 'round',
-                      }}
-                    />
-                  </ShapeSource>
-                ))}
-              </>
+              <ShapeSource
+                id="routeSource"
+                shape={{
+                  type: 'Feature',
+                  properties: {},
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: routeCoordinates,
+                  },
+                }}
+              >
+                <LineLayer
+                  id="routeLine"
+                  style={{
+                    lineColor: COLORS.blue,
+                    lineWidth: 5,
+                    lineCap: 'round',
+                    lineJoin: 'round',
+                  }}
+                />
+              </ShapeSource>
             )}
 
             {/* Optimized Markers with virtualization */}
