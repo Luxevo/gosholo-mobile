@@ -47,7 +47,7 @@ try {
   ShapeSource = MapboxMaps.ShapeSource;
   LineLayer = MapboxMaps.LineLayer;
 } catch (error) {
-  console.log('Mapbox not available in Expo Go (use a dev build).');
+  // Mapbox not available in Expo Go (use a dev build)
 }
 
 // Initialize Mapbox
@@ -213,7 +213,6 @@ export default function CompassScreen() {
         }
       } else if (type === 'address') {
         // TODO: Implement geocoding for address
-        console.log('Geocoding needed for address:', destination);
         router.setParams({ destination: undefined, type: undefined });
       }
     }
@@ -231,7 +230,7 @@ export default function CompassScreen() {
         setPermissionDenied(!canAskAgain || status === 'denied');
       }
     } catch (error) {
-      console.log('Location permission error:', error);
+      // Location permission error
     }
   };
 
@@ -250,13 +249,12 @@ export default function CompassScreen() {
       }
       return coord;
     } catch (error) {
-      console.log('Get location error:', error);
+      // Get location error
     }
   }, []);
 
   const fetchDirections = useCallback(async (destination: LngLat, profile?: 'driving' | 'driving-traffic' | 'walking' | 'cycling') => {
     if (!userLocation) {
-      console.log('User location not available');
       return;
     }
 
@@ -316,10 +314,10 @@ export default function CompassScreen() {
           );
         }
       } else if (data.code === 'NoRoute') {
-        console.log('❌ Aucune route trouvée');
+        // No route found
       }
     } catch (error) {
-      console.log('Error fetching directions:', error);
+      // Error fetching directions
     }
   }, [userLocation, routingProfile]);
 
@@ -405,7 +403,6 @@ export default function CompassScreen() {
         setModalState(prev => ({ ...prev, showSearchResults: false }));
       }
     } catch (error) {
-      console.log('Error searching address:', error);
       setSearchState(prev => ({ ...prev, results: [], isSearchingAddress: false }));
       setModalState(prev => ({ ...prev, showSearchResults: false }));
     }
@@ -530,7 +527,6 @@ export default function CompassScreen() {
         onError: () => setVoiceState(prev => ({ ...prev, isSpeaking: false })),
       });
     } catch (error) {
-      console.log('Error speaking instruction:', error);
       setVoiceState(prev => ({ ...prev, isSpeaking: false }));
     }
   }, [voiceNavigationEnabled]);
@@ -1089,8 +1085,7 @@ export default function CompassScreen() {
             if (coordinates) {
               fetchDirections(coordinates);
             } else {
-              // Géocodage si pas de coordonnées
-              console.log('Geocoding needed for:', address);
+              // Geocoding needed for address
             }
           }, 100);
         }}
