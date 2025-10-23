@@ -134,7 +134,25 @@
   "get_directions_to": "Obtenir l'itinéraire vers",
   "cancel": "Annuler",
   "yes": "Oui",
-  "search_placeholder_businesses": "Chercher commerces, catégories..."
+  "search_placeholder_businesses": "Chercher commerces, catégories...",
+  "meters_short": "m",
+  "kilometers_short": "km",
+  "hours_short": "h",
+  "minutes_short": "min",
+  "nav_now": "Maintenant",
+  "nav_in": "Dans",
+  "nav_arrival": "Arrivée",
+  "nav_duration": "Durée",
+  "nav_distance": "Distance",
+  "nav_route_options": "Options d'itinéraire",
+  "nav_route": "Itinéraire",
+  "nav_upcoming": "À venir",
+  "nav_see_all": "Tout voir",
+  "nav_start": "Démarrer",
+  "nav_overview": "Aperçu",
+  "nav_rerouting": "Recalcul en cours...",
+  "nav_off_route": "Hors itinéraire",
+  "nav_exit": "Quitter"
 }
 
 

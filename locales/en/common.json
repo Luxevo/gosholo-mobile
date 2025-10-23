@@ -134,7 +134,25 @@
   "get_directions_to": "Get directions to",
   "cancel": "Cancel",
   "yes": "Yes",
-  "search_placeholder_businesses": "Search businesses, categories..."
+  "search_placeholder_businesses": "Search businesses, categories...",
+  "meters_short": "m",
+  "kilometers_short": "km",
+  "hours_short": "h",
+  "minutes_short": "min",
+  "nav_now": "Now",
+  "nav_in": "In",
+  "nav_arrival": "Arrival",
+  "nav_duration": "Duration",
+  "nav_distance": "Distance",
+  "nav_route_options": "Route Options",
+  "nav_route": "Route",
+  "nav_upcoming": "Upcoming",
+  "nav_see_all": "See All",
+  "nav_start": "Start",
+  "nav_overview": "Overview",
+  "nav_rerouting": "Rerouting...",
+  "nav_off_route": "Off route",
+  "nav_exit": "Exit"
 }
 
 

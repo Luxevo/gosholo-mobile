@@ -1,19 +1,28 @@
 import BusinessDetailModal from '@/components/BusinessDetailModal';
 import { LOGO_BASE64 } from '@/components/LogoBase64';
+import { NavigationBanner } from '@/components/navigation/NavigationBanner';
+import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
+import { SearchOverlay } from '@/components/SearchOverlay';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
+import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
+import {
+  calculateETA,
+  getCurrentStepIndex,
+  getDistanceFromLine,
+} from '@/utils/navigationHelpers';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   FlatList,
   Image,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -120,14 +129,16 @@ const DestinationMarker = React.memo(({ coordinate }: { coordinate: LngLat }) =>
 
 export default function CompassScreen() {
   const [userLocation, setUserLocation] = useState<LngLat | null>(null);
+  const [userHeading, setUserHeading] = useState<number>(0);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  
+
   // Consolidated map state
   const [mapState, setMapState] = useState({
     is3D: false,
     followUserLocation: true,
     isNavigating: false,
+    showRouteOverview: false,
   });
   
   // Consolidated modal state
@@ -158,6 +169,7 @@ export default function CompassScreen() {
     query: '',
     results: [] as any[],
     isSearchingAddress: false,
+    showFullScreenSearch: false,
   });
   
   // Consolidated voice state
@@ -167,13 +179,14 @@ export default function CompassScreen() {
   });
   
   const [routingProfile, setRoutingProfile] = useState<'driving-traffic' | 'driving' | 'walking' | 'cycling'>('driving-traffic');
-  
+  const headingSubscription = useRef<Location.LocationSubscription | null>(null);
+
   // Extract individual states for easier access
-  const { is3D, followUserLocation, isNavigating } = mapState;
+  const { is3D, followUserLocation, isNavigating, showRouteOverview } = mapState;
   const { selectedBusiness, showBusinessModal, showBusinessList, showNavigationInstructions, showProfileSwitcher, showSearchResults } = modalState;
   const { routeCoordinates, routeDistance, routeDuration, navigationSteps, alternativeRoutes, currentStepIndex, trafficData, destinationMarker } = navigationState;
-  const { query: searchQuery, results: searchResults, isSearchingAddress } = searchState;
-  const { voiceNavigationEnabled, isSpeaking } = voiceState;
+  const { query: searchQuery, results: searchResults, showFullScreenSearch } = searchState;
+  const { voiceNavigationEnabled } = voiceState;
 
   const cameraRef = useRef<any>(null);
   const { t } = useTranslation();
@@ -196,6 +209,28 @@ export default function CompassScreen() {
   useEffect(() => {
     requestLocationPermission();
   }, []);
+
+  // Track user heading for navigation
+  useEffect(() => {
+    if (!hasLocationPermission) return;
+
+    const startHeadingTracking = async () => {
+      try {
+        const subscription = await Location.watchHeadingAsync((heading) => {
+          setUserHeading(heading.trueHeading || heading.magHeading);
+        });
+        headingSubscription.current = subscription;
+      } catch (error) {
+        console.error('Error tracking heading:', error);
+      }
+    };
+
+    startHeadingTracking();
+
+    return () => {
+      headingSubscription.current?.remove();
+    };
+  }, [hasLocationPermission]);
 
   // Handle navigation from offers/events
   useEffect(() => {
@@ -302,16 +337,26 @@ export default function CompassScreen() {
           destinationMarker: destination,
         });
         
-        setMapState(prev => ({ ...prev, isNavigating: true }));
+        setMapState(prev => ({ ...prev, isNavigating: true, followUserLocation: true }));
 
-        // Fit camera to show the entire route
+        // Enable voice navigation by default
+        setVoiceState({ voiceNavigationEnabled: true, isSpeaking: false });
+
+        // Zoom to user position first for navigation view
         if (cameraRef.current && userLocation) {
-          cameraRef.current.fitBounds(
-            userLocation,
-            destination,
-            [80, 50, 200, 50],
-            500
-          );
+          cameraRef.current.setCamera({
+            centerCoordinate: userLocation,
+            zoomLevel: 18,
+            pitch: 60,
+            heading: userHeading,
+            animationDuration: 1000,
+            animationMode: 'flyTo',
+          });
+        }
+
+        // Speak first instruction
+        if (route.legs?.[0]?.steps?.[0]?.maneuver?.instruction) {
+          speakInstruction(route.legs[0].steps[0].maneuver.instruction);
         }
       } else if (data.code === 'NoRoute') {
         // No route found
@@ -365,9 +410,9 @@ export default function CompassScreen() {
     }
   }, [followUserLocation, recenterOnUser]);
 
-  // Optimized search addresses using Mapbox Geocoding API
+  // Search using Mapbox Search Box API (with session tokens for cost optimization)
   const searchAddress = useCallback(async (query: string) => {
-    if (!query || query.length < 3) {
+    if (!query || query.length < 2) {
       setSearchState(prev => ({ ...prev, results: [], isSearchingAddress: false }));
       setModalState(prev => ({ ...prev, showSearchResults: false }));
       return;
@@ -377,25 +422,34 @@ export default function CompassScreen() {
 
     try {
       const accessToken = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
-      const proximity = userLocation ? `${userLocation[0]},${userLocation[1]}` : '-73.567,45.501';
-      
-      const params = new URLSearchParams({
-        access_token: accessToken || '',
-        proximity: proximity,
-        country: 'CA',
+      if (!accessToken) {
+        console.error('Mapbox access token not found');
+        return;
+      }
+
+      const searchService = getMapboxSearchService(accessToken);
+      const suggestions = await searchService.getSuggestions(query, {
+        proximity: userLocation || [-73.567, 45.501], // Montreal fallback
         language: 'fr',
-        limit: '6', // Reduced from 8 for better performance
-        types: 'address,poi,place,postcode,locality,neighborhood',
-        autocomplete: 'true',
+        country: 'CA',
+        limit: 6,
+        types: 'address,poi,place',
       });
-      
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?${params.toString()}`;
 
-      const response = await fetch(url);
-      const data = await response.json();
+      if (suggestions.length > 0) {
+        // Convert SearchSuggestion to match old format for compatibility
+        const results = suggestions.map((suggestion: SearchSuggestion) => ({
+          id: suggestion.mapbox_id,
+          text: suggestion.name,
+          place_name: suggestion.full_address || suggestion.place_formatted || suggestion.name,
+          properties: {
+            mapbox_id: suggestion.mapbox_id,
+            feature_type: suggestion.feature_type,
+          },
+          // Add search suggestion object for retrieval
+          _suggestion: suggestion,
+        }));
 
-      if (data.features && data.features.length > 0) {
-        const results = data.features.slice(0, 6); // Limit results
         setSearchState(prev => ({ ...prev, results, isSearchingAddress: false }));
         setModalState(prev => ({ ...prev, showSearchResults: true }));
       } else {
@@ -403,28 +457,60 @@ export default function CompassScreen() {
         setModalState(prev => ({ ...prev, showSearchResults: false }));
       }
     } catch (error) {
+      console.error('Search error:', error);
       setSearchState(prev => ({ ...prev, results: [], isSearchingAddress: false }));
       setModalState(prev => ({ ...prev, showSearchResults: false }));
     }
   }, [userLocation]);
 
-  const handleAddressSelect = useCallback((feature: any) => {
-    const [lng, lat] = feature.center;
-    setSearchState(prev => ({ ...prev, query: feature.place_name }));
-    setModalState(prev => ({ ...prev, showSearchResults: false }));
-    
-    // Center map on selected location
-    if (cameraRef.current) {
-      cameraRef.current.setCamera({
-        centerCoordinate: [lng, lat],
-        zoomLevel: 16,
-        animationDuration: 1000,
-      });
+  const handleAddressSelect = useCallback(async (feature: any) => {
+    // Use Search Box API retrieve to get full coordinates
+    const accessToken = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    if (!accessToken) return;
+
+    try {
+      const searchService = getMapboxSearchService(accessToken);
+      const mapboxId = feature.properties?.mapbox_id || feature.id;
+
+      const result = await searchService.retrievePlace(mapboxId);
+
+      if (result) {
+        const [lng, lat] = result.coordinates;
+        setSearchState(prev => ({ ...prev, query: result.name }));
+        setModalState(prev => ({ ...prev, showSearchResults: false }));
+
+        // Center map on selected location
+        if (cameraRef.current) {
+          cameraRef.current.setCamera({
+            centerCoordinate: [lng, lat],
+            zoomLevel: 16,
+            animationDuration: 1000,
+          });
+        }
+
+        // Start navigation to this location
+        fetchDirections([lng, lat]);
+      }
+    } catch (error) {
+      console.error('Error retrieving place:', error);
+      // Fallback to old method if center coords available
+      if (feature.center) {
+        const [lng, lat] = feature.center;
+        setSearchState(prev => ({ ...prev, query: feature.place_name || feature.text }));
+        setModalState(prev => ({ ...prev, showSearchResults: false }));
+
+        if (cameraRef.current) {
+          cameraRef.current.setCamera({
+            centerCoordinate: [lng, lat],
+            zoomLevel: 16,
+            animationDuration: 1000,
+          });
+        }
+
+        fetchDirections([lng, lat]);
+      }
     }
-    
-    // Optionally start navigation to this location
-    fetchDirections([lng, lat]);
-  }, []);
+  }, [fetchDirections]);
 
   const handleCommerceSelect = useCallback((commerce: Commerce) => {
     if (!commerce.latitude || !commerce.longitude) return;
@@ -561,22 +647,26 @@ export default function CompassScreen() {
     () => {
       let lastUpdate = 0;
       const throttleDelay = 2000; // Update camera max every 2 seconds
-      
+
       return (location: LngLat) => {
         const now = Date.now();
         if (now - lastUpdate < throttleDelay) return;
-        
+
         lastUpdate = now;
         if (cameraRef.current && followUserLocation) {
+          // Google Maps-style camera follow during navigation
           cameraRef.current.setCamera({
             centerCoordinate: location,
-            zoomLevel: isNavigating ? 17 : 15,
+            zoomLevel: isNavigating ? 18 : 15,
+            pitch: isNavigating ? 60 : 0,  // Tilt view during navigation
+            heading: isNavigating ? userHeading : 0,  // Rotate map to movement direction
             animationDuration: 1000,
+            animationMode: 'flyTo',
           });
         }
       };
     },
-    [followUserLocation, isNavigating]
+    [followUserLocation, isNavigating, userHeading]
   );
 
   // Optimized location following effect
@@ -592,6 +682,49 @@ export default function CompassScreen() {
       setMapState(prev => ({ ...prev, isNavigating: hasRoute }));
     }
   }, [routeCoordinates, isNavigating]);
+
+  // Auto-update current step based on user location
+  useEffect(() => {
+    if (!isNavigating || !userLocation || !navigationSteps.length || !routeCoordinates) return;
+
+    const newStepIndex = getCurrentStepIndex(userLocation, navigationSteps, routeCoordinates);
+
+    if (newStepIndex !== currentStepIndex) {
+      setNavigationState(prev => ({
+        ...prev,
+        currentStepIndex: newStepIndex,
+      }));
+    }
+  }, [userLocation, isNavigating, navigationSteps, routeCoordinates, currentStepIndex]);
+
+  // Rerouting when off-track
+  useEffect(() => {
+    if (!isNavigating || !userLocation || !routeCoordinates || !destinationMarker) return;
+
+    const checkReroute = setInterval(() => {
+      const distanceFromRoute = getDistanceFromLine(userLocation, routeCoordinates);
+
+      // If more than 50 meters off route, recalculate
+      if (distanceFromRoute > 50) {
+        Alert.alert(
+          t('nav_rerouting'),
+          t('nav_off_route'),
+          [
+            {
+              text: t('yes'),
+              onPress: () => fetchDirections(destinationMarker, routingProfile),
+            },
+            {
+              text: t('cancel'),
+              style: 'cancel',
+            },
+          ]
+        );
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(checkReroute);
+  }, [isNavigating, userLocation, routeCoordinates, destinationMarker, routingProfile, t]);
 
   // Memoized category icons - moved outside component for better performance
   const categoryIcons = useMemo(
@@ -660,7 +793,7 @@ export default function CompassScreen() {
               <LocationPuck puckBearing="heading" puckBearingEnabled visible />
             )}
 
-            {/* Simple Route Line - Default Blue */}
+            {/* Simple Blue Route Line - Fast & Clean */}
             {ShapeSource && LineLayer && routeCoordinates && (
               <ShapeSource
                 id="routeSource"
@@ -676,8 +809,8 @@ export default function CompassScreen() {
                 <LineLayer
                   id="routeLine"
                   style={{
-                    lineColor: COLORS.blue,
-                    lineWidth: 5,
+                    lineColor: '#4285F4', // Google Maps blue
+                    lineWidth: 6,
                     lineCap: 'round',
                     lineJoin: 'round',
                   }}
@@ -710,26 +843,19 @@ export default function CompassScreen() {
         )}
       </View>
 
-      {/* Search Pill */}
-      <View style={styles.searchPillContainer}>
-        <View style={styles.searchPill}>
-          <IconSymbol name="magnifyingglass" size={16} color={COLORS.darkGray} />
-          <TextInput
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={(text) => setSearchState(prev => ({ ...prev, query: text }))}
-            placeholder="Chercher une adresse ou un commerce"
-            placeholderTextColor={COLORS.darkGray}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity             onPress={() => {
-              setSearchState({ query: '', results: [], isSearchingAddress: false });
-              setModalState(prev => ({ ...prev, showSearchResults: false }));
-            }}>
-              <IconSymbol name="xmark.circle.fill" size={16} color={COLORS.darkGray} />
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* Search Pill - Hide when navigating - Tap to open full screen */}
+      {!isNavigating && (
+        <View style={styles.searchPillContainer}>
+          <TouchableOpacity
+            style={styles.searchPill}
+            onPress={() => setSearchState(prev => ({ ...prev, showFullScreenSearch: true }))}
+            activeOpacity={0.8}
+          >
+            <IconSymbol name="magnifyingglass" size={16} color={COLORS.darkGray} />
+            <Text style={styles.searchPlaceholder}>
+              {searchQuery || "Chercher une adresse ou un commerce"}
+            </Text>
+          </TouchableOpacity>
         
         {/* Search Results Dropdown */}
         {showSearchResults && (filteredCommerces.length > 0 || searchResults.length > 0) && (
@@ -803,10 +929,31 @@ export default function CompassScreen() {
             />
           </View>
         )}
-      </View>
+        </View>
+      )}
 
-      {/* Route Info Pill */}
-      {routeDistance && routeDuration && (
+      {/* Google Maps-Style Navigation Banner */}
+      {isNavigating && navigationSteps.length > 0 && currentStepIndex < navigationSteps.length && (
+        <NavigationBanner
+          currentStep={navigationSteps[currentStepIndex]}
+          estimatedArrival={routeDuration ? calculateETA(routeDuration) : undefined}
+        />
+      )}
+
+      {/* Google Maps-Style Simple Bottom Bar */}
+      {isNavigating && routeDistance && routeDuration && !showNavigationInstructions && !showBusinessList && (
+        <SimpleNavigationBar
+          distance={routeDistance}
+          duration={routeDuration}
+          arrivalTime={calculateETA(routeDuration)}
+          hasAlternatives={alternativeRoutes.length > 0}
+          onShowAlternatives={() => setModalState(prev => ({ ...prev, showNavigationInstructions: true }))}
+          onClose={clearRoute}
+        />
+      )}
+
+      {/* Old Route Info Pill (KEEP FOR PROFILE SWITCHER) */}
+      {routeDistance && routeDuration && showProfileSwitcher && (
         <View style={styles.routeInfoContainer}>
           <View style={styles.routeInfoPill}>
               <TouchableOpacity onPress={() => setModalState(prev => ({ ...prev, showProfileSwitcher: !prev.showProfileSwitcher }))} style={styles.profileIconButton}>
@@ -917,26 +1064,60 @@ export default function CompassScreen() {
         </View>
       )}
 
-      {/* 2D/3D Toggle Pill - Under Search Bar */}
-      <View style={styles.topLeftControls}>
-        <TouchableOpacity style={styles.togglePill} onPress={toggleMapStyle}>
-          <IconSymbol name={is3D ? 'cube' : 'map'} size={18} color={COLORS.primary} />
-          <Text style={styles.togglePillText}>{is3D ? '3D' : '2D'}</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 2D/3D Toggle Pill - Hide when navigating */}
+      {!isNavigating && (
+        <View style={styles.topLeftControls}>
+          <TouchableOpacity style={styles.togglePill} onPress={toggleMapStyle}>
+            <IconSymbol name={is3D ? 'cube' : 'map'} size={18} color={COLORS.primary} />
+            <Text style={styles.togglePillText}>{is3D ? '3D' : '2D'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* Recenter Button - Bottom Right */}
-      <View style={[styles.bottomRightControls, routeDistance ? { bottom: 100 } : null]}>
-        <TouchableOpacity 
-          style={[styles.recenterButton, followUserLocation && styles.recenterButtonActive]} 
+      {/* Google Maps-Style Right Side Buttons */}
+      <View style={[styles.rightSideButtons, isNavigating ? { bottom: 140 } : { bottom: 30 }]}>
+        {/* Recenter/Compass Button */}
+        <TouchableOpacity
+          style={[styles.sideButton, followUserLocation && styles.sideButtonActive]}
           onPress={recenterOnUser}
         >
-          <IconSymbol 
-            name="location.fill" 
-            size={24} 
-            color={followUserLocation ? COLORS.teal : COLORS.darkGray} 
+          <IconSymbol
+            name="location.fill"
+            size={24}
+            color={followUserLocation ? COLORS.teal : COLORS.white}
           />
         </TouchableOpacity>
+
+        {/* Search Button - Only show during navigation */}
+        {isNavigating && (
+          <TouchableOpacity
+            style={styles.sideButton}
+            onPress={() => {
+              // Open full-screen search
+              setSearchState(prev => ({ ...prev, showFullScreenSearch: true }));
+            }}
+          >
+            <IconSymbol
+              name="magnifyingglass"
+              size={24}
+              color={COLORS.white}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Voice/Mute Button - Only show during navigation */}
+        {isNavigating && (
+          <TouchableOpacity
+            style={styles.sideButton}
+            onPress={toggleVoiceNavigation}
+          >
+            <IconSymbol
+              name={voiceNavigationEnabled ? "speaker.wave.3.fill" : "speaker.slash.fill"}
+              size={24}
+              color={voiceNavigationEnabled ? COLORS.teal : COLORS.white}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
 
@@ -1090,6 +1271,22 @@ export default function CompassScreen() {
           }, 100);
         }}
       />
+
+      {/* Full-Screen Search Overlay */}
+      <SearchOverlay
+        visible={showFullScreenSearch}
+        initialQuery={searchQuery}
+        onClose={() => setSearchState(prev => ({ ...prev, showFullScreenSearch: false }))}
+        onSearchChange={(query) => {
+          setSearchState(prev => ({ ...prev, query }));
+          searchAddress(query);
+        }}
+        onSelectCommerce={handleCommerceSelect}
+        onSelectAddress={handleAddressSelect}
+        commerceResults={filteredCommerces}
+        addressResults={searchResults}
+        isSearching={searchState.isSearchingAddress}
+      />
     </View>
   );
 }
@@ -1126,6 +1323,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.black,
     padding: 0,
+  },
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.darkGray,
   },
   topLeftControls: {
     position: 'absolute',
@@ -1544,29 +1746,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },
-  bottomRightControls: {
+  // Google Maps-style right side buttons
+  rightSideButtons: {
     position: 'absolute',
-    bottom: 30,
-    right: 20,
+    right: 16,
     zIndex: 1000,
+    gap: 12,
   },
-  recenterButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  sideButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#1C1C1E', // Dark gray like Google
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
-  recenterButtonActive: {
-    backgroundColor: 'rgba(1, 97, 103, 0.15)',
-    borderWidth: 2,
-    borderColor: COLORS.teal,
+  sideButtonActive: {
+    backgroundColor: '#2C2C2E',
   },
   searchResultsContainer: {
     marginTop: 8,
