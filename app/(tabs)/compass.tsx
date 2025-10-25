@@ -3,6 +3,7 @@ import { LOGO_BASE64 } from '@/components/LogoBase64';
 import { NavigationBanner } from '@/components/navigation/NavigationBanner';
 import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
 import { SearchOverlay } from '@/components/SearchOverlay';
+import { POIModal } from '@/components/POIModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
@@ -11,6 +12,7 @@ import {
   getCurrentStepIndex,
   getDistanceFromLine,
 } from '@/utils/navigationHelpers';
+import { findAndGetPlaceDetails, formatTodaysHours, isPlaceOpen } from '@/utils/foursquareAPI';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Speech from 'expo-speech';
@@ -39,7 +41,8 @@ let Mapbox: any,
   Terrain: any,
   SkyLayer: any,
   ShapeSource: any,
-  LineLayer: any;
+  LineLayer: any,
+  SymbolLayer: any;
 
 try {
   const MapboxMaps = require('@rnmapbox/maps');
@@ -55,6 +58,7 @@ try {
   SkyLayer = MapboxMaps.SkyLayer;
   ShapeSource = MapboxMaps.ShapeSource;
   LineLayer = MapboxMaps.LineLayer;
+  SymbolLayer = MapboxMaps.SymbolLayer;
 } catch (error) {
   // Mapbox not available in Expo Go (use a dev build)
 }
@@ -149,6 +153,8 @@ export default function CompassScreen() {
     showNavigationInstructions: false,
     showProfileSwitcher: false,
     showSearchResults: false,
+    selectedPOI: null as any,
+    showPOIModal: false,
   });
   
   // Consolidated navigation state
@@ -183,12 +189,13 @@ export default function CompassScreen() {
 
   // Extract individual states for easier access
   const { is3D, followUserLocation, isNavigating, showRouteOverview } = mapState;
-  const { selectedBusiness, showBusinessModal, showBusinessList, showNavigationInstructions, showProfileSwitcher, showSearchResults } = modalState;
+  const { selectedBusiness, showBusinessModal, showBusinessList, showNavigationInstructions, showProfileSwitcher, showSearchResults, selectedPOI, showPOIModal } = modalState;
   const { routeCoordinates, routeDistance, routeDuration, navigationSteps, alternativeRoutes, currentStepIndex, trafficData, destinationMarker } = navigationState;
   const { query: searchQuery, results: searchResults, showFullScreenSearch } = searchState;
   const { voiceNavigationEnabled } = voiceState;
 
   const cameraRef = useRef<any>(null);
+  const mapRef = useRef<any>(null);
   const { t } = useTranslation();
   const params = useLocalSearchParams();
 
@@ -761,6 +768,78 @@ export default function CompassScreen() {
     return '#FF6233';
   }, []);
 
+  // Handle POI clicks on the map
+  const handleMapPress = useCallback(async (event: any) => {
+    try {
+      const { geometry, properties } = event;
+      const point = [properties.screenPointX, properties.screenPointY];
+
+      // Query rendered features at the click point
+      if (mapRef.current) {
+        const features = await mapRef.current.queryRenderedFeaturesAtPoint(
+          point,
+          null,
+          ['poi-labels'] // Only query our POI layer
+        );
+
+        if (features && features.features && features.features.length > 0) {
+          const poiFeature = features.features[0];
+          const poiProperties = poiFeature.properties;
+
+          const poiName = poiProperties.name_en || poiProperties.name || 'Unknown Place';
+          const poiCoords = geometry.coordinates as LngLat;
+
+          // Try to match with local commerce database first
+          const matchedCommerce = commerces.find(commerce => {
+            if (!commerce.latitude || !commerce.longitude) return false;
+
+            // Check if names match (case-insensitive)
+            const nameMatch = commerce.name.toLowerCase().includes(poiName.toLowerCase()) ||
+                             poiName.toLowerCase().includes(commerce.name.toLowerCase());
+
+            // Check if coordinates are very close (within ~50 meters)
+            const latDiff = Math.abs(commerce.latitude - poiCoords[1]);
+            const lngDiff = Math.abs(commerce.longitude - poiCoords[0]);
+            const coordMatch = latDiff < 0.0005 && lngDiff < 0.0005; // ~50m threshold
+
+            return nameMatch || coordMatch;
+          });
+
+          // Fetch Foursquare data for opening hours and details
+          console.log('🔍 Fetching Foursquare details for:', poiName);
+          const foursquareDetails = await findAndGetPlaceDetails(poiCoords, poiName);
+
+          // Extract POI data combining Mapbox, Commerce, and Foursquare data
+          const poiData = {
+            name: matchedCommerce?.name || foursquareDetails?.name || poiName,
+            category: poiProperties.class || 'place',
+            type: poiProperties.type || matchedCommerce?.category || foursquareDetails?.categories?.[0]?.name,
+            maki: poiProperties.maki,
+            coordinates: poiCoords,
+            phone: foursquareDetails?.tel || matchedCommerce?.phone || undefined,
+            openingHours: foursquareDetails ? formatTodaysHours(foursquareDetails) : undefined,
+            isOpen: foursquareDetails ? isPlaceOpen(foursquareDetails) : undefined,
+          };
+
+          console.log('✅ POI Data:', {
+            name: poiData.name,
+            hasHours: !!poiData.openingHours,
+            isOpen: poiData.isOpen,
+          });
+
+          // Show POI modal
+          setModalState(prev => ({
+            ...prev,
+            selectedPOI: poiData,
+            showPOIModal: true,
+          }));
+        }
+      }
+    } catch (error) {
+      console.log('Error handling map press:', error);
+    }
+  }, [commerces]);
+
   const defaultCenter: LngLat = userLocation ?? [-74.006, 40.7128]; // fallback
 
   return (
@@ -771,8 +850,10 @@ export default function CompassScreen() {
         {/* Map */}
         {Mapbox && MapView ? (
           <MapView
+            ref={mapRef}
             style={styles.map}
             styleURL={Mapbox?.StyleURL?.Streets ?? 'mapbox://styles/mapbox/streets-v12'}
+            onPress={handleMapPress}
             onTouchStart={useCallback(() => {
               // Disable follow mode when user manually moves the map
               if (followUserLocation) {
@@ -791,6 +872,48 @@ export default function CompassScreen() {
 
             {hasLocationPermission && userLocation && (
               <LocationPuck puckBearing="heading" puckBearingEnabled visible />
+            )}
+
+            {/* POI Labels - Like Real Maps - ALL POIS */}
+            {SymbolLayer && (
+              <SymbolLayer
+                id="poi-labels"
+                sourceID="composite"
+                sourceLayerID="poi_label"
+                minZoomLevel={13}
+                style={{
+                  textField: ['get', 'name_en'],
+                  textSize: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    13, 10,
+                    16, 12,
+                    18, 14
+                  ],
+                  textFont: ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+                  textColor: '#666666',
+                  textHaloColor: '#FFFFFF',
+                  textHaloWidth: 1,
+                  textHaloBlur: 0.5,
+                  textAnchor: 'top',
+                  textOffset: [0, 0.5],
+                  textOptional: true,
+                  textAllowOverlap: false,
+                  iconImage: ['coalesce', ['get', 'maki'], 'marker-15'],
+                  iconSize: [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    13, 0.8,
+                    16, 1.0,
+                    18, 1.2
+                  ],
+                  iconOpacity: 0.8,
+                  iconAllowOverlap: false,
+                  iconIgnorePlacement: false,
+                }}
+              />
             )}
 
             {/* Simple Blue Route Line - Fast & Clean */}
@@ -1286,6 +1409,16 @@ export default function CompassScreen() {
         commerceResults={filteredCommerces}
         addressResults={searchResults}
         isSearching={searchState.isSearchingAddress}
+      />
+
+      {/* POI Modal - Google Maps Style */}
+      <POIModal
+        visible={showPOIModal}
+        poi={selectedPOI}
+        onClose={() => setModalState(prev => ({ ...prev, showPOIModal: false, selectedPOI: null }))}
+        onGetDirections={(coordinates) => {
+          fetchDirections(coordinates);
+        }}
       />
     </View>
   );
