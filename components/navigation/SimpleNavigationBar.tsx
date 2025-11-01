@@ -13,10 +13,10 @@ interface SimpleNavigationBarProps {
 }
 
 const COLORS = {
-  background: '#1C1C1E', // Dark gray (like Google)
-  text: '#34C759', // Green (like Google)
-  textSecondary: '#8E8E93',
-  exitButton: '#FF3B30', // Red
+  background: '#016167', // Brand teal for navigation background
+  text: '#B2FD9D', // Brand green for duration text
+  textSecondary: 'rgba(255, 255, 255, 0.8)',
+  exitButton: '#FF6233', // Brand primary orange for exit
   white: '#FFFFFF',
 };
 
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   dragHandle: {
     width: 36,
     height: 4,
-    backgroundColor: '#48484A',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 12,
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#2C2C2E',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },

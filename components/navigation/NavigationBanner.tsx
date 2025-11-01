@@ -18,7 +18,7 @@ interface NavigationBannerProps {
 }
 
 const COLORS = {
-  navigationGreen: '#34C759', // Google Maps green
+  navigationGreen: '#016167', // Brand teal (primary navigation color)
   white: '#FFFFFF',
   textPrimary: '#FFFFFF',
   textSecondary: 'rgba(255, 255, 255, 0.95)',

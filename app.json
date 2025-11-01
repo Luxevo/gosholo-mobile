@@ -22,10 +22,6 @@
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.jostinjarry1.gosholomobile"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static"
-    },
     "plugins": [
       "expo-router",
       "expo-splash-screen",
