@@ -7,14 +7,13 @@ import fr from '../locales/fr/common.json';
 i18n
   .use(initReactI18next)
   .init({
+    compatibilityJSON: 'v4',
     lng: 'fr', // Default to French
-    fallbackLng: 'en',
+    fallbackLng: 'fr',
     resources: {
-      en: { common: en },
-      fr: { common: fr },
+      en: { translation: en },
+      fr: { translation: fr },
     },
-    ns: ['common'],
-    defaultNS: 'common',
     interpolation: { escapeValue: false },
   });
 
