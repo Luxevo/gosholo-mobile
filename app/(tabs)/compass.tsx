@@ -12,7 +12,6 @@ import {
   getCurrentStepIndex,
   getDistanceFromLine,
 } from '@/utils/navigationHelpers';
-import { findAndGetPlaceDetails, formatTodaysHours, isPlaceOpen } from '@/utils/foursquareAPI';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Speech from 'expo-speech';
@@ -806,27 +805,17 @@ export default function CompassScreen() {
             return nameMatch || coordMatch;
           });
 
-          // Fetch Foursquare data for opening hours and details
-          console.log('🔍 Fetching Foursquare details for:', poiName);
-          const foursquareDetails = await findAndGetPlaceDetails(poiCoords, poiName);
-
-          // Extract POI data combining Mapbox, Commerce, and Foursquare data
+          // Extract POI data combining Mapbox and Commerce data
           const poiData = {
-            name: matchedCommerce?.name || foursquareDetails?.name || poiName,
+            name: matchedCommerce?.name || poiName,
             category: poiProperties.class || 'place',
-            type: poiProperties.type || matchedCommerce?.category || foursquareDetails?.categories?.[0]?.name,
+            type: poiProperties.type || matchedCommerce?.category,
             maki: poiProperties.maki,
             coordinates: poiCoords,
-            phone: foursquareDetails?.tel || matchedCommerce?.phone || undefined,
-            openingHours: foursquareDetails ? formatTodaysHours(foursquareDetails) : undefined,
-            isOpen: foursquareDetails ? isPlaceOpen(foursquareDetails) : undefined,
+            phone: matchedCommerce?.phone || undefined,
+            openingHours: undefined,
+            isOpen: undefined,
           };
-
-          console.log('✅ POI Data:', {
-            name: poiData.name,
-            hasHours: !!poiData.openingHours,
-            isOpen: poiData.isOpen,
-          });
 
           // Show POI modal
           setModalState(prev => ({

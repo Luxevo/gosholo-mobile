@@ -7,6 +7,12 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "env": {
+          "RCT_NEW_ARCH_ENABLED": "1"
+        }
+      },
       "ios": {
         "cache": {
           "key": "pods-fix-dev-v2"
