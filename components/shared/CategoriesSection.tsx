@@ -25,6 +25,7 @@ interface CategoriesSectionProps {
   onCategoryPress: (categoryId: string) => void;
   showSeeAll?: boolean;
   onSeeAllPress?: () => void;
+  title?: string;
 }
 
 export function CategoriesSection({
@@ -33,6 +34,7 @@ export function CategoriesSection({
   onCategoryPress,
   showSeeAll = true,
   onSeeAllPress,
+  title,
 }: CategoriesSectionProps) {
   const { t } = useTranslation();
 
@@ -40,7 +42,7 @@ export function CategoriesSection({
     <View style={styles.container}>
       {/* Section Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('categories')}</Text>
+        <Text style={styles.title}>{title || t('categories')}</Text>
         {showSeeAll && (
           <TouchableOpacity onPress={onSeeAllPress} accessibilityRole="button">
             <Text style={styles.seeAllText}>{t('see_all')}</Text>

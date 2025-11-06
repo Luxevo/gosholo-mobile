@@ -38,7 +38,7 @@ interface OfferCardProps {
 }
 
 const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleShare = async () => {
     try {
@@ -125,7 +125,9 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
             </Text>
             {offer.commerces?.category && (
               <View style={styles.categoryChip}>
-                <Text style={styles.categoryText}>{offer.commerces.category}</Text>
+                <Text style={styles.categoryText}>
+                  {i18n.language === 'fr' ? offer.commerces.category.name_fr : offer.commerces.category.name_en}
+                </Text>
               </View>
             )}
           </View>

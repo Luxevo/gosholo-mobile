@@ -48,7 +48,7 @@ export default function OfferDetailModal({
   onFavoritePress,
   onNavigateToMap
 }: OfferDetailModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
   const { commerces } = useCommerces();
   
@@ -186,7 +186,9 @@ export default function OfferDetailModal({
               </TouchableOpacity>
               {offer.commerces?.category && (
                 <View style={styles.categoryPill}>
-                  <Text style={styles.categoryText}>{offer.commerces.category}</Text>
+                  <Text style={styles.categoryText}>
+                    {i18n.language === 'fr' ? offer.commerces.category.name_fr : offer.commerces.category.name_en}
+                  </Text>
                 </View>
               )}
             </View>
