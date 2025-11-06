@@ -2,8 +2,8 @@ import BusinessDetailModal from '@/components/BusinessDetailModal';
 import { LOGO_BASE64 } from '@/components/LogoBase64';
 import { NavigationBanner } from '@/components/navigation/NavigationBanner';
 import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
-import { SearchOverlay } from '@/components/SearchOverlay';
 import { POIModal } from '@/components/POIModal';
+import { SearchOverlay } from '@/components/SearchOverlay';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
@@ -194,8 +194,7 @@ export default function CompassScreen() {
   const { voiceNavigationEnabled } = voiceState;
 
   const cameraRef = useRef<any>(null);
-  const mapRef = useRef<any>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useLocalSearchParams();
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
@@ -207,7 +206,8 @@ export default function CompassScreen() {
     const query = searchQuery.toLowerCase();
     return commerces.filter((commerce) =>
       commerce.name?.toLowerCase().includes(query) ||
-      commerce.category?.toLowerCase().includes(query) ||
+      commerce.category?.name_en?.toLowerCase().includes(query) ||
+      commerce.category?.name_fr?.toLowerCase().includes(query) ||
       commerce.address?.toLowerCase().includes(query)
     );
   }, [commerces, searchQuery]);
@@ -768,67 +768,7 @@ export default function CompassScreen() {
     return '#FF6233';
   }, []);
 
-  // Handle POI clicks on the map
-  const handleMapPress = useCallback(async (event: any) => {
-    try {
-      const { geometry, properties } = event;
-      const point = [properties.screenPointX, properties.screenPointY];
-
-      // Query rendered features at the click point
-      if (mapRef.current) {
-        const features = await mapRef.current.queryRenderedFeaturesAtPoint(
-          point,
-          null,
-          ['poi-labels'] // Only query our POI layer
-        );
-
-        if (features && features.features && features.features.length > 0) {
-          const poiFeature = features.features[0];
-          const poiProperties = poiFeature.properties;
-
-          const poiName = poiProperties.name_en || poiProperties.name || 'Unknown Place';
-          const poiCoords = geometry.coordinates as LngLat;
-
-          // Try to match with local commerce database first
-          const matchedCommerce = commerces.find(commerce => {
-            if (!commerce.latitude || !commerce.longitude) return false;
-
-            // Check if names match (case-insensitive)
-            const nameMatch = commerce.name.toLowerCase().includes(poiName.toLowerCase()) ||
-                             poiName.toLowerCase().includes(commerce.name.toLowerCase());
-
-            // Check if coordinates are very close (within ~50 meters)
-            const latDiff = Math.abs(commerce.latitude - poiCoords[1]);
-            const lngDiff = Math.abs(commerce.longitude - poiCoords[0]);
-            const coordMatch = latDiff < 0.0005 && lngDiff < 0.0005; // ~50m threshold
-
-            return nameMatch || coordMatch;
-          });
-
-          // Extract POI data combining Mapbox and Commerce data
-          const poiData = {
-            name: matchedCommerce?.name || poiName,
-            category: poiProperties.class || 'place',
-            type: poiProperties.type || matchedCommerce?.category,
-            maki: poiProperties.maki,
-            coordinates: poiCoords,
-            phone: matchedCommerce?.phone || undefined,
-            openingHours: undefined,
-            isOpen: undefined,
-          };
-
-          // Show POI modal
-          setModalState(prev => ({
-            ...prev,
-            selectedPOI: poiData,
-            showPOIModal: true,
-          }));
-        }
-      }
-    } catch (error) {
-      console.log('Error handling map press:', error);
-    }
-  }, [commerces]);
+  
 
   const defaultCenter: LngLat = userLocation ?? [-74.006, 40.7128]; // fallback
 
@@ -840,10 +780,8 @@ export default function CompassScreen() {
         {/* Map */}
         {Mapbox && MapView ? (
           <MapView
-            ref={mapRef}
             style={styles.map}
             styleURL={Mapbox?.StyleURL?.Streets ?? 'mapbox://styles/mapbox/streets-v12'}
-            onPress={handleMapPress}
             onTouchStart={useCallback(() => {
               // Disable follow mode when user manually moves the map
               if (followUserLocation) {
@@ -1000,11 +938,18 @@ export default function CompassScreen() {
                       ]}
                       onPress={() => handleCommerceSelect(commerce)}
                     >
-                      <IconSymbol
-                        name="storefront.fill"
-                        size={20}
-                        color={commerce.boosted ? COLORS.primary : COLORS.teal}
-                      />
+                      {commerce.image_url ? (
+                        <Image
+                          source={{ uri: commerce.image_url }}
+                          style={styles.searchResultLogo}
+                        />
+                      ) : (
+                        <IconSymbol
+                          name="storefront.fill"
+                          size={20}
+                          color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                        />
+                      )}
                       <View style={styles.searchResultTextContainer}>
                         <View style={styles.searchResultNameRow}>
                           <Text style={[styles.searchResultText, commerce.boosted && styles.searchResultTextBoosted]} numberOfLines={1}>
@@ -1017,7 +962,7 @@ export default function CompassScreen() {
                           )}
                         </View>
                         <Text style={styles.searchResultSubtext} numberOfLines={1}>
-                          {commerce.category} • {commerce.address}
+                          {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
                         </Text>
                       </View>
                       <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
@@ -1271,7 +1216,7 @@ export default function CompassScreen() {
               >
                 <View style={styles.businessItemContent}>
                   <Text style={styles.businessItemCategory}>
-                    {getCategoryIcon(item.category)}
+                    {getCategoryIcon(item.category?.name_fr || 'Commerce')}
                   </Text>
                   <View style={styles.businessItemInfo}>
                     <View style={styles.businessNameRow}>
@@ -1293,7 +1238,7 @@ export default function CompassScreen() {
                       {item.address || t('address_not_available')}
                     </Text>
                     <Text style={styles.businessItemCategory}>
-                      {item.category}
+                      {item.category ? (i18n.language === 'fr' ? item.category.name_fr : item.category.name_en) : 'Commerce'}
                     </Text>
                   </View>
                   <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
@@ -1923,6 +1868,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray,
+  },
+  searchResultLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.gray,
   },
   searchResultTextContainer: {
     flex: 1,

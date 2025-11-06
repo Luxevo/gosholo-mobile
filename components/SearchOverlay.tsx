@@ -10,6 +10,7 @@ import {
   StatusBar,
   Keyboard,
   TouchableWithoutFeedback,
+  Image,
 } from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useTranslation } from 'react-i18next';
@@ -57,7 +58,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   addressResults,
   isSearching,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [query, setQuery] = useState(initialQuery);
   const searchInputRef = useRef<TextInput>(null);
 
@@ -151,16 +152,23 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                         onClose();
                       }}
                     >
-                      <View style={[
-                        styles.resultIconContainer,
-                        commerce.boosted && styles.resultIconContainerBoosted
-                      ]}>
-                        <IconSymbol
-                          name="storefront.fill"
-                          size={24}
-                          color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                      {commerce.image_url ? (
+                        <Image
+                          source={{ uri: commerce.image_url }}
+                          style={styles.resultLogo}
                         />
-                      </View>
+                      ) : (
+                        <View style={[
+                          styles.resultIconContainer,
+                          commerce.boosted && styles.resultIconContainerBoosted
+                        ]}>
+                          <IconSymbol
+                            name="storefront.fill"
+                            size={24}
+                            color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                          />
+                        </View>
+                      )}
                       <View style={styles.resultTextContainer}>
                         <View style={styles.resultTitleRow}>
                           <Text style={[
@@ -176,7 +184,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                           )}
                         </View>
                         <Text style={styles.resultSubtitle} numberOfLines={1}>
-                          {commerce.category} • {commerce.address}
+                          {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
                         </Text>
                       </View>
                       <IconSymbol name="chevron.right" size={20} color={COLORS.textSecondary} />
@@ -301,6 +309,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 16,
+  },
+  resultLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
     marginRight: 16,
   },
   resultTextContainer: {

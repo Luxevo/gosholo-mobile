@@ -6,6 +6,10 @@ export interface Commerce {
   name: string;
   address: string;
   category_id: number | null;
+  category?: {
+    name_en: string;
+    name_fr: string;
+  };
   description: string | null;
   email: string | null;
   phone: string | null;
@@ -42,7 +46,7 @@ export function useCommerces() {
 
       const { data, error: supabaseError } = await supabase
         .from('commerces')
-        .select('*')
+        .select('*, category:category_id(name_en, name_fr)')
         .eq('status', 'active')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
