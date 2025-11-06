@@ -378,11 +378,12 @@ export default function CompassScreen() {
       trafficData: null,
       destinationMarker: null,
     });
-    
-    setModalState(prev => ({ ...prev, showNavigationInstructions: false }));
+
+    setModalState(prev => ({ ...prev, showNavigationInstructions: false, showSearchResults: false }));
     setVoiceState({ voiceNavigationEnabled: false, isSpeaking: false });
     setMapState(prev => ({ ...prev, isNavigating: false }));
-    
+    setSearchState({ query: '', results: [], isSearchingAddress: false, showFullScreenSearch: false });
+
     stopSpeaking();
     router.setParams({ destination: undefined, type: undefined });
   }, []);
@@ -881,18 +882,28 @@ export default function CompassScreen() {
                   const commerce = item.data as Commerce;
                   return (
                     <TouchableOpacity
-                      style={styles.searchResultItem}
+                      style={[
+                        styles.searchResultItem,
+                        commerce.boosted && styles.searchResultItemBoosted
+                      ]}
                       onPress={() => handleCommerceSelect(commerce)}
                     >
-                      <IconSymbol 
-                        name="storefront.fill" 
-                        size={20} 
-                        color={COLORS.teal} 
+                      <IconSymbol
+                        name="storefront.fill"
+                        size={20}
+                        color={commerce.boosted ? COLORS.primary : COLORS.teal}
                       />
                       <View style={styles.searchResultTextContainer}>
-                        <Text style={styles.searchResultText} numberOfLines={1}>
-                          {commerce.name}
-                        </Text>
+                        <View style={styles.searchResultNameRow}>
+                          <Text style={[styles.searchResultText, commerce.boosted && styles.searchResultTextBoosted]} numberOfLines={1}>
+                            {commerce.name}
+                          </Text>
+                          {commerce.boosted && (
+                            <View style={styles.searchBoostedBadge}>
+                              <IconSymbol name="star.fill" size={10} color={COLORS.white} />
+                            </View>
+                          )}
+                        </View>
                         <Text style={styles.searchResultSubtext} numberOfLines={1}>
                           {commerce.category} • {commerce.address}
                         </Text>
@@ -1804,6 +1815,28 @@ const styles = StyleSheet.create({
   searchResultSubtext: {
     fontSize: 12,
     color: COLORS.darkGray,
+  },
+  searchResultItemBoosted: {
+    backgroundColor: 'rgba(255, 98, 51, 0.05)',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  searchResultNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  searchResultTextBoosted: {
+    color: COLORS.primary,
+  },
+  searchBoostedBadge: {
+    backgroundColor: COLORS.primary,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   destinationMarkerContainer: {
     alignItems: 'center',

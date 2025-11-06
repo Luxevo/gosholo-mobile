@@ -142,19 +142,39 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                   const commerce = item.data;
                   return (
                     <TouchableOpacity
-                      style={styles.resultItem}
+                      style={[
+                        styles.resultItem,
+                        commerce.boosted && styles.resultItemBoosted
+                      ]}
                       onPress={() => {
                         onSelectCommerce(commerce);
                         onClose();
                       }}
                     >
-                      <View style={styles.resultIconContainer}>
-                        <IconSymbol name="storefront.fill" size={24} color={COLORS.teal} />
+                      <View style={[
+                        styles.resultIconContainer,
+                        commerce.boosted && styles.resultIconContainerBoosted
+                      ]}>
+                        <IconSymbol
+                          name="storefront.fill"
+                          size={24}
+                          color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                        />
                       </View>
                       <View style={styles.resultTextContainer}>
-                        <Text style={styles.resultTitle} numberOfLines={1}>
-                          {commerce.name}
-                        </Text>
+                        <View style={styles.resultTitleRow}>
+                          <Text style={[
+                            styles.resultTitle,
+                            commerce.boosted && styles.resultTitleBoosted
+                          ]} numberOfLines={1}>
+                            {commerce.name}
+                          </Text>
+                          {commerce.boosted && (
+                            <View style={styles.boostedBadge}>
+                              <IconSymbol name="star.fill" size={10} color={COLORS.white} />
+                            </View>
+                          )}
+                        </View>
                         <Text style={styles.resultSubtitle} numberOfLines={1}>
                           {commerce.category} • {commerce.address}
                         </Text>
@@ -329,5 +349,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  resultItemBoosted: {
+    backgroundColor: 'rgba(255, 98, 51, 0.05)',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
+  },
+  resultIconContainerBoosted: {
+    backgroundColor: 'rgba(255, 98, 51, 0.1)',
+  },
+  resultTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  resultTitleBoosted: {
+    color: COLORS.primary,
+  },
+  boostedBadge: {
+    backgroundColor: COLORS.primary,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
