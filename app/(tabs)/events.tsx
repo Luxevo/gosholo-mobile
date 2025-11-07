@@ -7,8 +7,9 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents } from '@/hooks/useEvents';
 import { Event } from '@/lib/supabase';
+import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
@@ -29,18 +30,18 @@ const COLORS = {
   black: '#000000',
 };
 
-const getCategoriesConfig = (t: any): Category[] => [
-  { id: 'all', label: t('all'), icon: 'calendar' },
-  { id: 'music', label: t('music'), icon: 'music.note' },
-  { id: 'sports', label: t('sports'), icon: 'sportscourt' },
-  { id: 'art', label: t('art'), icon: 'paintbrush' },
+const getDateFiltersConfig = (t: any): Category[] => [
+  { id: 'all', label: t('all'), icon: 'square.grid.2x2' },
+  { id: 'ongoing', label: t('ongoing'), icon: 'play.circle' },
+  { id: 'upcoming', label: t('upcoming'), icon: 'calendar' },
 ];
 
-const getFiltersConfig = (t: any): Filter[] => [
-  { id: 'filters', label: t('filters') },
-  { id: 'near-me', label: t('near_me') },
-  { id: 'this-week', label: t('this_week') },
-  { id: 'free', label: t('free') },
+const getDistanceFiltersConfig = (t: any): Filter[] => [
+  { id: 'all', label: t('all') },
+  { id: 'near-100m', label: '100m' },
+  { id: 'near-250m', label: '250m' },
+  { id: 'near-500m', label: '500m' },
+  { id: 'near-1km', label: '1km' },
 ];
 
 export default function EventsScreen() {
@@ -49,8 +50,34 @@ export default function EventsScreen() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userCity, setUserCity] = useState<string>('');
+
+  // Get user location on mount
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation([location.coords.longitude, location.coords.latitude]);
+
+        // Reverse geocode to get city name
+        try {
+          const [address] = await Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+          if (address.city) {
+            setUserCity(address.city);
+          }
+        } catch (error) {
+          console.error('Error reverse geocoding:', error);
+        }
+      }
+    })();
+  }, []);
 
   // Treats date-only (YYYY-MM-DD) as active through end of that day (UTC)
   const isEventActive = (end_date?: string | null, now: Date = new Date()) => {
@@ -67,6 +94,83 @@ export default function EventsScreen() {
     return (events ?? []).filter((e) => isEventActive((e as any).end_date));
   }, [events]);
 
+  // Helper: Calculate distance between two points (Haversine formula)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Filter events by search, date and distance
+  const filteredEvents = useMemo(() => {
+    let filtered = activeEvents;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((event) =>
+        event.title?.toLowerCase().includes(query) ||
+        event.description?.toLowerCase().includes(query) ||
+        event.commerces?.name?.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by date ranges
+    if (selectedDateFilter && selectedDateFilter !== 'all') {
+      const now = new Date();
+
+      filtered = filtered.filter((event) => {
+        const startDate = new Date(event.start_date);
+        const endDate = event.end_date ? new Date(event.end_date) : null;
+
+        if (selectedDateFilter === 'ongoing') {
+          // Event has started but hasn't ended yet
+          const hasStarted = startDate <= now;
+          const hasntEnded = !endDate || endDate >= now;
+          return hasStarted && hasntEnded;
+        } else if (selectedDateFilter === 'upcoming') {
+          // Event hasn't started yet
+          return startDate > now;
+        }
+
+        return true;
+      });
+    }
+
+    // Filter by distance ranges
+    if (selectedFilter && selectedFilter.startsWith('near-') && userLocation) {
+      let radiusKm = 10;
+      if (selectedFilter === 'near-100m') radiusKm = 0.1;
+      else if (selectedFilter === 'near-250m') radiusKm = 0.25;
+      else if (selectedFilter === 'near-500m') radiusKm = 0.5;
+      else if (selectedFilter === 'near-1km') radiusKm = 1;
+
+      filtered = filtered.filter((event) => {
+        const eventLat = event.latitude || event.commerces?.latitude;
+        const eventLng = event.longitude || event.commerces?.longitude;
+
+        if (!eventLat || !eventLng) return false;
+
+        const distance = calculateDistance(
+          userLocation[1],
+          userLocation[0],
+          Number(eventLat),
+          Number(eventLng)
+        );
+
+        return distance <= radiusKm;
+      });
+    }
+
+    return filtered;
+  }, [activeEvents, searchQuery, selectedDateFilter, selectedFilter, userLocation]);
+
   const handleEventPress = (event: Event) => {
     setSelectedEvent(event);
     setShowModal(true);
@@ -81,12 +185,20 @@ export default function EventsScreen() {
     console.log('Favorite pressed for event:', selectedEvent?.id);
   };
 
-  const handleCategoryPress = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+  const handleDateFilterPress = (filterId: string) => {
+    if (filterId === 'all') {
+      setSelectedDateFilter(null); // Clear filter
+    } else {
+      setSelectedDateFilter(prev => prev === filterId ? null : filterId);
+    }
   };
 
   const handleFilterPress = (filterId: string) => {
-    setSelectedFilter((prev) => (prev === filterId ? null : filterId));
+    if (filterId === 'all') {
+      setSelectedFilter(null); // Clear filter
+    } else {
+      setSelectedFilter(prev => prev === filterId ? null : filterId);
+    }
   };
 
   if (loading) {
@@ -142,7 +254,7 @@ export default function EventsScreen() {
       >
         {/* Header */}
         <AppHeader
-          location="Montréal"
+          location={userCity}
           onLocationPress={() => console.log('Location pressed')}
           onNotificationPress={() => console.log('Notifications pressed')}
           onProfilePress={() => console.log('Profile pressed')}
@@ -155,23 +267,24 @@ export default function EventsScreen() {
           placeholder={t('search_placeholder_events')}
         />
 
-        {/* Categories */}
+        {/* Date Filters */}
         <CategoriesSection
-          categories={getCategoriesConfig(t)}
-          selectedCategory={selectedCategory}
-          onCategoryPress={handleCategoryPress}
-          onSeeAllPress={() => console.log('See all categories')}
+          title={t('date')}
+          categories={getDateFiltersConfig(t)}
+          selectedCategory={selectedDateFilter || 'all'}
+          onCategoryPress={handleDateFilterPress}
+          onSeeAllPress={() => setSelectedDateFilter(null)}
         />
 
-        {/* Filters */}
+        {/* Distance Filters */}
         <FiltersSection
-          filters={getFiltersConfig(t)}
-          selectedFilter={selectedFilter}
+          filters={getDistanceFiltersConfig(t)}
+          selectedFilter={selectedFilter || 'all'}
           onFilterPress={handleFilterPress}
         />
 
         {/* Event List */}
-        {activeEvents.map((event) => (
+        {filteredEvents.map((event) => (
           <EventCard
             key={event.id}
             event={event}

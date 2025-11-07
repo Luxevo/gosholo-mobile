@@ -38,7 +38,7 @@ interface EventCardProps {
 }
 
 const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavoritePress }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const handleShare = async () => {
     try {
@@ -165,7 +165,9 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             </Text>
             {event.commerces?.category && (
               <View style={styles.categoryChip}>
-                <Text style={styles.categoryText}>{event.commerces.category}</Text>
+                <Text style={styles.categoryText}>
+                  {i18n.language === 'fr' ? event.commerces.category.name_fr : event.commerces.category.name_en}
+                </Text>
               </View>
             )}
           </View>

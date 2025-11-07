@@ -48,7 +48,7 @@ export default function EventDetailModal({
   onFavoritePress,
   onNavigateToMap
 }: EventDetailModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
   if (!event) return null;
 
@@ -181,7 +181,9 @@ export default function EventDetailModal({
               </TouchableOpacity>
               {event.commerces?.category && (
                 <View style={styles.categoryPill}>
-                  <Text style={styles.categoryText}>{event.commerces.category}</Text>
+                  <Text style={styles.categoryText}>
+                    {i18n.language === 'fr' ? event.commerces.category.name_fr : event.commerces.category.name_en}
+                  </Text>
                 </View>
               )}
             </View>

@@ -1,8 +1,14 @@
 import { Commerce } from '@/hooks/useCommerces';
+import { useOffers } from '@/hooks/useOffers';
+import { useEvents } from '@/hooks/useEvents';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Linking, Modal, Pressable, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { Image, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useMemo, useState } from 'react';
+import OfferDetailModal from './OfferDetailModal';
+import EventDetailModal from './EventDetailModal';
+import type { Offer, Event } from '@/lib/supabase';
 
 const COLORS = {
   light: {
@@ -54,10 +60,31 @@ export default function BusinessDetailModal({
   onGetDirections,
   onNavigateToMap,
 }: BusinessDetailModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const scheme = useColorScheme();
   const theme = scheme === 'dark' ? COLORS.dark : COLORS.light;
-  
+
+  // Fetch offers and events
+  const { offers } = useOffers();
+  const { events } = useEvents();
+
+  // State for offer/event detail modals
+  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [offerModalVisible, setOfferModalVisible] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [eventModalVisible, setEventModalVisible] = useState(false);
+
+  // Filter active offers and events for this commerce
+  const commerceOffers = useMemo(() => {
+    if (!business) return [];
+    return offers.filter(offer => offer.commerce_id === business.id);
+  }, [offers, business]);
+
+  const commerceEvents = useMemo(() => {
+    if (!business) return [];
+    return events.filter(event => event.commerce_id === business.id);
+  }, [events, business]);
+
   if (!business) {
     return null;
   }
@@ -127,62 +154,204 @@ export default function BusinessDetailModal({
           </View>
 
           {/* Content */}
-          <View style={styles.content}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {categoryEmojis[business.category] || '🏪'} {business.category}
-              </Text>
-            </View>
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.content}>
+              <View style={styles.topSection}>
+                {/* Business Logo/Image */}
+                {business.image_url && (
+                  <View style={styles.logoPastille}>
+                    <Image
+                      source={{ uri: business.image_url }}
+                      style={styles.businessLogo}
+                      resizeMode="cover"
+                    />
+                  </View>
+                )}
 
-            <Text style={[styles.name, { color: theme.ink }]}>{business.name}</Text>
-
-            {business.address && (
-              <TouchableOpacity 
-                style={styles.addressCard} 
-                onPress={handleAddressPress}
-                activeOpacity={onNavigateToMap ? 0.7 : 1}
-                disabled={!onNavigateToMap}
-              >
-                <View style={styles.addressRow}>
-                  <Ionicons name="location-outline" size={16} color={theme.teal} />
-                  <Text style={[styles.address, { color: theme.ink }]}>{business.address}</Text>
-                  {onNavigateToMap && (
-                    <Ionicons name="chevron-forward" size={16} color={theme.inkLight} style={styles.addressChevron} />
-                  )}
+                <View style={styles.topInfo}>
+                  <Text style={[styles.name, { color: theme.ink }]}>{business.name}</Text>
                 </View>
-              </TouchableOpacity>
-            )}
+              </View>
 
-            {business.description && (
-              <Text style={[styles.description, { color: theme.inkLight }]} numberOfLines={4}>
-                {business.description}
-              </Text>
-            )}
+              {business.address && (
+                <TouchableOpacity
+                  style={styles.addressCard}
+                  onPress={handleAddressPress}
+                  activeOpacity={onNavigateToMap ? 0.7 : 1}
+                  disabled={!onNavigateToMap}
+                >
+                  <View style={styles.addressRow}>
+                    <Ionicons name="location-outline" size={16} color={theme.teal} />
+                    <Text style={[styles.address, { color: theme.ink }]}>{business.address}</Text>
+                    {onNavigateToMap && (
+                      <Ionicons name="chevron-forward" size={16} color={theme.inkLight} style={styles.addressChevron} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
 
-            {/* Action buttons */}
-            <View style={styles.actions}>
-              {business.latitude && business.longitude && onGetDirections && (
-                <Pressable style={[styles.actionBtn, styles.directionsBtn]} onPress={() => onGetDirections(business)}>
-                  <Ionicons name="navigate-outline" size={16} color={COLORS.light.white} />
-                  <Text style={styles.actionText}>{t('directions')}</Text>
-                </Pressable>
+              {business.description && (
+                <Text style={[styles.description, { color: theme.inkLight }]}>
+                  {business.description}
+                </Text>
               )}
-              {business.website && (
-                <Pressable style={[styles.actionBtn, styles.websiteBtn]} onPress={handleWebsite}>
-                  <Ionicons name="globe-outline" size={16} color={COLORS.light.white} />
-                  <Text style={styles.actionText}>{t('website')}</Text>
-                </Pressable>
+
+              {/* Action buttons */}
+              <View style={styles.actions}>
+                {business.latitude && business.longitude && onGetDirections && (
+                  <Pressable style={[styles.actionBtn, styles.directionsBtn]} onPress={() => onGetDirections(business)}>
+                    <Ionicons name="navigate-outline" size={16} color={COLORS.light.white} />
+                    <Text style={styles.actionText}>{t('directions')}</Text>
+                  </Pressable>
+                )}
+                {business.website && (
+                  <Pressable style={[styles.actionBtn, styles.websiteBtn]} onPress={handleWebsite}>
+                    <Ionicons name="globe-outline" size={16} color={COLORS.light.white} />
+                    <Text style={styles.actionText}>{t('website')}</Text>
+                  </Pressable>
+                )}
+                {business.email && (
+                  <Pressable style={[styles.actionBtn, styles.emailBtn]} onPress={handleEmail}>
+                    <Ionicons name="mail-outline" size={16} color={COLORS.light.white} />
+                    <Text style={styles.actionText}>{t('email')}</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {/* Active Offers Section */}
+              {commerceOffers.length > 0 && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="pricetag" size={20} color={theme.primary} />
+                    <Text style={[styles.sectionTitle, { color: theme.ink }]}>
+                      {t('special_offers')} ({commerceOffers.length})
+                    </Text>
+                  </View>
+                  {commerceOffers.map((offer) => (
+                    <TouchableOpacity
+                      key={offer.id}
+                      style={[styles.offerCard, { backgroundColor: theme.gray }]}
+                      onPress={() => {
+                        setSelectedOffer(offer);
+                        setOfferModalVisible(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.offerHeader}>
+                        <Text style={[styles.offerTitle, { color: theme.ink }]} numberOfLines={2}>
+                          {offer.title}
+                        </Text>
+                        {offer.boosted && (
+                          <View style={styles.boostedBadge}>
+                            <Ionicons name="star" size={10} color={COLORS.light.white} />
+                          </View>
+                        )}
+                      </View>
+                      {offer.description && (
+                        <Text style={[styles.offerDescription, { color: theme.inkLight }]} numberOfLines={2}>
+                          {offer.description}
+                        </Text>
+                      )}
+                      {offer.end_date && (
+                        <View style={styles.offerFooter}>
+                          <Ionicons name="time-outline" size={12} color={theme.inkLight} />
+                          <Text style={[styles.offerDate, { color: theme.inkLight }]}>
+                            {t('valid_until')}: {new Date(offer.end_date).toLocaleDateString()}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={[styles.cardChevron, { backgroundColor: theme.primary }]}>
+                        <Ionicons name="arrow-forward" size={16} color={COLORS.light.white} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               )}
-              {business.email && (
-                <Pressable style={[styles.actionBtn, styles.emailBtn]} onPress={handleEmail}>
-                  <Ionicons name="mail-outline" size={16} color={COLORS.light.white} />
-                  <Text style={styles.actionText}>{t('email')}</Text>
-                </Pressable>
+
+              {/* Active Events Section */}
+              {commerceEvents.length > 0 && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="calendar" size={20} color={theme.teal} />
+                    <Text style={[styles.sectionTitle, { color: theme.ink }]}>
+                      {t('exciting_events')} ({commerceEvents.length})
+                    </Text>
+                  </View>
+                  {commerceEvents.map((event) => (
+                    <TouchableOpacity
+                      key={event.id}
+                      style={[styles.eventCard, { backgroundColor: theme.gray }]}
+                      onPress={() => {
+                        setSelectedEvent(event);
+                        setEventModalVisible(true);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.eventHeader}>
+                        <Text style={[styles.eventTitle, { color: theme.ink }]} numberOfLines={2}>
+                          {event.title}
+                        </Text>
+                        {event.boosted && (
+                          <View style={styles.boostedBadge}>
+                            <Ionicons name="star" size={10} color={COLORS.light.white} />
+                          </View>
+                        )}
+                      </View>
+                      {event.description && (
+                        <Text style={[styles.eventDescription, { color: theme.inkLight }]} numberOfLines={2}>
+                          {event.description}
+                        </Text>
+                      )}
+                      <View style={styles.eventFooter}>
+                        <Ionicons name="calendar-outline" size={12} color={theme.inkLight} />
+                        <Text style={[styles.eventDate, { color: theme.inkLight }]}>
+                          {new Date(event.start_date).toLocaleDateString()}
+                          {event.end_date && ` - ${new Date(event.end_date).toLocaleDateString()}`}
+                        </Text>
+                      </View>
+                      <View style={[styles.cardChevron, { backgroundColor: theme.primary }]}>
+                        <Ionicons name="arrow-forward" size={16} color={COLORS.light.white} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* Empty state when no offers or events */}
+              {commerceOffers.length === 0 && commerceEvents.length === 0 && (
+                <View style={styles.emptyState}>
+                  <Ionicons name="information-circle-outline" size={40} color={theme.inkLight} />
+                  <Text style={[styles.emptyText, { color: theme.inkLight }]}>
+                    {t('no_offers_title')}
+                  </Text>
+                </View>
               )}
             </View>
-          </View>
+          </ScrollView>
         </SafeAreaView>
       </View>
+
+      {/* Offer Detail Modal */}
+      <OfferDetailModal
+        visible={offerModalVisible}
+        offer={selectedOffer}
+        onClose={() => {
+          setOfferModalVisible(false);
+          setSelectedOffer(null);
+        }}
+        onNavigateToMap={onNavigateToMap}
+      />
+
+      {/* Event Detail Modal */}
+      <EventDetailModal
+        visible={eventModalVisible}
+        event={selectedEvent}
+        onClose={() => {
+          setEventModalVisible(false);
+          setSelectedEvent(null);
+        }}
+        onNavigateToMap={onNavigateToMap}
+      />
     </Modal>
   );
 }
@@ -195,10 +364,34 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: SPACING.xl,
-    maxHeight: '70%',
+    height: '85%',
     borderTopWidth: 3,
     borderTopColor: COLORS.light.primary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  topSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  logoPastille: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.light.gray,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: COLORS.light.primary,
+  },
+  businessLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  topInfo: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -242,6 +435,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.lg,
+    paddingBottom: SPACING.xl * 2,
   },
   badge: {
     alignSelf: 'flex-start',
@@ -315,5 +509,125 @@ const styles = StyleSheet.create({
   },
   emailBtn: {
     backgroundColor: COLORS.light.teal,
+  },
+  section: {
+    marginTop: SPACING.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  offerCard: {
+    padding: SPACING.md,
+    paddingRight: SPACING.xl * 2.5,
+    borderRadius: 12,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.light.primary,
+    borderLeftWidth: 4,
+    position: 'relative',
+  },
+  offerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.xs,
+  },
+  offerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+  },
+  offerDescription: {
+    fontSize: 12,
+    marginBottom: SPACING.xs,
+    lineHeight: 16,
+  },
+  offerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: SPACING.xs,
+  },
+  offerDate: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  eventCard: {
+    padding: SPACING.md,
+    paddingRight: SPACING.xl * 2.5,
+    borderRadius: 12,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.light.teal,
+    borderLeftWidth: 4,
+    position: 'relative',
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.xs,
+  },
+  eventTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+  },
+  eventDescription: {
+    fontSize: 12,
+    marginBottom: SPACING.xs,
+    lineHeight: 16,
+  },
+  eventFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: SPACING.xs,
+  },
+  eventDate: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  boostedBadge: {
+    backgroundColor: COLORS.light.primary,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: SPACING.xs,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xl * 2,
+  },
+  emptyText: {
+    fontSize: 14,
+    marginTop: SPACING.md,
+    textAlign: 'center',
+  },
+  cardChevron: {
+    position: 'absolute',
+    right: SPACING.md,
+    top: '50%',
+    marginTop: -16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

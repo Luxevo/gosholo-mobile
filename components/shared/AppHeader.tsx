@@ -28,13 +28,17 @@ export function AppHeader({
 }: AppHeaderProps) {
   return (
     <View style={styles.container}>
-      {/* Left side: Logo + Location */}
+      {/* Left side: Logo */}
       <View style={styles.leftSection}>
         <Image
           source={require('@/assets/images/dark_green.png')}
           style={styles.logo}
           resizeMode="contain"
         />
+      </View>
+
+      {/* Right side: Location */}
+      <View style={styles.rightSection}>
         <TouchableOpacity
           style={styles.locationChip}
           onPress={onLocationPress}
@@ -43,27 +47,6 @@ export function AppHeader({
         >
           <IconSymbol name="mappin" size={14} color={COLORS.teal} />
           <Text style={styles.locationText}>{location}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Right side: Notification + Profile */}
-      <View style={styles.rightSection}>
-        <TouchableOpacity
-          style={styles.notificationButton}
-          onPress={onNotificationPress}
-          accessibilityRole="button"
-          accessibilityLabel="Notifications"
-        >
-          <IconSymbol name="bell" size={20} color={COLORS.darkGray} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={onProfilePress}
-          accessibilityRole="button"
-          accessibilityLabel="Profile"
-        >
-          <IconSymbol name="person.crop.circle.fill" size={32} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
     </View>

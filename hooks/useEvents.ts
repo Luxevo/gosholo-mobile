@@ -5,7 +5,11 @@ export type EventWithCommerce = Event & {
   commerces: {
     id: string;
     name: string;
-    category: string;
+    category_id: number | null;
+    category: {
+      name_en: string;
+      name_fr: string;
+    } | null;
     address: string;
     latitude?: number;
     longitude?: number;
@@ -66,10 +70,10 @@ export const useEvents = (options: UseEventsOptions = {}) => {
       // Get unique commerce IDs
       const commerceIds = [...new Set(eventsData.map(event => event.commerce_id))];
 
-      // Fetch commerce data
+      // Fetch commerce data with category
       const { data: commercesData, error: commercesError } = await supabase
         .from('commerces')
-        .select('id, name, category, address, latitude, longitude')
+        .select('id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr)')
         .in('id', commerceIds);
 
       if (commercesError) {

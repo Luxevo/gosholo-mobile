@@ -5,7 +5,7 @@ export interface Commerce {
   id: string;
   name: string;
   address: string;
-  category: string;
+  category_id: number | null;
   description: string | null;
   email: string | null;
   phone: string | null;
@@ -22,7 +22,7 @@ export interface Commerce {
   updated_at: string;
   boosted: boolean | null;
   boosted_at: string | null;
-  boost_type: 'visibilite' | null;
+  boost_type: 'en_vedette' | 'visibilite' | null;
 }
 
 export function useCommerces() {

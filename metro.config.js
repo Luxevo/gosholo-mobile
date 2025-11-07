@@ -7,3 +7,4 @@ config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 
 module.exports = config;
+
