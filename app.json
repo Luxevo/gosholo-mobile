@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.jostinjarry1.gosholomobile",
+      "bundleIdentifier": "com.gosholo.gosholo",
       "buildNumber": "30",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
