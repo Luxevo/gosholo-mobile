@@ -305,7 +305,7 @@ export default function BusinessDetailModal({
                       <View style={styles.eventFooter}>
                         <Ionicons name="calendar-outline" size={12} color={theme.inkLight} />
                         <Text style={[styles.eventDate, { color: theme.inkLight }]}>
-                          {new Date(event.start_date).toLocaleDateString()}
+                          {event.start_date ? new Date(event.start_date).toLocaleDateString() : 'Date TBA'}
                           {event.end_date && ` - ${new Date(event.end_date).toLocaleDateString()}`}
                         </Text>
                       </View>

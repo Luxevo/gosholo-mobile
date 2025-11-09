@@ -126,6 +126,7 @@ export default function EventsScreen() {
       const now = new Date();
 
       filtered = filtered.filter((event) => {
+        if (!event.start_date) return false;
         const startDate = new Date(event.start_date);
         const endDate = event.end_date ? new Date(event.end_date) : null;
 
