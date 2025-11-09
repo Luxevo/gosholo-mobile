@@ -154,7 +154,14 @@
   "nav_overview": "Aperçu",
   "nav_rerouting": "Recalcul en cours...",
   "nav_off_route": "Hors itinéraire",
-  "nav_exit": "Quitter"
+  "nav_exit": "Quitter",
+  "nav_driving_traffic": "Voiture (trafic)",
+  "nav_driving_fast": "Voiture (rapide)",
+  "nav_walking": "Marche",
+  "nav_cycling": "Vélo",
+  "search_try_another": "Essayez une autre recherche",
+  "search_title": "Rechercher",
+  "search_subtitle": "Commerces, adresses, lieux..."
 }
 
 

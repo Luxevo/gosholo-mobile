@@ -228,15 +228,15 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               <IconSymbol name="magnifyingglass" size={48} color={COLORS.textSecondary} />
               <Text style={styles.emptyTitle}>{t('no_offers_title')}</Text>
               <Text style={styles.emptySubtitle}>
-                Essayez une autre recherche
+                {t('search_try_another')}
               </Text>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
               <IconSymbol name="magnifyingglass" size={48} color={COLORS.textSecondary} />
-              <Text style={styles.emptyTitle}>Rechercher</Text>
+              <Text style={styles.emptyTitle}>{t('search_title')}</Text>
               <Text style={styles.emptySubtitle}>
-                Commerces, adresses, lieux...
+                {t('search_subtitle')}
               </Text>
             </View>
           )}

@@ -904,7 +904,7 @@ export default function CompassScreen() {
           >
             <IconSymbol name="magnifyingglass" size={16} color={COLORS.darkGray} />
             <Text style={styles.searchPlaceholder}>
-              {searchQuery || "Chercher une adresse ou un commerce"}
+              {searchQuery || t('search_placeholder_businesses')}
             </Text>
           </TouchableOpacity>
         
@@ -1073,7 +1073,7 @@ export default function CompassScreen() {
               >
                 <IconSymbol name="car.fill" size={20} color={routingProfile === 'driving-traffic' ? COLORS.teal : COLORS.darkGray} />
                 <Text style={[styles.profileOptionText, routingProfile === 'driving-traffic' && styles.profileOptionTextActive]}>
-                  Voiture (trafic)
+                  {t('nav_driving_traffic')}
                 </Text>
               </TouchableOpacity>
               
@@ -1090,7 +1090,7 @@ export default function CompassScreen() {
               >
                 <IconSymbol name="car" size={20} color={routingProfile === 'driving' ? COLORS.teal : COLORS.darkGray} />
                 <Text style={[styles.profileOptionText, routingProfile === 'driving' && styles.profileOptionTextActive]}>
-                  Voiture (rapide)
+                  {t('nav_driving_fast')}
                 </Text>
               </TouchableOpacity>
               
@@ -1107,7 +1107,7 @@ export default function CompassScreen() {
               >
                 <IconSymbol name="figure.walk" size={20} color={routingProfile === 'walking' ? COLORS.teal : COLORS.darkGray} />
                 <Text style={[styles.profileOptionText, routingProfile === 'walking' && styles.profileOptionTextActive]}>
-                  Marche
+                  {t('nav_walking')}
                 </Text>
               </TouchableOpacity>
               
@@ -1124,7 +1124,7 @@ export default function CompassScreen() {
               >
                 <IconSymbol name="bicycle" size={20} color={routingProfile === 'cycling' ? COLORS.teal : COLORS.darkGray} />
                 <Text style={[styles.profileOptionText, routingProfile === 'cycling' && styles.profileOptionTextActive]}>
-                  Vélo
+                  {t('nav_cycling')}
                 </Text>
               </TouchableOpacity>
             </View>

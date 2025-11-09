@@ -154,7 +154,14 @@
   "nav_overview": "Overview",
   "nav_rerouting": "Rerouting...",
   "nav_off_route": "Off route",
-  "nav_exit": "Exit"
+  "nav_exit": "Exit",
+  "nav_driving_traffic": "Car (traffic)",
+  "nav_driving_fast": "Car (fast)",
+  "nav_walking": "Walking",
+  "nav_cycling": "Cycling",
+  "search_try_another": "Try another search",
+  "search_title": "Search",
+  "search_subtitle": "Businesses, addresses, places..."
 }
 
 
