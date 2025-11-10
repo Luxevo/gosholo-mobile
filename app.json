@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "gosholo-v2",
-    "slug": "gosholo-v2",
+    "slug": "gosholo-mobile",
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/ios-icon.png",
