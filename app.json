@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "gosholo-mobile",
-    "slug": "gosholo-mobile",
+    "name": "gosholo-v2",
+    "slug": "gosholo-v2",
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/ios-icon.png",
@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.gosholo.gosholo",
+      "bundleIdentifier": "com.jostinjarry1.gosholomobile",
       "buildNumber": "30",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -20,7 +20,7 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
-      "package": "com.jostinjarry1.gosholomobile"
+      "package": "com.gosholo.gosholo"
     },
     "plugins": [
       "expo-router",
