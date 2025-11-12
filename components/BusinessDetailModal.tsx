@@ -1,6 +1,7 @@
 import { Commerce } from '@/hooks/useCommerces';
 import { useOffers } from '@/hooks/useOffers';
 import { useEvents } from '@/hooks/useEvents';
+import { useCommerceHours } from '@/hooks/useCommerceHours';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
@@ -8,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMemo, useState } from 'react';
 import OfferDetailModal from './OfferDetailModal';
 import EventDetailModal from './EventDetailModal';
+import OpeningHours from './OpeningHours';
 import type { Offer, Event } from '@/lib/supabase';
 
 const COLORS = {
@@ -67,6 +69,9 @@ export default function BusinessDetailModal({
   // Fetch offers and events
   const { offers } = useOffers();
   const { events } = useEvents();
+
+  // Fetch commerce hours
+  const { regularHours, specialHours, loading: hoursLoading, isOpenNow, todayHours } = useCommerceHours(business?.id || null);
 
   // State for offer/event detail modals
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
@@ -217,6 +222,15 @@ export default function BusinessDetailModal({
                   </Pressable>
                 )}
               </View>
+
+              {/* Opening Hours Section */}
+              <OpeningHours
+                regularHours={regularHours}
+                specialHours={specialHours}
+                isOpenNow={isOpenNow}
+                todayHours={todayHours}
+                loading={hoursLoading}
+              />
 
               {/* Active Offers Section */}
               {commerceOffers.length > 0 && (

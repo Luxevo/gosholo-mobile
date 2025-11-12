@@ -161,7 +161,14 @@
   "nav_cycling": "Vélo",
   "search_try_another": "Essayez une autre recherche",
   "search_title": "Rechercher",
-  "search_subtitle": "Commerces, adresses, lieux..."
+  "search_subtitle": "Commerces, adresses, lieux...",
+  "opening_hours": "Heures d'ouverture",
+  "closed": "Fermé",
+  "today": "Aujourd'hui",
+  "show_less": "Voir Moins",
+  "show_all_hours": "Voir Toutes les Heures",
+  "special_hours": "Heures Spéciales",
+  "loading": "Chargement"
 }
 
 

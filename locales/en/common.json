@@ -161,7 +161,14 @@
   "nav_cycling": "Cycling",
   "search_try_another": "Try another search",
   "search_title": "Search",
-  "search_subtitle": "Businesses, addresses, places..."
+  "search_subtitle": "Businesses, addresses, places...",
+  "opening_hours": "Opening Hours",
+  "closed": "Closed",
+  "today": "Today",
+  "show_less": "Show Less",
+  "show_all_hours": "Show All Hours",
+  "special_hours": "Special Hours",
+  "loading": "Loading"
 }
 
 
