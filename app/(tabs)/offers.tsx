@@ -221,6 +221,8 @@ export default function OffersScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />
         }

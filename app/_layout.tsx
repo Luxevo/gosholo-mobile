@@ -42,7 +42,13 @@ export default function RootLayout() {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <Stack screenOptions={{ headerShown: false }}/>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          animationDuration: 400,
+        }}
+      />
       <WelcomeModal
         visible={showWelcomeModal}
         onClose={handleCloseWelcomeModal}
