@@ -232,7 +232,6 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: COLORS.line,
     width: Platform.OS === 'android' ? 340 : 356,
-    height: Platform.OS === 'android' ? 460 : 480,
     // Modern subtle shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -270,10 +269,10 @@ const styles = StyleSheet.create({
   boostText: { fontSize: 10, fontWeight: '700', color: '#FFD700' },
 
   // media
-  media: { 
-    position: 'relative', 
-    height: Platform.OS === 'android' ? 250 : 267, 
-    backgroundColor: COLORS.bgMuted 
+  media: {
+    position: 'relative',
+    aspectRatio: 4 / 5,
+    backgroundColor: COLORS.bgMuted
   },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
@@ -323,7 +322,6 @@ const styles = StyleSheet.create({
 
   // body
   body: {
-    height: Platform.OS === 'android' ? 210 : 213,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.lg,
     justifyContent: 'space-between',
@@ -372,7 +370,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
 
-  actions: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'center' },
+  actions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
   primaryBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: RAD.pill,

@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: COLORS.line,
     width: Platform.OS === 'android' ? 340 : 356,
-    height: Platform.OS === 'android' ? 460 : 480,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -192,10 +191,10 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  media: { 
-    position: 'relative', 
-    height: Platform.OS === 'android' ? 250 : 267, 
-    backgroundColor: COLORS.bgMuted 
+  media: {
+    position: 'relative',
+    aspectRatio: 4 / 5,
+    backgroundColor: COLORS.bgMuted
   },
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
@@ -263,7 +262,6 @@ const styles = StyleSheet.create({
   timeTextExpired: { color: COLORS.white },
 
   body: {
-    height: Platform.OS === 'android' ? 210 : 213,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.lg,
     backgroundColor: COLORS.white,
@@ -317,6 +315,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.sm,
     alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
 
   primaryBtn: {
