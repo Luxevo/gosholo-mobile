@@ -20,11 +20,26 @@
     "android": {
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
-      "package": "com.gosholo.gosholo"
+      "package": "com.gosholo.gosholo",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      }
     },
     "plugins": [
       "expo-router",
       "expo-splash-screen",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "This app uses location to show nearby restaurants and food events on the map."
+        }
+      ],
       [
         "@rnmapbox/maps",
         {
