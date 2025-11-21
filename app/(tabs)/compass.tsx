@@ -97,12 +97,11 @@ const CommerceMarker = React.memo(({ commerce, onPress }: { commerce: Commerce; 
         style={styles.markerContainer}
       >
         {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
-        <View 
+        <View
           style={[
             styles.markerPin,
             isBoosted && styles.markerPinBoosted
           ]}
-          pointerEvents="none"
         >
           <Image
             source={{ uri: LOGO_BASE64 }}
@@ -770,7 +769,7 @@ export default function CompassScreen() {
 
   
 
-  const defaultCenter: LngLat = userLocation ?? [-74.006, 40.7128]; // fallback
+  const defaultCenter: LngLat = userLocation ?? [-73.5673, 45.5017]; // Montreal fallback
 
   return (
     <View style={styles.container}>
