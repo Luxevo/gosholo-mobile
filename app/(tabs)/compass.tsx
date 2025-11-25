@@ -26,6 +26,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -87,37 +88,72 @@ const COLORS = {
 type LngLat = [number, number];
 
 // Optimized marker components for better performance
+// Android: PointAnnotation with text (reliable clicks)
+// iOS: MarkerView with logo (better rendering)
 const CommerceMarker = React.memo(({ commerce, onPress }: { commerce: Commerce; onPress: (commerce: Commerce) => void }) => {
   const isBoosted = commerce.boosted;
-  
-  return (
-    <MarkerView
-      id={commerce.id}
-      coordinate={[commerce.longitude!, commerce.latitude!]}
-      allowOverlap={true}
-      anchor={{ x: 0.5, y: 0.5 }}
-    >
-      <TouchableOpacity
-        onPress={() => onPress(commerce)}
-        activeOpacity={0.7}
-        style={styles.markerContainer}
+  const isAndroid = Platform.OS === 'android';
+
+  if (isAndroid) {
+    // Android: Use PointAnnotation with text "gosholo"
+    return (
+      <PointAnnotation
+        id={commerce.id}
+        coordinate={[commerce.longitude!, commerce.latitude!]}
+        anchor={{ x: 0.5, y: 0.5 }}
+        draggable={false}
+        onSelected={() => onPress(commerce)}
       >
-        {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
         <View
           style={[
             styles.markerPin,
-            isBoosted && styles.markerPinBoosted
+            styles.markerPinButton,
+            isBoosted && styles.markerPinBoosted,
+            isBoosted && styles.markerPinButtonBoosted
           ]}
+          collapsable={false}
         >
-          <Image
-            source={{ uri: LOGO_BASE64 }}
-            style={styles.markerLogo}
-            resizeMode="contain"
-          />
+          <Text
+            style={[styles.markerText, isBoosted && styles.markerTextBoosted]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={false}
+          >
+            gosholo
+          </Text>
         </View>
-      </TouchableOpacity>
-    </MarkerView>
-  );
+      </PointAnnotation>
+    );
+  } else {
+    // iOS: Use MarkerView with logo image
+    return (
+      <MarkerView
+        id={commerce.id}
+        coordinate={[commerce.longitude!, commerce.latitude!]}
+        allowOverlap={true}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <TouchableOpacity
+          onPress={() => onPress(commerce)}
+          activeOpacity={0.7}
+          style={styles.markerContainer}
+        >
+          {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
+          <View
+            style={[
+              styles.markerPin,
+              isBoosted && styles.markerPinBoosted
+            ]}
+          >
+            <Image
+              source={{ uri: LOGO_BASE64 }}
+              style={styles.markerLogo}
+              resizeMode="contain"
+            />
+          </View>
+        </TouchableOpacity>
+      </MarkerView>
+    );
+  }
 });
 
 // Clustered Marker - Shows number when multiple businesses at same location
@@ -130,25 +166,26 @@ const ClusteredMarker = React.memo(({
 }) => {
   const isBoosted = cluster.isBoosted;
   const count = cluster.commerces.length;
+  const isAndroid = Platform.OS === 'android';
 
-  return (
-    <MarkerView
-      id={cluster.id}
-      coordinate={[cluster.longitude, cluster.latitude]}
-      allowOverlap={true}
-      anchor={{ x: 0.5, y: 0.5 }}
-    >
-      <TouchableOpacity
-        onPress={() => onPress(cluster)}
-        activeOpacity={0.7}
-        style={styles.markerContainer}
+  if (isAndroid) {
+    // Android: Use PointAnnotation with count number
+    return (
+      <PointAnnotation
+        id={cluster.id}
+        coordinate={[cluster.longitude, cluster.latitude]}
+        anchor={{ x: 0.5, y: 0.5 }}
+        draggable={false}
+        onSelected={() => onPress(cluster)}
       >
-        {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
         <View
           style={[
             styles.markerPin,
-            isBoosted && styles.markerPinBoosted
+            styles.markerPinButton,
+            isBoosted && styles.markerPinBoosted,
+            isBoosted && styles.markerPinButtonBoosted
           ]}
+          collapsable={false}
         >
           <Text
             style={[
@@ -160,9 +197,43 @@ const ClusteredMarker = React.memo(({
             {count}
           </Text>
         </View>
-      </TouchableOpacity>
-    </MarkerView>
-  );
+      </PointAnnotation>
+    );
+  } else {
+    // iOS: Use MarkerView with count number
+    return (
+      <MarkerView
+        id={cluster.id}
+        coordinate={[cluster.longitude, cluster.latitude]}
+        allowOverlap={true}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <TouchableOpacity
+          onPress={() => onPress(cluster)}
+          activeOpacity={0.7}
+          style={styles.markerContainer}
+        >
+          {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
+          <View
+            style={[
+              styles.markerPin,
+              isBoosted && styles.markerPinBoosted
+            ]}
+          >
+            <Text
+              style={[
+                styles.clusterCountText,
+                isBoosted && styles.clusterCountTextBoosted
+              ]}
+              numberOfLines={1}
+            >
+              {count}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </MarkerView>
+    );
+  }
 });
 
 const DestinationMarker = React.memo(({ coordinate }: { coordinate: LngLat }) => (
@@ -949,7 +1020,7 @@ export default function CompassScreen() {
             )}
 
             {/* Optimized Markers with clustering - Show number when multiple at same location */}
-            {MarkerView &&
+            {(MarkerView || PointAnnotation) &&
               markerClusters
                 .slice(0, 50) // Limit to 50 markers for performance
                 .map((cluster: MarkerCluster) => {
@@ -1660,6 +1731,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
+  markerPinButton: {
+    // Android: Button shape (pill/rounded rectangle) with green fluo background
+    width: 60,
+    height: 28,
+    borderRadius: 14,
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+    minWidth: 60,
+    backgroundColor: COLORS.green, // Green fluo
+    borderWidth: 0,
+  },
+  markerPinButtonBoosted: {
+    // Android boosted: Better styled button with border and shadow
+    minWidth: 70,
+    height: 32,
+    borderRadius: 16,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    backgroundColor: COLORS.green,
+    borderWidth: 2,
+    borderColor: COLORS.teal,
+    shadowColor: COLORS.teal,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 6,
+  },
   markerLogo: {
     width: 30,
     height: 30,
@@ -1669,12 +1767,15 @@ const styles = StyleSheet.create({
     height: 42,
   },
   markerText: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: 'rgb(1,111,115)',
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.teal,
+    textAlign: 'center',
   },
   markerTextBoosted: {
-    fontSize: 34,
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.teal,
   },
   boostGlow: {
     position: 'absolute',
