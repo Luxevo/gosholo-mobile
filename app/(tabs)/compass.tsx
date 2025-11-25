@@ -8,6 +8,10 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
 import {
+  groupCommercesByLocation,
+  type MarkerCluster,
+} from '@/utils/markerClustering';
+import {
   calculateETA,
   getCurrentStepIndex,
   getDistanceFromLine,
@@ -21,6 +25,8 @@ import {
   Alert,
   FlatList,
   Image,
+  Modal,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -114,6 +120,51 @@ const CommerceMarker = React.memo(({ commerce, onPress }: { commerce: Commerce; 
   );
 });
 
+// Clustered Marker - Shows number when multiple businesses at same location
+const ClusteredMarker = React.memo(({
+  cluster,
+  onPress
+}: {
+  cluster: MarkerCluster;
+  onPress: (cluster: MarkerCluster) => void
+}) => {
+  const isBoosted = cluster.isBoosted;
+  const count = cluster.commerces.length;
+
+  return (
+    <MarkerView
+      id={cluster.id}
+      coordinate={[cluster.longitude, cluster.latitude]}
+      allowOverlap={true}
+      anchor={{ x: 0.5, y: 0.5 }}
+    >
+      <TouchableOpacity
+        onPress={() => onPress(cluster)}
+        activeOpacity={0.7}
+        style={styles.markerContainer}
+      >
+        {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
+        <View
+          style={[
+            styles.markerPin,
+            isBoosted && styles.markerPinBoosted
+          ]}
+        >
+          <Text
+            style={[
+              styles.clusterCountText,
+              isBoosted && styles.clusterCountTextBoosted
+            ]}
+            numberOfLines={1}
+          >
+            {count}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </MarkerView>
+  );
+});
+
 const DestinationMarker = React.memo(({ coordinate }: { coordinate: LngLat }) => (
   <MarkerView
     id="destination-marker"
@@ -153,6 +204,8 @@ export default function CompassScreen() {
     showSearchResults: false,
     selectedPOI: null as any,
     showPOIModal: false,
+    selectedCluster: null as MarkerCluster | null,
+    showClusterModal: false,
   });
   
   // Consolidated navigation state
@@ -187,7 +240,7 @@ export default function CompassScreen() {
 
   // Extract individual states for easier access
   const { is3D, followUserLocation, isNavigating, showRouteOverview } = mapState;
-  const { selectedBusiness, showBusinessModal, showBusinessList, showNavigationInstructions, showProfileSwitcher, showSearchResults, selectedPOI, showPOIModal } = modalState;
+  const { selectedBusiness, showBusinessModal, showBusinessList, showNavigationInstructions, showProfileSwitcher, showSearchResults, selectedPOI, showPOIModal, selectedCluster, showClusterModal } = modalState;
   const { routeCoordinates, routeDistance, routeDuration, navigationSteps, alternativeRoutes, currentStepIndex, trafficData, destinationMarker } = navigationState;
   const { query: searchQuery, results: searchResults, showFullScreenSearch } = searchState;
   const { voiceNavigationEnabled } = voiceState;
@@ -210,6 +263,11 @@ export default function CompassScreen() {
       commerce.address?.toLowerCase().includes(query)
     );
   }, [commerces, searchQuery]);
+
+  // Group commerces by location to show numbered markers for co-located businesses
+  const markerClusters = useMemo(() => {
+    return groupCommercesByLocation(filteredCommerces, 20); // 20m threshold (same building)
+  }, [filteredCommerces]);
 
   useEffect(() => {
     requestLocationPermission();
@@ -582,6 +640,28 @@ export default function CompassScreen() {
     }));
   }, []);
 
+  const handleClusterPress = useCallback((cluster: MarkerCluster) => {
+    // If only one commerce, open it directly
+    if (cluster.commerces.length === 1) {
+      handleBusinessPress(cluster.commerces[0]);
+    } else {
+      // Show list of all businesses at this location
+      setModalState(prev => ({
+        ...prev,
+        selectedCluster: cluster,
+        showClusterModal: true,
+      }));
+    }
+  }, [handleBusinessPress]);
+
+  const handleCloseClusterModal = useCallback(() => {
+    setModalState(prev => ({
+      ...prev,
+      selectedCluster: null,
+      showClusterModal: false,
+    }));
+  }, []);
+
   const toggleBusinessList = useCallback(() => {
     setModalState(prev => ({ ...prev, showBusinessList: !prev.showBusinessList }));
   }, []);
@@ -868,18 +948,30 @@ export default function CompassScreen() {
               </ShapeSource>
             )}
 
-            {/* Optimized Markers with virtualization */}
+            {/* Optimized Markers with clustering - Show number when multiple at same location */}
             {MarkerView &&
-              filteredCommerces
-                .filter(commerce => commerce.latitude && commerce.longitude)
+              markerClusters
                 .slice(0, 50) // Limit to 50 markers for performance
-                .map((commerce: Commerce) => (
-                  <CommerceMarker
-                    key={commerce.id}
-                    commerce={commerce}
-                    onPress={handleBusinessPress}
-                  />
-                ))}
+                .map((cluster: MarkerCluster) => {
+                  // Render clustered marker if multiple commerces, otherwise single marker
+                  if (cluster.commerces.length > 1) {
+                    return (
+                      <ClusteredMarker
+                        key={cluster.id}
+                        cluster={cluster}
+                        onPress={handleClusterPress}
+                      />
+                    );
+                  } else {
+                    return (
+                      <CommerceMarker
+                        key={cluster.commerces[0].id}
+                        commerce={cluster.commerces[0]}
+                        onPress={handleBusinessPress}
+                      />
+                    );
+                  }
+                })}
             
             {/* Optimized Destination Marker */}
             {MarkerView && destinationMarker && (
@@ -1354,6 +1446,82 @@ export default function CompassScreen() {
         addressResults={searchResults}
         isSearching={searchState.isSearchingAddress}
       />
+
+      {/* Cluster Modal - Show list of businesses at same location */}
+      <Modal visible={showClusterModal} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={handleCloseClusterModal}
+            activeOpacity={1}
+          />
+          <View style={styles.clusterModalContainer}>
+            {/* Header */}
+            <View style={styles.clusterModalHeader}>
+              <Text style={styles.clusterModalTitle}>
+                {t('multiple_businesses_here')}
+              </Text>
+              <TouchableOpacity onPress={handleCloseClusterModal}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Subtitle */}
+            <Text style={styles.clusterModalSubtitle}>
+              {t('businesses_at_this_location', { count: selectedCluster?.commerces.length || 0 })}
+            </Text>
+
+            {/* Business List */}
+            <ScrollView style={styles.clusterModalScroll}>
+              {selectedCluster?.commerces.map((commerce: Commerce) => (
+                <TouchableOpacity
+                  key={commerce.id}
+                  style={[
+                    styles.clusterCommerceItem,
+                    commerce.boosted && styles.clusterCommerceItemBoosted
+                  ]}
+                  onPress={() => {
+                    handleCloseClusterModal();
+                    setTimeout(() => handleBusinessPress(commerce), 100);
+                  }}
+                >
+                  {/* Logo */}
+                  {commerce.image_url ? (
+                    <Image
+                      source={{ uri: commerce.image_url }}
+                      style={styles.clusterCommerceLogo}
+                    />
+                  ) : (
+                    <View style={styles.clusterCommerceLogo}>
+                      <IconSymbol
+                        name="storefront.fill"
+                        size={20}
+                        color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                      />
+                    </View>
+                  )}
+
+                  {/* Info */}
+                  <View style={styles.clusterCommerceInfo}>
+                    <Text style={styles.clusterCommerceName} numberOfLines={1}>
+                      {commerce.name}
+                    </Text>
+                    <Text style={styles.clusterCommerceCategory} numberOfLines={1}>
+                      {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'}
+                    </Text>
+                    <Text style={styles.clusterCommerceAddress} numberOfLines={1}>
+                      {commerce.address || t('address_not_available')}
+                    </Text>
+                  </View>
+
+                  {/* Arrow */}
+                  <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* POI Modal - Google Maps Style */}
       <POIModal
@@ -1920,5 +2088,102 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
+  },
+  // Cluster marker styles
+  clusterCountText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.teal,
+    textAlign: 'center',
+  },
+  clusterCountTextBoosted: {
+    fontSize: 28,
+    color: COLORS.primary,
+  },
+  // Cluster modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  clusterModalContainer: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: '70%',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  clusterModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  clusterModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.black,
+  },
+  clusterModalSubtitle: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  clusterModalScroll: {
+    paddingHorizontal: 16,
+  },
+  clusterCommerceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginVertical: 6,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.gray,
+  },
+  clusterCommerceItemBoosted: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    backgroundColor: '#FFF5F3',
+  },
+  clusterCommerceLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.gray,
+  },
+  clusterCommerceInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  clusterCommerceName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.black,
+    marginBottom: 4,
+  },
+  clusterCommerceCategory: {
+    fontSize: 14,
+    color: COLORS.primary,
+    marginBottom: 2,
+  },
+  clusterCommerceAddress: {
+    fontSize: 12,
+    color: COLORS.darkGray,
   },
 });
