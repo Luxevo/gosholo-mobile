@@ -1,17 +1,17 @@
-import { Commerce } from '@/hooks/useCommerces';
-import { useOffers } from '@/hooks/useOffers';
-import { useEvents } from '@/hooks/useEvents';
 import { useCommerceHours } from '@/hooks/useCommerceHours';
+import { Commerce } from '@/hooks/useCommerces';
+import { useEvents } from '@/hooks/useEvents';
+import { useOffers } from '@/hooks/useOffers';
+import type { Event, Offer } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useMemo, useState } from 'react';
-import OfferDetailModal from './OfferDetailModal';
 import EventDetailModal from './EventDetailModal';
-import OpeningHours from './OpeningHours';
-import type { Offer, Event } from '@/lib/supabase';
 import { LinkableText } from './LinkableText';
+import OfferDetailModal from './OfferDetailModal';
+import OpeningHours from './OpeningHours';
 
 const COLORS = {
   light: {
@@ -115,6 +115,8 @@ export default function BusinessDetailModal({
   };
   const handleEmail = () => business.email && Linking.openURL(`mailto:${business.email}`);
   const handleWebsite = () => business.website && openUrl(business.website);
+  const handleFacebook = () => business.facebook_url && openUrl(business.facebook_url);
+  const handleInstagram = () => business.instagram_url && openUrl(business.instagram_url);
 
   const handleShare = async () => {
     try {
@@ -223,6 +225,22 @@ export default function BusinessDetailModal({
                   </Pressable>
                 )}
               </View>
+
+              {/* Social Media buttons */}
+              {(business.facebook_url || business.instagram_url) && (
+                <View style={styles.socialActions}>
+                  {business.facebook_url && (
+                    <Pressable style={styles.socialBtn} onPress={handleFacebook}>
+                      <Ionicons name="logo-facebook" size={26} color={theme.teal} />
+                    </Pressable>
+                  )}
+                  {business.instagram_url && (
+                    <Pressable style={styles.socialBtn} onPress={handleInstagram}>
+                      <Ionicons name="logo-instagram" size={26} color={theme.teal} />
+                    </Pressable>
+                  )}
+                </View>
+              )}
 
               {/* Opening Hours Section */}
               <OpeningHours
@@ -524,6 +542,20 @@ const styles = StyleSheet.create({
   },
   emailBtn: {
     backgroundColor: COLORS.light.teal,
+  },
+  socialActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginTop: SPACING.md,
+    alignItems: 'center',
+  },
+  socialBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   section: {
     marginTop: SPACING.xl,
