@@ -178,6 +178,24 @@ export default function BusinessDetailModal({
 
                 <View style={styles.topInfo}>
                   <Text style={[styles.name, { color: theme.ink }]}>{business.name}</Text>
+                  
+                  {/* Category and Subcategory */}
+                  {business.category && (
+                    <View style={styles.categoryRow}>
+                      <View style={[styles.categoryBadge, { backgroundColor: theme.gray }]}>
+                        <Text style={[styles.categoryText, { color: theme.ink }]}>
+                          {i18n.language === 'fr' ? business.category.name_fr : business.category.name_en}
+                        </Text>
+                      </View>
+                      {business.subcategory && (business.category.name_en?.toLowerCase() === 'restaurant' || business.category.name_fr?.toLowerCase() === 'restaurant') && (
+                        <View style={[styles.categoryBadge, styles.subcategoryBadge, { backgroundColor: theme.teal }]}>
+                          <Text style={[styles.categoryText, { color: COLORS.light.white }]}>
+                            {i18n.language === 'fr' ? business.subcategory.name_fr : business.subcategory.name_en}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -489,6 +507,25 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     marginBottom: SPACING.sm,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+    marginTop: SPACING.xs,
+  },
+  categoryBadge: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  subcategoryBadge: {
+    opacity: 0.9,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   addressCard: {
     backgroundColor: 'rgba(178, 253, 157, 0.12)',
