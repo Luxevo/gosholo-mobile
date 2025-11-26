@@ -3,7 +3,6 @@ import OfferDetailModal from '@/components/OfferDetailModal';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
 import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
-import { PromoBanner } from '@/components/shared/PromoBanner';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCategories } from '@/hooks/useCategories';
@@ -240,11 +239,6 @@ export default function OffersScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder={t('search_placeholder_offers')}
-        />
-
-        {/* Promo Banner */}
-        <PromoBanner
-          onPress={() => console.log('Promo banner pressed')}
         />
 
         {/* Categories */}
