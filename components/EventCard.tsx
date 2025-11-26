@@ -3,6 +3,7 @@ import type { EventWithCommerce } from '@/hooks/useEvents';
 import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ImageBackground, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinkableText } from './LinkableText';
 
 const COLORS = {
   primary: '#FF6233',
@@ -176,9 +177,9 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             {event.title}
           </Text>
 
-          <Text style={styles.description} numberOfLines={2}>
+          <LinkableText style={styles.description} linkColor={COLORS.teal} numberOfLines={2}>
             {event.description}
-          </Text>
+          </LinkableText>
         </View>
 
         {/* Actions */}

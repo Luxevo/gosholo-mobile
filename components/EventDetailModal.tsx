@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Image, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusinessDetailModal from './BusinessDetailModal';
+import { LinkableText } from './LinkableText';
 
 const COLORS = {
   primary: '#FF6233',
@@ -192,7 +193,7 @@ export default function EventDetailModal({
             <Text style={styles.title}>{event.title}</Text>
 
             {/* Description */}
-            <Text style={styles.subtitle}>{event.description}</Text>
+            <LinkableText style={styles.subtitle} linkColor={COLORS.teal}>{event.description}</LinkableText>
 
             {/* Key Info Grid */}
             <View style={styles.infoGrid}>
@@ -297,7 +298,7 @@ export default function EventDetailModal({
                   <IconSymbol name="info.circle.fill" size={18} color={COLORS.inkDim} />
                   <Text style={styles.conditionsLabel}>{t('event_details')}</Text>
                 </View>
-                <Text style={styles.conditionsText}>{event.condition}</Text>
+                <LinkableText style={styles.conditionsText} linkColor={COLORS.teal}>{event.condition}</LinkableText>
               </View>
             )}
           </View>

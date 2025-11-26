@@ -11,6 +11,7 @@ import OfferDetailModal from './OfferDetailModal';
 import EventDetailModal from './EventDetailModal';
 import OpeningHours from './OpeningHours';
 import type { Offer, Event } from '@/lib/supabase';
+import { LinkableText } from './LinkableText';
 
 const COLORS = {
   light: {
@@ -196,9 +197,9 @@ export default function BusinessDetailModal({
               )}
 
               {business.description && (
-                <Text style={[styles.description, { color: theme.inkLight }]}>
+                <LinkableText style={[styles.description, { color: theme.inkLight }]} linkColor={theme.teal}>
                   {business.description}
-                </Text>
+                </LinkableText>
               )}
 
               {/* Action buttons */}
@@ -262,9 +263,9 @@ export default function BusinessDetailModal({
                         )}
                       </View>
                       {offer.description && (
-                        <Text style={[styles.offerDescription, { color: theme.inkLight }]} numberOfLines={2}>
+                        <LinkableText style={[styles.offerDescription, { color: theme.inkLight }]} linkColor={theme.teal} numberOfLines={2}>
                           {offer.description}
-                        </Text>
+                        </LinkableText>
                       )}
                       {offer.end_date && (
                         <View style={styles.offerFooter}>
@@ -312,9 +313,9 @@ export default function BusinessDetailModal({
                         )}
                       </View>
                       {event.description && (
-                        <Text style={[styles.eventDescription, { color: theme.inkLight }]} numberOfLines={2}>
+                        <LinkableText style={[styles.eventDescription, { color: theme.inkLight }]} linkColor={theme.teal} numberOfLines={2}>
                           {event.description}
-                        </Text>
+                        </LinkableText>
                       )}
                       <View style={styles.eventFooter}>
                         <Ionicons name="calendar-outline" size={12} color={theme.inkLight} />

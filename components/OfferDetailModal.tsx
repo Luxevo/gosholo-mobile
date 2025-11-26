@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusinessDetailModal from './BusinessDetailModal';
+import { LinkableText } from './LinkableText';
 
 const COLORS = {
   primary: '#FF6233',
@@ -197,7 +198,7 @@ export default function OfferDetailModal({
             <Text style={styles.title}>{offer.title}</Text>
 
             {/* Description */}
-            <Text style={styles.subtitle}>{offer.description}</Text>
+            <LinkableText style={styles.subtitle} linkColor={COLORS.teal}>{offer.description}</LinkableText>
 
             {/* Key Info Grid */}
             <View style={styles.infoGrid}>
@@ -256,7 +257,7 @@ export default function OfferDetailModal({
                   <IconSymbol name="info.circle.fill" size={18} color={COLORS.inkDim} />
                   <Text style={styles.conditionsLabel}>{t('terms_conditions')}</Text>
                 </View>
-                <Text style={styles.conditionsText}>{offer.condition}</Text>
+                <LinkableText style={styles.conditionsText} linkColor={COLORS.teal}>{offer.condition}</LinkableText>
               </View>
             )}
           </View>

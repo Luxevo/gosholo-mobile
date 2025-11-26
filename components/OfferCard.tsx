@@ -3,6 +3,7 @@ import type { OfferWithCommerce } from '@/hooks/useOffers';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ImageBackground, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinkableText } from './LinkableText';
 
 const COLORS = {
   primary: '#FF6233',
@@ -136,9 +137,9 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
             {offer.title}
           </Text>
 
-          <Text style={styles.description} numberOfLines={2}>
+          <LinkableText style={styles.description} linkColor={COLORS.teal} numberOfLines={2}>
             {offer.description}
-          </Text>
+          </LinkableText>
         </View>
 
         {/* CTA */}
