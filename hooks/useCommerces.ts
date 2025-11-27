@@ -10,11 +10,11 @@ export interface Commerce {
     name_en: string;
     name_fr: string;
   };
-  sub_category?: number | null;
-  subcategory?: {
+  sub_category_id?: number | null;
+  sub_category?: {
     name_en: string;
     name_fr: string;
-  };
+  } | null;
   description: string | null;
   email: string | null;
   phone: string | null;
@@ -51,14 +51,12 @@ export function useCommerces() {
 
       const { data, error: supabaseError } = await supabase
         .from('commerces')
-        .select('*, category:category_id(name_en, name_fr), subcategory:sub_category(name_en, name_fr)')
+        .select('*, category:category_id(name_en, name_fr), sub_category(name_en, name_fr)')
         .eq('status', 'active')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
         .order('boosted', { ascending: false })
         .order('boosted_at', { ascending: false, nullsFirst: false });
-
-      console.log('🏪 Supabase response:', { data, error: supabaseError });
 
       if (supabaseError) {
         throw supabaseError;

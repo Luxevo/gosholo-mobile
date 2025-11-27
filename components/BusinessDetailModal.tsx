@@ -187,10 +187,10 @@ export default function BusinessDetailModal({
                           {i18n.language === 'fr' ? business.category.name_fr : business.category.name_en}
                         </Text>
                       </View>
-                      {business.subcategory && (business.category.name_en?.toLowerCase() === 'restaurant' || business.category.name_fr?.toLowerCase() === 'restaurant') && (
+                      {business.sub_category && (business.category.name_en?.toLowerCase().trim() === 'restaurant' || business.category.name_fr?.toLowerCase().trim() === 'restaurant') && (
                         <View style={[styles.categoryBadge, styles.subcategoryBadge, { backgroundColor: theme.teal }]}>
                           <Text style={[styles.categoryText, { color: COLORS.light.white }]}>
-                            {i18n.language === 'fr' ? business.subcategory.name_fr : business.subcategory.name_en}
+                            {i18n.language === 'fr' ? business.sub_category.name_fr : business.sub_category.name_en}
                           </Text>
                         </View>
                       )}
