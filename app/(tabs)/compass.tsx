@@ -11,6 +11,7 @@ import {
   groupCommercesByLocation,
   type MarkerCluster,
 } from '@/utils/markerClustering';
+import { matchesSearch } from '@/utils/searchUtils';
 import {
   calculateETA,
   getCurrentStepIndex,
@@ -322,16 +323,16 @@ export default function CompassScreen() {
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
 
-  // Memoized filtered commerces - no side effects
+  // Memoized filtered commerces - no side effects (accent-insensitive search)
   const filteredCommerces = useMemo(() => {
     if (!searchQuery.trim()) return commerces;
 
-    const query = searchQuery.toLowerCase();
+    const query = searchQuery.trim();
     return commerces.filter((commerce) =>
-      commerce.name?.toLowerCase().includes(query) ||
-      commerce.category?.name_en?.toLowerCase().includes(query) ||
-      commerce.category?.name_fr?.toLowerCase().includes(query) ||
-      commerce.address?.toLowerCase().includes(query)
+      matchesSearch(commerce.name, query) ||
+      matchesSearch(commerce.category?.name_en, query) ||
+      matchesSearch(commerce.category?.name_fr, query) ||
+      matchesSearch(commerce.address, query)
     );
   }, [commerces, searchQuery]);
 

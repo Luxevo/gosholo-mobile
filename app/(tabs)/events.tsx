@@ -7,6 +7,7 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents } from '@/hooks/useEvents';
 import { Event } from '@/lib/supabase';
+import { matchesSearch } from '@/utils/searchUtils';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -111,13 +112,13 @@ export default function EventsScreen() {
   const filteredEvents = useMemo(() => {
     let filtered = activeEvents;
 
-    // Filter by search query
+    // Filter by search query (accent-insensitive)
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.trim();
       filtered = filtered.filter((event) =>
-        event.title?.toLowerCase().includes(query) ||
-        event.description?.toLowerCase().includes(query) ||
-        event.commerces?.name?.toLowerCase().includes(query)
+        matchesSearch(event.title, query) ||
+        matchesSearch(event.description, query) ||
+        matchesSearch(event.commerces?.name, query)
       );
     }
 

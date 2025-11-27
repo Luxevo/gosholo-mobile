@@ -8,6 +8,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCategories } from '@/hooks/useCategories';
 import { useOffers } from '@/hooks/useOffers';
 import { Offer } from '@/lib/supabase';
+import { matchesSearch } from '@/utils/searchUtils';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -106,13 +107,13 @@ export default function OffersScreen() {
   const filteredOffers = useMemo(() => {
     let filtered = activeOffers;
 
-    // Filter by search query
+    // Filter by search query (accent-insensitive)
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.trim();
       filtered = filtered.filter((offer) =>
-        offer.title?.toLowerCase().includes(query) ||
-        offer.description?.toLowerCase().includes(query) ||
-        offer.commerces?.name?.toLowerCase().includes(query)
+        matchesSearch(offer.title, query) ||
+        matchesSearch(offer.description, query) ||
+        matchesSearch(offer.commerces?.name, query)
       );
     }
 
