@@ -14,6 +14,7 @@ export type OfferWithCommerce = Offer & {
     latitude?: number;
     longitude?: number;
   } | null;
+  distance?: number | null;
 };
 
 interface UseOffersOptions {
@@ -81,34 +82,56 @@ export const useOffers = (options: UseOffersOptions = {}) => {
         throw commercesError;
       }
 
-      // Combine offers with commerce data
-      const combinedData = offersData.map(offer => ({
-        ...offer,
-        commerces: commercesData?.find(commerce => commerce.id === offer.commerce_id) || null
-      }));
+      // Combine offers with commerce data and calculate distance
+      const combinedData = offersData.map(offer => {
+        const commerce = commercesData?.find(c => c.id === offer.commerce_id) || null;
+
+        // Calculate distance if user location is available
+        let distance: number | null = null;
+        if (userLocation && userLocation[0] && userLocation[1]) {
+          const offerLat = offer.latitude || commerce?.latitude;
+          const offerLng = offer.longitude || commerce?.longitude;
+
+          if (offerLat && offerLng) {
+            distance = calculateDistance(
+              userLocation[1], // user lat
+              userLocation[0], // user lng
+              parseFloat(offerLat.toString()),
+              parseFloat(offerLng.toString())
+            );
+          }
+        }
+
+        return {
+          ...offer,
+          commerces: commerce,
+          distance
+        };
+      });
 
       let filteredData = combinedData;
 
       // Apply location filter if user location is provided
       if (filterType === 'nearby' && userLocation && userLocation[0] && userLocation[1]) {
         filteredData = filteredData.filter(offer => {
-          // Use offer location if available, otherwise use commerce location
-          const offerLat = offer.latitude || offer.commerces?.latitude;
-          const offerLng = offer.longitude || offer.commerces?.longitude;
-          
-          if (!offerLat || !offerLng) return false;
-
-          // Simple distance calculation (Haversine formula approximation)
-          const distance = calculateDistance(
-            userLocation[1], // user lat
-            userLocation[0], // user lng
-            parseFloat(offerLat.toString()),
-            parseFloat(offerLng.toString())
-          );
-
-          return distance <= radius;
+          if (offer.distance === null) return false;
+          return offer.distance <= radius;
         });
       }
+
+      // Sort by boosted first, then by distance (closest to farthest)
+      filteredData.sort((a, b) => {
+        // Boosted items first
+        if (a.boosted && !b.boosted) return -1;
+        if (!a.boosted && b.boosted) return 1;
+
+        // Then sort by distance (closest first)
+        // Items without distance go to the end
+        if (a.distance === null && b.distance === null) return 0;
+        if (a.distance === null) return 1;
+        if (b.distance === null) return -1;
+        return a.distance - b.distance;
+      });
 
       setOffers(filteredData);
     } catch (err) {

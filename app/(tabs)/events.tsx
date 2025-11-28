@@ -47,14 +47,14 @@ const getDistanceFiltersConfig = (t: any): Filter[] => [
 
 export default function EventsScreen() {
   const { t } = useTranslation();
-  const { events, loading, error, refetch } = useEvents();
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userCity, setUserCity] = useState<string>('');
+  const { events, loading, error, refetch } = useEvents({ userLocation });
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [userCity, setUserCity] = useState<string>('');
 
   // Get user location on mount
   useEffect(() => {

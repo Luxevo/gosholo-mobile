@@ -14,6 +14,7 @@ export type EventWithCommerce = Event & {
     latitude?: number;
     longitude?: number;
   } | null;
+  distance?: number | null;
 };
 
 interface UseEventsOptions {
@@ -80,11 +81,32 @@ export const useEvents = (options: UseEventsOptions = {}) => {
         throw commercesError;
       }
 
-      // Combine events with commerce data
-      const combinedData = eventsData.map(event => ({
-        ...event,
-        commerces: commercesData?.find(commerce => commerce.id === event.commerce_id) || null
-      }));
+      // Combine events with commerce data and calculate distance
+      const combinedData = eventsData.map(event => {
+        const commerce = commercesData?.find(c => c.id === event.commerce_id) || null;
+
+        // Calculate distance if user location is available
+        let distance: number | null = null;
+        if (userLocation && userLocation[0] && userLocation[1]) {
+          const eventLat = event.latitude || commerce?.latitude;
+          const eventLng = event.longitude || commerce?.longitude;
+
+          if (eventLat && eventLng) {
+            distance = calculateDistance(
+              userLocation[1], // user lat
+              userLocation[0], // user lng
+              parseFloat(eventLat.toString()),
+              parseFloat(eventLng.toString())
+            );
+          }
+        }
+
+        return {
+          ...event,
+          commerces: commerce,
+          distance
+        };
+      });
 
       let filteredData = combinedData;
 
@@ -103,6 +125,20 @@ export const useEvents = (options: UseEventsOptions = {}) => {
           return startDate > now;
         });
       }
+
+      // Sort by boosted first, then by distance (closest to farthest)
+      filteredData.sort((a, b) => {
+        // Boosted items first
+        if (a.boosted && !b.boosted) return -1;
+        if (!a.boosted && b.boosted) return 1;
+
+        // Then sort by distance (closest first)
+        // Items without distance go to the end
+        if (a.distance === null && b.distance === null) return 0;
+        if (a.distance === null) return 1;
+        if (b.distance === null) return -1;
+        return a.distance - b.distance;
+      });
 
       setEvents(filteredData);
     } catch (err) {
@@ -129,3 +165,15 @@ export const useEvents = (options: UseEventsOptions = {}) => {
   };
 };
 
+// Helper function to calculate distance between two points (Haversine formula)
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};

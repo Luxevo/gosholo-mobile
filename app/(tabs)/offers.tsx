@@ -42,15 +42,15 @@ const getFiltersConfig = (t: any): Filter[] => [
 
 export default function OffersScreen() {
   const { t, i18n } = useTranslation();
-  const { offers, loading, error, refetch } = useOffers();
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userCity, setUserCity] = useState<string>('');
+  const { offers, loading, error, refetch } = useOffers({ userLocation });
   const { categories: dbCategories } = useCategories();
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [userCity, setUserCity] = useState<string>('');
 
   // Get user location on mount
   useEffect(() => {
