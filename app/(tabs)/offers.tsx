@@ -32,8 +32,8 @@ const COLORS = {
   black: '#000000',
 };
 
-const getFiltersConfig = (t: any): Filter[] => [
-  { id: 'all', label: t('all') },
+const getFiltersConfig = (t: any, sortOrder: 'new_to_old' | 'old_to_new'): Filter[] => [
+  { id: 'sort_toggle', label: sortOrder === 'new_to_old' ? `↓ ${t('recent') || 'Recent'}` : `↑ ${t('oldest') || 'Oldest'}` },
   { id: 'near-100m', label: '100m' },
   { id: 'near-250m', label: '250m' },
   { id: 'near-500m', label: '500m' },
@@ -51,6 +51,7 @@ export default function OffersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'new_to_old' | 'old_to_new'>('new_to_old');
 
   // Get user location on mount
   useEffect(() => {
@@ -149,8 +150,20 @@ export default function OffersScreen() {
       });
     }
 
+    // Sort by date based on sortOrder
+    filtered = [...filtered].sort((a, b) => {
+      const dateA = new Date(a.created_at || 0).getTime();
+      const dateB = new Date(b.created_at || 0).getTime();
+
+      if (sortOrder === 'new_to_old') {
+        return dateB - dateA; // Newest first
+      } else {
+        return dateA - dateB; // Oldest first
+      }
+    });
+
     return filtered;
-  }, [activeOffers, searchQuery, selectedCategory, selectedFilter, userLocation]);
+  }, [activeOffers, searchQuery, selectedCategory, selectedFilter, userLocation, sortOrder]);
 
   const handleOfferPress = (offer: Offer) => {
     setSelectedOffer(offer);
@@ -181,8 +194,9 @@ export default function OffersScreen() {
   };
 
   const handleFilterPress = (filterId: string) => {
-    if (filterId === 'all') {
-      setSelectedFilter(null); // Clear filter
+    if (filterId === 'sort_toggle') {
+      // Toggle sort order
+      setSortOrder(prev => prev === 'new_to_old' ? 'old_to_new' : 'new_to_old');
     } else {
       setSelectedFilter(prev => prev === filterId ? null : filterId);
     }
@@ -252,8 +266,8 @@ export default function OffersScreen() {
 
         {/* Filters */}
         <FiltersSection
-          filters={getFiltersConfig(t)}
-          selectedFilter={selectedFilter || 'all'}
+          filters={getFiltersConfig(t, sortOrder)}
+          selectedFilter={selectedFilter || 'sort_toggle'}
           onFilterPress={handleFilterPress}
         />
 

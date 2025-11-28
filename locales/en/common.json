@@ -165,7 +165,9 @@
   "show_less": "Show Less",
   "show_all_hours": "Show All Hours",
   "special_hours": "Special Hours",
-  "loading": "Loading"
+  "loading": "Loading",
+  "recent": "Recent",
+  "oldest": "Oldest"
 }
 
 

@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Event } from '@/lib/supabase';
+import { useCommerces } from '@/hooks/useCommerces';
+import { EventWithCommerce } from '@/hooks/useEvents';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +37,7 @@ const SPACING = {
 
 interface EventDetailModalProps {
   visible: boolean;
-  event: Event | null;
+  event: EventWithCommerce | null;
   onClose: () => void;
   onFavoritePress?: () => void;
   onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
@@ -51,7 +52,12 @@ export default function EventDetailModal({
 }: EventDetailModalProps) {
   const { t, i18n } = useTranslation();
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
+  const { commerces } = useCommerces();
+
   if (!event) return null;
+
+  // Find the business from the useCommerces hook that matches the event's commerce
+  const business = event.commerces ? commerces.find(c => c.id === event.commerces?.id) || null : null;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -169,7 +175,7 @@ export default function EventDetailModal({
             <View style={styles.dragHandle} />
 
             {/* Business & Category */}
-            <View style={styles.businessRow}>
+            <View style={styles.businessSection}>
               <TouchableOpacity
                 style={styles.businessInfo}
                 onPress={() => setBusinessModalVisible(true)}
@@ -179,6 +185,7 @@ export default function EventDetailModal({
                 <Text style={styles.businessName} numberOfLines={1}>
                   {event.commerces?.name || t('event')}
                 </Text>
+                <IconSymbol name="chevron.right" size={14} color={COLORS.teal} />
               </TouchableOpacity>
               {event.commerces?.category && (
                 <View style={styles.categoryPill}>
@@ -308,7 +315,7 @@ export default function EventDetailModal({
       {/* Business Detail Modal */}
       <BusinessDetailModal
         visible={businessModalVisible}
-        business={event.commerces}
+        business={business}
         onClose={() => setBusinessModalVisible(false)}
         onNavigateToMap={(address, coordinates) => {
           setBusinessModalVisible(false);
@@ -425,33 +432,39 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xxl,
   },
 
-  businessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  businessSection: {
+    flexDirection: 'column',
+    gap: SPACING.sm,
     marginBottom: SPACING.lg,
   },
   businessInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    flex: 1,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(1, 111, 115, 0.1)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(1, 111, 115, 0.25)',
   },
   businessName: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.teal,
-    flexShrink: 1,
+    textDecorationLine: 'underline',
   },
   categoryPill: {
-    backgroundColor: COLORS.bgMuted,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(1, 111, 115, 0.08)',
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
     borderRadius: 8,
   },
   categoryText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
     color: COLORS.inkDim,
     letterSpacing: 0.3,
   },

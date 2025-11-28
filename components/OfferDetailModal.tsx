@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces } from '@/hooks/useCommerces';
-import { Offer } from '@/lib/supabase';
+import { OfferWithCommerce } from '@/hooks/useOffers';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -36,7 +36,7 @@ const SPACING = {
 
 interface OfferDetailModalProps {
   visible: boolean;
-  offer: Offer | null;
+  offer: OfferWithCommerce | null;
   onClose: () => void;
   onFavoritePress?: () => void;
   onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
@@ -174,7 +174,7 @@ export default function OfferDetailModal({
             <View style={styles.dragHandle} />
 
             {/* Business & Category */}
-            <View style={styles.businessRow}>
+            <View style={styles.businessSection}>
               <TouchableOpacity
                 style={styles.businessInfo}
                 onPress={() => setBusinessModalVisible(true)}
@@ -184,6 +184,7 @@ export default function OfferDetailModal({
                 <Text style={styles.businessName} numberOfLines={1}>
                   {offer.commerces?.name || t('business')}
                 </Text>
+                <IconSymbol name="chevron.right" size={14} color={COLORS.teal} />
               </TouchableOpacity>
               {offer.commerces?.category && (
                 <View style={styles.categoryPill}>
@@ -386,36 +387,40 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xxl,
   },
 
-  businessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  businessSection: {
+    flexDirection: 'column',
+    gap: SPACING.sm,
     marginBottom: SPACING.lg,
   },
   businessInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    flex: 1,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(1, 111, 115, 0.1)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(1, 111, 115, 0.25)',
   },
   businessName: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.teal,
-    flexShrink: 1,
+    textDecorationLine: 'underline',
   },
   categoryPill: {
-    backgroundColor: 'rgba(1, 111, 115, 0.15)',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(1, 111, 115, 0.08)',
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(1, 111, 115, 0.3)',
   },
   categoryText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.teal,
+    fontWeight: '600',
+    color: COLORS.inkDim,
     letterSpacing: 0.3,
   },
 
