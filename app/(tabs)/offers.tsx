@@ -150,17 +150,33 @@ export default function OffersScreen() {
       });
     }
 
-    // Sort by date based on sortOrder
-    filtered = [...filtered].sort((a, b) => {
-      const dateA = new Date(a.created_at || 0).getTime();
-      const dateB = new Date(b.created_at || 0).getTime();
+    // Sort based on selectedFilter
+    if (selectedFilter === 'sort_toggle') {
+      // Sort by date when sort_toggle is selected
+      filtered = [...filtered].sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
 
-      if (sortOrder === 'new_to_old') {
-        return dateB - dateA; // Newest first
-      } else {
-        return dateA - dateB; // Oldest first
-      }
-    });
+        if (sortOrder === 'new_to_old') {
+          return dateB - dateA; // Newest first
+        } else {
+          return dateA - dateB; // Oldest first
+        }
+      });
+    } else if (userLocation) {
+      // Default: Sort by distance (closest to farthest)
+      filtered = [...filtered].sort((a, b) => {
+        const aLat = a.latitude || a.commerces?.latitude;
+        const aLng = a.longitude || a.commerces?.longitude;
+        const bLat = b.latitude || b.commerces?.latitude;
+        const bLng = b.longitude || b.commerces?.longitude;
+
+        const distA = (aLat && aLng) ? calculateDistance(userLocation[1], userLocation[0], Number(aLat), Number(aLng)) : Infinity;
+        const distB = (bLat && bLng) ? calculateDistance(userLocation[1], userLocation[0], Number(bLat), Number(bLng)) : Infinity;
+
+        return distA - distB;
+      });
+    }
 
     return filtered;
   }, [activeOffers, searchQuery, selectedCategory, selectedFilter, userLocation, sortOrder]);
@@ -267,7 +283,7 @@ export default function OffersScreen() {
         {/* Filters */}
         <FiltersSection
           filters={getFiltersConfig(t, sortOrder)}
-          selectedFilter={selectedFilter || 'sort_toggle'}
+          selectedFilter={selectedFilter}
           onFilterPress={handleFilterPress}
         />
 

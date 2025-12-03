@@ -166,7 +166,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.bg,
     borderRadius: RAD.lg,
-    marginHorizontal: Platform.OS === 'android' ? 0 : SPACING.lg,
     marginTop: SPACING.sm,
     marginBottom: Platform.OS === 'android' ? 4 : SPACING.sm,
     overflow: 'hidden',
@@ -178,7 +177,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-    ...(Platform.OS === 'android' && { alignSelf: 'center' }),
+    alignSelf: 'center',
   },
   cardDisabled: { opacity: 0.6 },
   
