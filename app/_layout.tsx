@@ -1,8 +1,10 @@
 // app/_layout.tsx - Root layout
 import WelcomeModal from '@/components/WelcomeModal';
 import i18n from '@/i18n';
+import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack } from 'expo-router';
+import * as Linking from 'expo-linking';
+import { Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 
@@ -10,6 +12,52 @@ const WELCOME_MODAL_KEY = '@gosholo_welcome_seen';
 
 export default function RootLayout() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  // Handle deep links for auth callbacks
+  useEffect(() => {
+    const handleDeepLink = async (url: string) => {
+      // Check if this is an auth callback
+      if (url.includes('auth/callback') || url.includes('access_token') || url.includes('refresh_token')) {
+        try {
+          // Extract tokens from URL (Supabase sends them as hash fragments)
+          const hashParams = url.split('#')[1];
+          if (hashParams) {
+            const params = new URLSearchParams(hashParams);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+
+            if (accessToken && refreshToken) {
+              // Set the session with the tokens
+              const { error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+
+              if (!error) {
+                // Successfully authenticated, navigate to main app
+                router.replace('/(tabs)');
+                return;
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error handling auth callback:', err);
+        }
+      }
+    };
+
+    // Handle initial URL (app opened via deep link)
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink(url);
+    });
+
+    // Handle URL changes while app is open
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   // Show welcome modal only if user hasn't seen it before
   useEffect(() => {
