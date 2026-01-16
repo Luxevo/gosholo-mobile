@@ -1,10 +1,12 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces } from '@/hooks/useCommerces';
 import { EventWithCommerce } from '@/hooks/useEvents';
+import { useFavorites } from '@/hooks/useFavorites';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusinessDetailModal from './BusinessDetailModal';
 import { LinkableText } from './LinkableText';
@@ -40,6 +42,7 @@ interface EventDetailModalProps {
   event: EventWithCommerce | null;
   onClose: () => void;
   onFavoritePress?: () => void;
+  isFavorite?: boolean;
   onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
 }
 
@@ -48,16 +51,33 @@ export default function EventDetailModal({
   event,
   onClose,
   onFavoritePress,
+  isFavorite = false,
   onNavigateToMap
 }: EventDetailModalProps) {
   const { t, i18n } = useTranslation();
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
   const { commerces } = useCommerces();
+  const { isFavorite: isCommerceFavorite, toggleFavorite } = useFavorites();
 
   if (!event) return null;
 
   // Find the business from the useCommerces hook that matches the event's commerce
   const business = event.commerces ? commerces.find(c => c.id === event.commerces?.id) || null : null;
+
+  const handleBusinessFavoritePress = async () => {
+    if (!business) return;
+    const result = await toggleFavorite('commerce', business.id);
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_to_favorite'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    }
+  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -154,7 +174,11 @@ export default function EventDetailModal({
                 <Text style={styles.closeText}>×</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton} onPress={onFavoritePress} activeOpacity={0.7}>
-                <IconSymbol name="heart" size={20} color={COLORS.teal} />
+                <IconSymbol
+                  name={isFavorite ? "heart.fill" : "heart"}
+                  size={20}
+                  color={isFavorite ? COLORS.primary : COLORS.teal}
+                />
               </TouchableOpacity>
             </SafeAreaView>
 
@@ -323,6 +347,8 @@ export default function EventDetailModal({
             onNavigateToMap(address, coordinates);
           }
         }}
+        isFavorite={business ? isCommerceFavorite('commerce', business.id) : false}
+        onFavoritePress={handleBusinessFavoritePress}
       />
     </Modal>
   );

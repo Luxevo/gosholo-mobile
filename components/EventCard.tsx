@@ -1,8 +1,9 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { EventWithCommerce } from '@/hooks/useEvents';
+import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImageBackground, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinkableText } from './LinkableText';
 
 const COLORS = {
@@ -36,16 +37,25 @@ interface EventCardProps {
   event: EventWithCommerce;
   onPress: () => void;
   onFavoritePress?: () => void;
+  isFavorite?: boolean;
 }
 
-const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavoritePress }) => {
+const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavoritePress, isFavorite = false }) => {
   const { t, i18n } = useTranslation();
 
   const handleShare = async () => {
     try {
-      await Share.share({
-        message: `${event.title}${event.commerces?.name ? `\n${event.commerces.name}` : ''}${event.description ? `\n${event.description}` : ''}`,
+      const shareData = getShareMessage({
+        type: 'event',
+        id: event.id,
         title: event.title,
+        businessName: event.commerces?.name,
+        description: event.description,
+      });
+      await openShareSheet({
+        message: shareData.message,
+        title: shareData.title,
+        url: shareData.url,
       });
     } catch (error) {
       console.error(error);
@@ -144,17 +154,6 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
           )}
         </View>
 
-        {/* Favorite */}
-        {!!onFavoritePress && (
-          <TouchableOpacity
-            onPress={onFavoritePress}
-            style={styles.favBtn}
-            accessibilityRole="button"
-            accessibilityLabel={t('save_to_favorites')}
-          >
-            <IconSymbol name="heart" size={16} color={COLORS.ink} />
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Content */}
@@ -193,9 +192,25 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             <Text style={styles.primaryText}>{isEnded ? t('ended') : t('view_event')}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.shareBtn} onPress={handleShare} accessibilityRole="button">
-            <IconSymbol name="paperplane.fill" size={18} color={COLORS.teal} />
-          </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            {onFavoritePress && (
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={onFavoritePress}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
+              >
+                <IconSymbol
+                  name={isFavorite ? "heart.fill" : "heart"}
+                  size={20}
+                  color={isFavorite ? COLORS.primary : COLORS.teal}
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.iconBtn} onPress={handleShare} accessibilityRole="button">
+              <IconSymbol name="paperplane.fill" size={18} color={COLORS.teal} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -303,22 +318,6 @@ const styles = StyleSheet.create({
   },
   statusText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
 
-  // favorite
-  favBtn: {
-    position: 'absolute',
-    top: SPACING.sm,
-    right: SPACING.sm,
-    width: 36, height: 36,
-    borderRadius: RAD.pill,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
-  },
 
   // body
   body: {
@@ -388,14 +387,19 @@ const styles = StyleSheet.create({
   primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
   primaryText: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
 
-  shareBtn: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+
+  iconBtn: {
     width: 40,
     height: 40,
     borderRadius: RAD.pill,
     backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.teal,
+    borderWidth: 1,
+    borderColor: COLORS.line,
   },
 });

@@ -15,7 +15,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map."
-      }
+      },
+      "associatedDomains": ["applinks:app.gosholo.com"]
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -29,7 +30,26 @@
         "googleMaps": {
           "apiKey": ""
         }
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.gosholo.com",
+              "pathPrefix": "/offer-mobile"
+            },
+            {
+              "scheme": "https",
+              "host": "app.gosholo.com",
+              "pathPrefix": "/event-mobile"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "plugins": [
       "expo-router",

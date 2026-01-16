@@ -1,8 +1,8 @@
-import { supabase, type MobileUserProfile } from '@/lib/supabase';
+import { supabase, type UserProfile } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 
-export const useMobileUser = () => {
-  const [profile, setProfile] = useState<MobileUserProfile | null>(null);
+export const useProfile = () => {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,14 +12,14 @@ export const useMobileUser = () => {
       setError(null);
 
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         setProfile(null);
         return;
       }
 
       const { data: profileData, error: profileError } = await supabase
-        .from('mobile_user_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
@@ -30,23 +30,23 @@ export const useMobileUser = () => {
 
       setProfile(profileData);
     } catch (err) {
-      console.error('Error fetching mobile user profile:', err);
+      console.error('Error fetching user profile:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateProfile = async (updates: Partial<Omit<MobileUserProfile, 'id' | 'created_at' | 'updated_at'>>) => {
+  const updateProfile = async (updates: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         throw new Error('No authenticated user');
       }
 
       const { data, error } = await supabase
-        .from('mobile_user_profiles')
+        .from('profiles')
         .update(updates)
         .eq('id', user.id)
         .select()
@@ -59,7 +59,7 @@ export const useMobileUser = () => {
       setProfile(data);
       return data;
     } catch (err) {
-      console.error('Error updating mobile user profile:', err);
+      console.error('Error updating user profile:', err);
       throw err;
     }
   };
@@ -93,3 +93,6 @@ export const useMobileUser = () => {
     refetch
   };
 };
+
+// Legacy alias for backwards compatibility
+export const useMobileUser = useProfile;

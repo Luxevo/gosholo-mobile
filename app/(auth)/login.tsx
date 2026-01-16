@@ -80,6 +80,10 @@ export default function LoginScreen() {
     }
   };
 
+  const handleContinueAsGuest = () => {
+    router.replace('/(tabs)');
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
@@ -91,18 +95,10 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={COLORS.ink} />
-          </TouchableOpacity>
-
           {/* Logo */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/logo.png')}
+              source={require('@/assets/images/darker-logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -193,6 +189,14 @@ export default function LoginScreen() {
               <Text style={styles.registerLink}>{t('register')}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Continue as Guest */}
+          <TouchableOpacity
+            style={styles.guestButton}
+            onPress={handleContinueAsGuest}
+          >
+            <Text style={styles.guestButtonText}>{t('continue_as_guest')}</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -222,11 +226,12 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: SPACING.xxl,
+    marginBottom: 0,
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 140,
+    height: 140,
+    transform: [{ scale: 1.4 }],
   },
   title: {
     fontSize: 28,
@@ -323,5 +328,15 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '600',
     marginLeft: SPACING.xs,
+  },
+  guestButton: {
+    marginTop: SPACING.xl,
+    paddingVertical: SPACING.lg,
+    alignItems: 'center',
+  },
+  guestButtonText: {
+    fontSize: 16,
+    color: COLORS.teal,
+    fontWeight: '500',
   },
 });

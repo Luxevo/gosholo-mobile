@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Image } from 'react-native';
@@ -23,9 +24,27 @@ export default function Index() {
       }),
     ]).start();
 
-    // Navigate after animation + small delay
+    // Check auth state
+    const checkAuthAndNavigate = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          // User is logged in, go to home
+          router.replace('/(tabs)');
+        } else {
+          // Not logged in - show auth screen
+          router.replace('/(auth)/login');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.replace('/(auth)/login');
+      }
+    };
+
+    // Navigate after animation
     const timer = setTimeout(() => {
-      router.replace('/(tabs)');
+      checkAuthAndNavigate();
     }, 1500);
 
     return () => clearTimeout(timer);

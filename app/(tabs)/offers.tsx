@@ -6,15 +6,17 @@ import { FiltersSection, type Filter } from '@/components/shared/FiltersSection'
 import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCategories } from '@/hooks/useCategories';
-import { useOffers } from '@/hooks/useOffers';
-import { Offer } from '@/lib/supabase';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
 import { matchesSearch } from '@/utils/searchUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
+    Alert,
     RefreshControl,
     ScrollView,
     StyleSheet,
@@ -46,7 +48,8 @@ export default function OffersScreen() {
   const [userCity, setUserCity] = useState<string>('');
   const { offers, loading, error, refetch } = useOffers({ userLocation });
   const { categories: dbCategories } = useCategories();
-  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
+  const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -76,6 +79,37 @@ export default function OffersScreen() {
       }
     })();
   }, []);
+
+  // Check for deep link data when screen focuses
+  useFocusEffect(
+    useCallback(() => {
+      const checkDeepLink = async () => {
+        try {
+          const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
+          if (deepLinkData) {
+            const { type, id } = JSON.parse(deepLinkData);
+            if (type === 'offer' && id) {
+              // Clear the deep link data immediately
+              await AsyncStorage.removeItem('@gosholo_deep_link');
+              // Find the offer and open the modal
+              const offer = offers.find(o => o.id === id);
+              if (offer) {
+                setSelectedOffer(offer);
+                setShowModal(true);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking deep link:', error);
+        }
+      };
+
+      // Only check if offers are loaded
+      if (offers.length > 0) {
+        checkDeepLink();
+      }
+    }, [offers])
+  );
 
   const isOfferActive = (end_date?: string | null, now: Date = new Date()) => {
     if (!end_date) return true;
@@ -181,7 +215,7 @@ export default function OffersScreen() {
     return filtered;
   }, [activeOffers, searchQuery, selectedCategory, selectedFilter, userLocation, sortOrder]);
 
-  const handleOfferPress = (offer: Offer) => {
+  const handleOfferPress = (offer: OfferWithCommerce) => {
     setSelectedOffer(offer);
     setShowModal(true);
   };
@@ -191,8 +225,19 @@ export default function OffersScreen() {
     setSelectedOffer(null);
   };
 
-  const handleFavoritePress = () => {
-    console.log('Favorite pressed for offer:', selectedOffer?.id);
+  const handleFavoritePress = async (offerId: string) => {
+    const result = await toggleFavorite('offer', offerId);
+
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_to_favorite'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    }
   };
 
   // Convert database categories to UI categories
@@ -309,7 +354,8 @@ export default function OffersScreen() {
             key={offer.id}
             offer={offer}
             onPress={() => handleOfferPress(offer)}
-            onFavoritePress={() => console.log('Favorite pressed:', offer.id)}
+            onFavoritePress={() => handleFavoritePress(offer.id)}
+            isFavorite={isFavorite('offer', offer.id)}
           />
         ))}
       </ScrollView>
@@ -318,7 +364,8 @@ export default function OffersScreen() {
         visible={showModal}
         offer={selectedOffer}
         onClose={handleCloseModal}
-        onFavoritePress={handleFavoritePress}
+        onFavoritePress={() => selectedOffer && handleFavoritePress(selectedOffer.id)}
+        isFavorite={selectedOffer ? isFavorite('offer', selectedOffer.id) : false}
         onNavigateToMap={(address, coordinates) => {
           // Fermer la modal avant de naviguer
           handleCloseModal();

@@ -203,7 +203,10 @@
   "my_wishlist": "My Wishlist",
   "wishlist_subtitle": "Items you want to try",
   "settings": "Settings",
-  "settings_subtitle": "Preferences and account"
+  "settings_subtitle": "Preferences and account",
+  "continue_as_guest": "Continue as Guest",
+  "remove_from_favorites": "Remove from favorites",
+  "login_to_favorite": "Log in to save favorites"
 }
 
 

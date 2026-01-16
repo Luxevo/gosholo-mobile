@@ -1,5 +1,6 @@
 import BusinessDetailModal from '@/components/BusinessDetailModal';
 import { LOGO_BASE64 } from '@/components/LogoBase64';
+import { useFavorites } from '@/hooks/useFavorites';
 import { NavigationBanner } from '@/components/navigation/NavigationBanner';
 import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
 import { POIModal } from '@/components/POIModal';
@@ -322,6 +323,7 @@ export default function CompassScreen() {
   const params = useLocalSearchParams();
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   // Memoized filtered commerces - no side effects (accent-insensitive search)
   const filteredCommerces = useMemo(() => {
@@ -711,6 +713,20 @@ export default function CompassScreen() {
       selectedBusiness: null,
     }));
   }, []);
+
+  const handleFavoritePress = useCallback(async (commerceId: string) => {
+    const result = await toggleFavorite('commerce', commerceId);
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_to_favorite'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    }
+  }, [toggleFavorite, t]);
 
   const handleClusterPress = useCallback((cluster: MarkerCluster) => {
     // If only one commerce, open it directly
@@ -1492,7 +1508,7 @@ export default function CompassScreen() {
         }}
         onNavigateToMap={(address, coordinates) => {
           handleCloseBusinessModal(); // Fermer le modal d'abord
-          
+
           setTimeout(() => {
             if (coordinates) {
               fetchDirections(coordinates);
@@ -1501,6 +1517,8 @@ export default function CompassScreen() {
             }
           }, 100);
         }}
+        isFavorite={selectedBusiness ? isFavorite('commerce', selectedBusiness.id) : false}
+        onFavoritePress={selectedBusiness ? () => handleFavoritePress(selectedBusiness.id) : undefined}
       />
 
       {/* Full-Screen Search Overlay */}

@@ -1,8 +1,7 @@
 import { useCommerceHours } from '@/hooks/useCommerceHours';
 import { Commerce } from '@/hooks/useCommerces';
-import { useEvents } from '@/hooks/useEvents';
-import { useOffers } from '@/hooks/useOffers';
-import type { Event, Offer } from '@/lib/supabase';
+import { useEvents, EventWithCommerce } from '@/hooks/useEvents';
+import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -54,6 +53,8 @@ interface BusinessDetailModalProps {
   onClose: () => void;
   onGetDirections?: (business: Commerce) => void;
   onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
+  isFavorite?: boolean;
+  onFavoritePress?: () => void;
 }
 
 export default function BusinessDetailModal({
@@ -62,6 +63,8 @@ export default function BusinessDetailModal({
   onClose,
   onGetDirections,
   onNavigateToMap,
+  isFavorite = false,
+  onFavoritePress,
 }: BusinessDetailModalProps) {
   const { t, i18n } = useTranslation();
   const scheme = useColorScheme();
@@ -75,9 +78,9 @@ export default function BusinessDetailModal({
   const { regularHours, specialHours, loading: hoursLoading, isOpenNow, todayHours } = useCommerceHours(business?.id || null);
 
   // State for offer/event detail modals
-  const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [offerModalVisible, setOfferModalVisible] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [eventModalVisible, setEventModalVisible] = useState(false);
 
   // Filter active offers and events for this commerce
@@ -149,6 +152,19 @@ export default function BusinessDetailModal({
               <Ionicons name="close" size={20} color={theme.ink} />
             </TouchableOpacity>
             <View style={styles.headerActions}>
+              {onFavoritePress && (
+                <TouchableOpacity
+                  style={[styles.favoriteButton, { backgroundColor: theme.gray }]}
+                  onPress={onFavoritePress}
+                  accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
+                >
+                  <Ionicons
+                    name={isFavorite ? "heart" : "heart-outline"}
+                    size={18}
+                    color={isFavorite ? theme.primary : theme.ink}
+                  />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={[styles.shareButton, { backgroundColor: theme.gray }]} onPress={handleShare}>
                 <Ionicons name="share-outline" size={18} color={theme.ink} />
               </TouchableOpacity>
@@ -465,6 +481,13 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   shareButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  favoriteButton: {
     width: 32,
     height: 32,
     borderRadius: 16,

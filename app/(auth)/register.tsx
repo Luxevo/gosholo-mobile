@@ -102,14 +102,13 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      // IMPORTANT: Set user_type and username in metadata for RLS policies
+      // Create user with username in metadata (triggers profile creation)
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
         options: {
           data: {
             username: username.trim(),
-            user_type: 'mobile', // This triggers the mobile user signup flow
           },
           emailRedirectTo: 'gosholomobile://auth/callback',
         },
@@ -162,18 +161,10 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={COLORS.ink} />
-          </TouchableOpacity>
-
           {/* Logo */}
           <View style={styles.logoContainer}>
             <Image
-              source={require('@/assets/images/logo.png')}
+              source={require('@/assets/images/darker-logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -339,24 +330,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: SPACING.xl,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.gray,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xl,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: 0,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
+    transform: [{ scale: 1.4 }],
   },
   title: {
     fontSize: 28,

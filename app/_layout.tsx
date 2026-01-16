@@ -13,9 +13,11 @@ const WELCOME_MODAL_KEY = '@gosholo_welcome_seen';
 export default function RootLayout() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
-  // Handle deep links for auth callbacks
+  // Handle deep links for auth callbacks and content sharing
   useEffect(() => {
     const handleDeepLink = async (url: string) => {
+      console.log('Deep link received:', url);
+
       // Check if this is an auth callback
       if (url.includes('auth/callback') || url.includes('access_token') || url.includes('refresh_token')) {
         try {
@@ -43,6 +45,27 @@ export default function RootLayout() {
         } catch (err) {
           console.error('Error handling auth callback:', err);
         }
+        return;
+      }
+
+      // Handle offer deep links
+      // Formats: gosholomobile://offer/[id] or https://app.gosholo.com/offer-mobile/[id]
+      const offerMatch = url.match(/\/offer(?:-mobile)?\/([a-zA-Z0-9-]+)/);
+      if (offerMatch) {
+        const offerId = offerMatch[1];
+        await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'offer', id: offerId }));
+        router.replace('/(tabs)/offers');
+        return;
+      }
+
+      // Handle event deep links
+      // Formats: gosholomobile://event/[id] or https://app.gosholo.com/event-mobile/[id]
+      const eventMatch = url.match(/\/event(?:-mobile)?\/([a-zA-Z0-9-]+)/);
+      if (eventMatch) {
+        const eventId = eventMatch[1];
+        await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'event', id: eventId }));
+        router.replace('/(tabs)/events');
+        return;
       }
     };
 

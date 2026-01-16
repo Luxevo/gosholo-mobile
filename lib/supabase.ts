@@ -1,17 +1,15 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-console.log('Supabase config:', { 
-  url: supabaseUrl, 
-  keyPrefix: supabaseAnonKey?.substring(0, 20) + '...' 
-});
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    detectSessionInUrl: false, // Disable for mobile - prevents web redirects
-    persistSession: true, // Keep session in mobile storage
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
   },
 });
 
@@ -92,14 +90,23 @@ export type Event = {
   commerces?: Commerce;
 };
 
-// Mobile User Types
-export type MobileUserProfile = {
+// User Profile Types (unified for mobile and dashboard users)
+export type UserProfile = {
   id: string;
-  username: string;
   email: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  avatar_url?: string;
+  is_subscribed?: boolean;
+  preferred_locale?: 'fr' | 'en';
   created_at: string;
   updated_at: string;
 };
+
+// Legacy alias for backwards compatibility
+export type MobileUserProfile = UserProfile;
 
 // Favorites Types
 export type UserFavoriteOffer = {

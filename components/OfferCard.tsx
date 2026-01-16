@@ -1,8 +1,9 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { OfferWithCommerce } from '@/hooks/useOffers';
+import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImageBackground, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinkableText } from './LinkableText';
 
 const COLORS = {
@@ -36,16 +37,25 @@ interface OfferCardProps {
   offer: OfferWithCommerce;
   onPress: () => void;
   onFavoritePress?: () => void;
+  isFavorite?: boolean;
 }
 
-const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress }) => {
+const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress, isFavorite = false }) => {
   const { t, i18n } = useTranslation();
 
   const handleShare = async () => {
     try {
-      await Share.share({
-        message: `${offer.title}${offer.commerces?.name ? `\n${offer.commerces.name}` : ''}${offer.description ? `\n${offer.description}` : ''}`,
+      const shareData = getShareMessage({
+        type: 'offer',
+        id: offer.id,
         title: offer.title,
+        businessName: offer.commerces?.name,
+        description: offer.description,
+      });
+      await openShareSheet({
+        message: shareData.message,
+        title: shareData.title,
+        url: shareData.url,
       });
     } catch (error) {
       console.error(error);
@@ -150,9 +160,25 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.shareBtn} onPress={handleShare} accessibilityRole="button">
-            <IconSymbol name="paperplane.fill" size={18} color={COLORS.teal} />
-          </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            {onFavoritePress && (
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={onFavoritePress}
+                accessibilityRole="button"
+                accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
+              >
+                <IconSymbol
+                  name={isFavorite ? "heart.fill" : "heart"}
+                  size={20}
+                  color={isFavorite ? COLORS.primary : COLORS.teal}
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.iconBtn} onPress={handleShare} accessibilityRole="button">
+              <IconSymbol name="paperplane.fill" size={18} color={COLORS.teal} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -331,14 +357,19 @@ const styles = StyleSheet.create({
   primaryText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
   primaryTextDisabled: { color: COLORS.inkDim },
 
-  shareBtn: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+
+  iconBtn: {
     width: 40,
     height: 40,
     borderRadius: RAD.pill,
     backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.teal,
+    borderWidth: 1,
+    borderColor: COLORS.line,
   },
 });

@@ -207,7 +207,10 @@
   "my_wishlist": "Ma Liste de souhaits",
   "wishlist_subtitle": "Ce que tu veux essayer",
   "settings": "Paramètres",
-  "settings_subtitle": "Préférences et compte"
+  "settings_subtitle": "Préférences et compte",
+  "continue_as_guest": "Continuer en tant qu'invité",
+  "remove_from_favorites": "Retirer des favoris",
+  "login_to_favorite": "Connecte-toi pour sauvegarder"
 }
 
 

@@ -5,15 +5,17 @@ import { CategoriesSection, type Category } from '@/components/shared/Categories
 import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useEvents } from '@/hooks/useEvents';
-import { Event } from '@/lib/supabase';
+import { useEvents, EventWithCommerce } from '@/hooks/useEvents';
+import { useFavorites } from '@/hooks/useFavorites';
 import { matchesSearch } from '@/utils/searchUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
+    Alert,
     RefreshControl,
     ScrollView,
     StyleSheet,
@@ -50,7 +52,8 @@ export default function EventsScreen() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [userCity, setUserCity] = useState<string>('');
   const { events, loading, error, refetch } = useEvents({ userLocation });
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
+  const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
@@ -80,6 +83,37 @@ export default function EventsScreen() {
       }
     })();
   }, []);
+
+  // Check for deep link data when screen focuses
+  useFocusEffect(
+    useCallback(() => {
+      const checkDeepLink = async () => {
+        try {
+          const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
+          if (deepLinkData) {
+            const { type, id } = JSON.parse(deepLinkData);
+            if (type === 'event' && id) {
+              // Clear the deep link data immediately
+              await AsyncStorage.removeItem('@gosholo_deep_link');
+              // Find the event and open the modal
+              const event = events.find(e => e.id === id);
+              if (event) {
+                setSelectedEvent(event);
+                setShowModal(true);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking deep link:', error);
+        }
+      };
+
+      // Only check if events are loaded
+      if (events.length > 0) {
+        checkDeepLink();
+      }
+    }, [events])
+  );
 
   // Treats date-only (YYYY-MM-DD) as active through end of that day (UTC)
   const isEventActive = (end_date?: string | null, now: Date = new Date()) => {
@@ -202,7 +236,7 @@ export default function EventsScreen() {
     return filtered;
   }, [activeEvents, searchQuery, selectedDateFilter, selectedFilter, userLocation, sortOrder]);
 
-  const handleEventPress = (event: Event) => {
+  const handleEventPress = (event: EventWithCommerce) => {
     setSelectedEvent(event);
     setShowModal(true);
   };
@@ -212,8 +246,19 @@ export default function EventsScreen() {
     setSelectedEvent(null);
   };
 
-  const handleFavoritePress = () => {
-    console.log('Favorite pressed for event:', selectedEvent?.id);
+  const handleFavoritePress = async (eventId: string) => {
+    const result = await toggleFavorite('event', eventId);
+
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_to_favorite'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    }
   };
 
   const handleDateFilterPress = (filterId: string) => {
@@ -323,7 +368,8 @@ export default function EventsScreen() {
             key={event.id}
             event={event}
             onPress={() => handleEventPress(event)}
-            onFavoritePress={() => console.log('Favorite pressed:', event.id)}
+            onFavoritePress={() => handleFavoritePress(event.id)}
+            isFavorite={isFavorite('event', event.id)}
           />
         ))}
       </ScrollView>
@@ -332,7 +378,8 @@ export default function EventsScreen() {
         visible={showModal}
         event={selectedEvent}
         onClose={handleCloseModal}
-        onFavoritePress={handleFavoritePress}
+        onFavoritePress={() => selectedEvent && handleFavoritePress(selectedEvent.id)}
+        isFavorite={selectedEvent ? isFavorite('event', selectedEvent.id) : false}
         onNavigateToMap={(address, coordinates) => {
           // Fermer la modal avant de naviguer
           handleCloseModal();
