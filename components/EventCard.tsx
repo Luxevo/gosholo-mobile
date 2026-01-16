@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { EventWithCommerce } from '@/hooks/useEvents';
+import { supabase } from '@/lib/supabase';
 import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -52,11 +53,15 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
         businessName: event.commerces?.name,
         description: event.description,
       });
-      await openShareSheet({
+      const shared = await openShareSheet({
         message: shareData.message,
         title: shareData.title,
         url: shareData.url,
       });
+      // Track share count if user actually shared
+      if (shared) {
+        await supabase.rpc('increment_event_share', { event_id: event.id });
+      }
     } catch (error) {
       console.error(error);
     }

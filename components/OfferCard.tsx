@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { OfferWithCommerce } from '@/hooks/useOffers';
+import { supabase } from '@/lib/supabase';
 import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -52,11 +53,15 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         businessName: offer.commerces?.name,
         description: offer.description,
       });
-      await openShareSheet({
+      const shared = await openShareSheet({
         message: shareData.message,
         title: shareData.title,
         url: shareData.url,
       });
+      // Track share count if user actually shared
+      if (shared) {
+        await supabase.rpc('increment_offer_share', { offer_id: offer.id });
+      }
     } catch (error) {
       console.error(error);
     }
