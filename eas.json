@@ -25,6 +25,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
       "ios": {
         "cache": {
           "key": "pods-fix-preview-v2"
