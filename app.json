@@ -14,7 +14,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to share images to social media."
       },
       "associatedDomains": ["applinks:app.gosholo.com"]
     },
