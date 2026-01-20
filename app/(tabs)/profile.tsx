@@ -197,11 +197,13 @@ export default function ProfileScreen() {
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {profile?.username?.charAt(0).toUpperCase() || '?'}
+                {(profile?.username || profile?.first_name || profile?.email || '?').charAt(0).toUpperCase()}
               </Text>
             </View>
           </View>
-          <Text style={styles.username}>@{profile?.username || t('loading')}</Text>
+          <Text style={styles.username}>
+            {profile?.username ? `@${profile.username}` : profile?.first_name || profile?.email || ''}
+          </Text>
           <Text style={styles.email}>{profile?.email || ''}</Text>
         </View>
 
