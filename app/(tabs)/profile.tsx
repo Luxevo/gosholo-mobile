@@ -209,9 +209,9 @@ export default function ProfileScreen() {
 
         {/* Profile Actions */}
         <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.actionItem}>
+          <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/favorites' as any)}>
             <View style={styles.actionIcon}>
-              <Ionicons name="heart" size={22} color={COLORS.primary} />
+              <Ionicons name="star" size={22} color={COLORS.primary} />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>{t('my_favorites')}</Text>
@@ -220,13 +220,24 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={COLORS.lightGray} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionItem}>
+          <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/likes' as any)}>
             <View style={styles.actionIcon}>
-              <Ionicons name="bookmark" size={22} color={COLORS.primary} />
+              <Ionicons name="heart" size={22} color={COLORS.primary} />
             </View>
             <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>{t('my_wishlist')}</Text>
-              <Text style={styles.actionSubtitle}>{t('wishlist_subtitle')}</Text>
+              <Text style={styles.actionTitle}>{t('my_likes')}</Text>
+              <Text style={styles.actionSubtitle}>{t('likes_subtitle')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.lightGray} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/follows' as any)}>
+            <View style={styles.actionIcon}>
+              <Ionicons name="people" size={22} color={COLORS.primary} />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>{t('my_follows')}</Text>
+              <Text style={styles.actionSubtitle}>{t('follows_subtitle')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={COLORS.lightGray} />
           </TouchableOpacity>

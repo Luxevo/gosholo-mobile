@@ -66,7 +66,7 @@ export const useFavorites = () => {
   }, [favorites]);
 
   // Toggle favorite (add if not favorited, remove if favorited)
-  const toggleFavorite = useCallback(async (type: FavoriteType, id: string): Promise<{ success: boolean; needsLogin: boolean }> => {
+  const toggleFavorite = useCallback(async (type: FavoriteType, id: string): Promise<{ success: boolean; needsLogin: boolean; action?: 'added' | 'removed' }> => {
     // Check if user is logged in
     if (!userId) {
       return { success: false, needsLogin: true };
@@ -93,6 +93,8 @@ export const useFavorites = () => {
           newSet.delete(id);
           return { ...prev, [`${type}s`]: newSet };
         });
+
+        return { success: true, needsLogin: false, action: 'removed' };
       } else {
         // Add favorite
         const { error } = await supabase
@@ -107,9 +109,9 @@ export const useFavorites = () => {
           newSet.add(id);
           return { ...prev, [`${type}s`]: newSet };
         });
-      }
 
-      return { success: true, needsLogin: false };
+        return { success: true, needsLogin: false, action: 'added' };
+      }
     } catch (error) {
       console.error(`Error toggling ${type} favorite:`, error);
       return { success: false, needsLogin: false };

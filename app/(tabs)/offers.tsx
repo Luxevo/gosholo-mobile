@@ -4,9 +4,11 @@ import { AppHeader } from '@/components/shared/AppHeader';
 import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
 import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
 import { SearchBar } from '@/components/shared/SearchBar';
+import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCategories } from '@/hooks/useCategories';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useLikes } from '@/hooks/useLikes';
 import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -49,12 +51,15 @@ export default function OffersScreen() {
   const { offers, loading, error, refetch } = useOffers({ userLocation });
   const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
+  const { isLiked, toggleLike } = useLikes();
   const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'new_to_old' | 'old_to_new'>('new_to_old');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   // Get user location on mount
   useEffect(() => {
@@ -237,6 +242,27 @@ export default function OffersScreen() {
           { text: t('login'), onPress: () => router.push('/(auth)/login') }
         ]
       );
+    } else if (result.success && result.action) {
+      setToastMessage(result.action === 'added' ? t('added_to_favorites') : t('removed_from_favorites'));
+      setShowToast(true);
+    }
+  };
+
+  const handleLikePress = async (offerId: string) => {
+    const result = await toggleLike('offer', offerId);
+
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_required'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    } else if (result.success && result.action) {
+      setToastMessage(result.action === 'liked' ? t('liked') : t('unliked'));
+      setShowToast(true);
     }
   };
 
@@ -356,6 +382,9 @@ export default function OffersScreen() {
             onPress={() => handleOfferPress(offer)}
             onFavoritePress={() => handleFavoritePress(offer.id)}
             isFavorite={isFavorite('offer', offer.id)}
+            onLikePress={() => handleLikePress(offer.id)}
+            isLiked={isLiked('offer', offer.id)}
+            likeCount={offer.like_count}
           />
         ))}
       </ScrollView>
@@ -369,14 +398,14 @@ export default function OffersScreen() {
         onNavigateToMap={(address, coordinates) => {
           // Fermer la modal avant de naviguer
           handleCloseModal();
-          
+
           // Petit délai pour laisser la modal se fermer
           setTimeout(() => {
             // Naviguer vers la carte avec l'itinéraire
             if (coordinates) {
               router.push({
                 pathname: '/compass',
-                params: { 
+                params: {
                   destination: `${coordinates[0]},${coordinates[1]}`,
                   type: 'coordinates'
                 }
@@ -384,7 +413,7 @@ export default function OffersScreen() {
             } else if (address) {
               router.push({
                 pathname: '/compass',
-                params: { 
+                params: {
                   destination: address,
                   type: 'address'
                 }
@@ -394,6 +423,12 @@ export default function OffersScreen() {
             }
           }, 100);
         }}
+      />
+
+      <Toast
+        message={toastMessage}
+        visible={showToast}
+        onHide={() => setShowToast(false)}
       />
     </SafeAreaView>
   );

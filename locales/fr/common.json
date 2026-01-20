@@ -210,7 +210,19 @@
   "settings_subtitle": "Préférences et compte",
   "continue_as_guest": "Continuer en tant qu'invité",
   "remove_from_favorites": "Retirer des favoris",
-  "login_to_favorite": "Connecte-toi pour sauvegarder"
+  "login_to_favorite": "Connecte-toi pour sauvegarder",
+  "added_to_favorites": "Ajouté aux favoris",
+  "removed_from_favorites": "Retiré des favoris",
+  "like": "J'aime",
+  "unlike": "Je n'aime plus",
+  "liked": "Aimé!",
+  "unliked": "Retiré",
+  "login_required": "Connexion requise",
+  "follow": "Suivre",
+  "unfollow": "Ne plus suivre",
+  "following": "Abonné",
+  "followed": "Abonné!",
+  "unfollowed": "Désabonné"
 }
 
 

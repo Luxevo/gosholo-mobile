@@ -206,7 +206,19 @@
   "settings_subtitle": "Preferences and account",
   "continue_as_guest": "Continue as Guest",
   "remove_from_favorites": "Remove from favorites",
-  "login_to_favorite": "Log in to save favorites"
+  "login_to_favorite": "Log in to save favorites",
+  "added_to_favorites": "Added to favorites",
+  "removed_from_favorites": "Removed from favorites",
+  "like": "Like",
+  "unlike": "Unlike",
+  "liked": "Liked!",
+  "unliked": "Unliked",
+  "login_required": "Login required",
+  "follow": "Follow",
+  "unfollow": "Unfollow",
+  "following": "Following",
+  "followed": "Now following!",
+  "unfollowed": "Unfollowed"
 }
 
 

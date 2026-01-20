@@ -15,6 +15,7 @@ export type EventWithCommerce = Event & {
     longitude?: number;
   } | null;
   distance?: number | null;
+  like_count?: number;
 };
 
 interface UseEventsOptions {

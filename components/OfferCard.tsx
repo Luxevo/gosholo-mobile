@@ -39,9 +39,12 @@ interface OfferCardProps {
   onPress: () => void;
   onFavoritePress?: () => void;
   isFavorite?: boolean;
+  onLikePress?: () => void;
+  isLiked?: boolean;
+  likeCount?: number;
 }
 
-const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress, isFavorite = false }) => {
+const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavoritePress, isFavorite = false, onLikePress, isLiked = false, likeCount }) => {
   const { t, i18n } = useTranslation();
 
   const handleShare = async () => {
@@ -166,6 +169,25 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
           </TouchableOpacity>
 
           <View style={styles.actionButtons}>
+            {onLikePress && (
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={onLikePress}
+                accessibilityRole="button"
+                accessibilityLabel={isLiked ? t('unlike') : t('like')}
+              >
+                <View style={styles.likeContainer}>
+                  <IconSymbol
+                    name={isLiked ? "heart.fill" : "heart"}
+                    size={20}
+                    color={isLiked ? "#FF4D6A" : COLORS.teal}
+                  />
+                  {(likeCount !== undefined && likeCount > 0) && (
+                    <Text style={styles.likeCount}>{likeCount}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )}
             {onFavoritePress && (
               <TouchableOpacity
                 style={styles.iconBtn}
@@ -173,11 +195,20 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
                 accessibilityRole="button"
                 accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
               >
-                <IconSymbol
-                  name={isFavorite ? "heart.fill" : "heart"}
-                  size={20}
-                  color={isFavorite ? COLORS.primary : COLORS.teal}
-                />
+                <View style={{ position: 'relative', width: 20, height: 20 }}>
+                  <IconSymbol
+                    name="star.fill"
+                    size={20}
+                    color={COLORS.teal}
+                    style={{ position: 'absolute' }}
+                  />
+                  <IconSymbol
+                    name={isFavorite ? "star.fill" : "star"}
+                    size={16}
+                    color={isFavorite ? "#E6B800" : COLORS.white}
+                    style={{ position: 'absolute', top: 2, left: 2 }}
+                  />
+                </View>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.iconBtn} onPress={handleShare} accessibilityRole="button">
@@ -376,5 +407,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.line,
+  },
+  likeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  likeCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.inkDim,
   },
 });

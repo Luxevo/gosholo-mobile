@@ -4,9 +4,11 @@ import { AppHeader } from '@/components/shared/AppHeader';
 import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
 import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
 import { SearchBar } from '@/components/shared/SearchBar';
+import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useEvents, EventWithCommerce } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useLikes } from '@/hooks/useLikes';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -53,12 +55,15 @@ export default function EventsScreen() {
   const [userCity, setUserCity] = useState<string>('');
   const { events, loading, error, refetch } = useEvents({ userLocation });
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
+  const { isLiked, toggleLike } = useLikes();
   const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'new_to_old' | 'old_to_new'>('new_to_old');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   // Get user location on mount
   useEffect(() => {
@@ -258,6 +263,27 @@ export default function EventsScreen() {
           { text: t('login'), onPress: () => router.push('/(auth)/login') }
         ]
       );
+    } else if (result.success && result.action) {
+      setToastMessage(result.action === 'added' ? t('added_to_favorites') : t('removed_from_favorites'));
+      setShowToast(true);
+    }
+  };
+
+  const handleLikePress = async (eventId: string) => {
+    const result = await toggleLike('event', eventId);
+
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_required'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    } else if (result.success && result.action) {
+      setToastMessage(result.action === 'liked' ? t('liked') : t('unliked'));
+      setShowToast(true);
     }
   };
 
@@ -370,6 +396,9 @@ export default function EventsScreen() {
             onPress={() => handleEventPress(event)}
             onFavoritePress={() => handleFavoritePress(event.id)}
             isFavorite={isFavorite('event', event.id)}
+            onLikePress={() => handleLikePress(event.id)}
+            isLiked={isLiked('event', event.id)}
+            likeCount={event.like_count}
           />
         ))}
       </ScrollView>
@@ -383,14 +412,14 @@ export default function EventsScreen() {
         onNavigateToMap={(address, coordinates) => {
           // Fermer la modal avant de naviguer
           handleCloseModal();
-          
+
           // Petit délai pour laisser la modal se fermer
           setTimeout(() => {
             // Naviguer vers la carte avec l'itinéraire
             if (coordinates) {
               router.push({
                 pathname: '/compass',
-                params: { 
+                params: {
                   destination: `${coordinates[0]},${coordinates[1]}`,
                   type: 'coordinates'
                 }
@@ -398,7 +427,7 @@ export default function EventsScreen() {
             } else if (address) {
               router.push({
                 pathname: '/compass',
-                params: { 
+                params: {
                   destination: address,
                   type: 'address'
                 }
@@ -408,6 +437,12 @@ export default function EventsScreen() {
             }
           }, 100);
         }}
+      />
+
+      <Toast
+        message={toastMessage}
+        visible={showToast}
+        onHide={() => setShowToast(false)}
       />
     </SafeAreaView>
   );

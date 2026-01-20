@@ -2,6 +2,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces } from '@/hooks/useCommerces';
 import { EventWithCommerce } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useFollows } from '@/hooks/useFollows';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -58,6 +59,7 @@ export default function EventDetailModal({
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
   const { commerces } = useCommerces();
   const { isFavorite: isCommerceFavorite, toggleFavorite } = useFavorites();
+  const { isFollowing, toggleFollow } = useFollows();
 
   if (!event) return null;
 
@@ -70,6 +72,21 @@ export default function EventDetailModal({
     if (result.needsLogin) {
       Alert.alert(
         t('login_to_favorite'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    }
+  };
+
+  const handleBusinessFollowPress = async () => {
+    if (!business) return;
+    const result = await toggleFollow(business.id);
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_required'),
         t('login_to_access_features'),
         [
           { text: t('cancel'), style: 'cancel' },
@@ -174,11 +191,20 @@ export default function EventDetailModal({
                 <Text style={styles.closeText}>×</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton} onPress={onFavoritePress} activeOpacity={0.7}>
-                <IconSymbol
-                  name={isFavorite ? "heart.fill" : "heart"}
-                  size={20}
-                  color={isFavorite ? COLORS.primary : COLORS.teal}
-                />
+                <View style={{ position: 'relative', width: 20, height: 20 }}>
+                  <IconSymbol
+                    name="star.fill"
+                    size={20}
+                    color={COLORS.teal}
+                    style={{ position: 'absolute' }}
+                  />
+                  <IconSymbol
+                    name={isFavorite ? "star.fill" : "star"}
+                    size={16}
+                    color={isFavorite ? "#E6B800" : COLORS.white}
+                    style={{ position: 'absolute', top: 2, left: 2 }}
+                  />
+                </View>
               </TouchableOpacity>
             </SafeAreaView>
 
@@ -349,6 +375,9 @@ export default function EventDetailModal({
         }}
         isFavorite={business ? isCommerceFavorite('commerce', business.id) : false}
         onFavoritePress={handleBusinessFavoritePress}
+        isFollowing={business ? isFollowing(business.id) : false}
+        onFollowPress={handleBusinessFollowPress}
+        followerCount={business?.follower_count}
       />
     </Modal>
   );

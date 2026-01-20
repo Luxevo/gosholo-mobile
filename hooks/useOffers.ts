@@ -15,6 +15,7 @@ export type OfferWithCommerce = Offer & {
     longitude?: number;
   } | null;
   distance?: number | null;
+  like_count?: number;
 };
 
 interface UseOffersOptions {

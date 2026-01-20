@@ -55,6 +55,9 @@ interface BusinessDetailModalProps {
   onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
   isFavorite?: boolean;
   onFavoritePress?: () => void;
+  isFollowing?: boolean;
+  onFollowPress?: () => void;
+  followerCount?: number;
 }
 
 export default function BusinessDetailModal({
@@ -65,6 +68,9 @@ export default function BusinessDetailModal({
   onNavigateToMap,
   isFavorite = false,
   onFavoritePress,
+  isFollowing = false,
+  onFollowPress,
+  followerCount,
 }: BusinessDetailModalProps) {
   const { t, i18n } = useTranslation();
   const scheme = useColorScheme();
@@ -158,11 +164,42 @@ export default function BusinessDetailModal({
                   onPress={onFavoritePress}
                   accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
                 >
+                  <View style={{ position: 'relative', width: 18, height: 18 }}>
+                    <Ionicons
+                      name="star"
+                      size={18}
+                      color={theme.teal}
+                      style={{ position: 'absolute' }}
+                    />
+                    <Ionicons
+                      name={isFavorite ? "star" : "star-outline"}
+                      size={14}
+                      color={isFavorite ? "#E6B800" : theme.ink}
+                      style={{ position: 'absolute', top: 2, left: 2 }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              )}
+              {onFollowPress && (
+                <TouchableOpacity
+                  style={[
+                    styles.followButton,
+                    { backgroundColor: isFollowing ? theme.teal : theme.gray }
+                  ]}
+                  onPress={onFollowPress}
+                  accessibilityLabel={isFollowing ? t('unfollow') : t('follow')}
+                >
                   <Ionicons
-                    name={isFavorite ? "heart" : "heart-outline"}
-                    size={18}
-                    color={isFavorite ? theme.primary : theme.ink}
+                    name={isFollowing ? "checkmark" : "add"}
+                    size={16}
+                    color={isFollowing ? theme.white : theme.ink}
                   />
+                  <Text style={[
+                    styles.followText,
+                    { color: isFollowing ? theme.white : theme.ink }
+                  ]}>
+                    {isFollowing ? t('following') : t('follow')}
+                  </Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={[styles.shareButton, { backgroundColor: theme.gray }]} onPress={handleShare}>
@@ -504,6 +541,18 @@ const styles = StyleSheet.create({
   },
   callText: {
     color: COLORS.light.white,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  followButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    gap: 4,
+  },
+  followText: {
     fontSize: 13,
     fontWeight: '600',
   },

@@ -1,6 +1,7 @@
 import BusinessDetailModal from '@/components/BusinessDetailModal';
 import { LOGO_BASE64 } from '@/components/LogoBase64';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useFollows } from '@/hooks/useFollows';
 import { NavigationBanner } from '@/components/navigation/NavigationBanner';
 import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
 import { POIModal } from '@/components/POIModal';
@@ -324,6 +325,7 @@ export default function CompassScreen() {
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { isFollowing, toggleFollow } = useFollows();
 
   // Memoized filtered commerces - no side effects (accent-insensitive search)
   const filteredCommerces = useMemo(() => {
@@ -727,6 +729,20 @@ export default function CompassScreen() {
       );
     }
   }, [toggleFavorite, t]);
+
+  const handleFollowPress = useCallback(async (commerceId: string) => {
+    const result = await toggleFollow(commerceId);
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_required'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    }
+  }, [toggleFollow, t]);
 
   const handleClusterPress = useCallback((cluster: MarkerCluster) => {
     // If only one commerce, open it directly
@@ -1519,6 +1535,9 @@ export default function CompassScreen() {
         }}
         isFavorite={selectedBusiness ? isFavorite('commerce', selectedBusiness.id) : false}
         onFavoritePress={selectedBusiness ? () => handleFavoritePress(selectedBusiness.id) : undefined}
+        isFollowing={selectedBusiness ? isFollowing(selectedBusiness.id) : false}
+        onFollowPress={selectedBusiness ? () => handleFollowPress(selectedBusiness.id) : undefined}
+        followerCount={selectedBusiness?.follower_count}
       />
 
       {/* Full-Screen Search Overlay */}

@@ -94,11 +94,20 @@ export function RestaurantCard({
           </View>
         )}
         <TouchableOpacity style={styles.favoriteButton} onPress={onFavoritePress}>
-          <IconSymbol 
-            name={isFavorite ? "heart.fill" : "heart"} 
-            size={20} 
-            color={COLORS.white} 
-          />
+          <View style={{ position: 'relative', width: 20, height: 20 }}>
+            <IconSymbol
+              name="star.fill"
+              size={20}
+              color={COLORS.teal}
+              style={{ position: 'absolute' }}
+            />
+            <IconSymbol
+              name={isFavorite ? "star.fill" : "star"}
+              size={16}
+              color={isFavorite ? "#E6B800" : COLORS.white}
+              style={{ position: 'absolute', top: 2, left: 2 }}
+            />
+          </View>
         </TouchableOpacity>
       </View>
       <View style={[styles.cardContent, { backgroundColor: getCardContentColor() }]}>

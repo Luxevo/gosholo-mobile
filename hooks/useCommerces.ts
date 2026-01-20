@@ -32,6 +32,8 @@ export interface Commerce {
   boosted: boolean | null;
   boosted_at: string | null;
   boost_type: 'en_vedette' | 'visibilite' | null;
+  like_count?: number;
+  follower_count?: number;
 }
 
 export function useCommerces() {
