@@ -1,7 +1,7 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces } from '@/hooks/useCommerces';
-import { useFavorites } from '@/hooks/useFavorites';
 import { useFollows } from '@/hooks/useFollows';
+import { useLikes } from '@/hooks/useLikes';
 import { OfferWithCommerce } from '@/hooks/useOffers';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -57,20 +57,19 @@ export default function OfferDetailModal({
   const { t, i18n } = useTranslation();
   const [businessModalVisible, setBusinessModalVisible] = useState(false);
   const { commerces } = useCommerces();
-  const { isFavorite: isCommerceFavorite, toggleFavorite } = useFavorites();
   const { isFollowing, toggleFollow } = useFollows();
+  const { isLiked, toggleLike } = useLikes();
 
   if (!offer) return null;
 
   // Find the business from the useCommerces hook that matches the offer's commerce
   const business = offer.commerces ? commerces.find(c => c.id === offer.commerces?.id) || null : null;
 
-  const handleBusinessFavoritePress = async () => {
-    if (!business) return;
-    const result = await toggleFavorite('commerce', business.id);
+  const handleLikePress = async () => {
+    const result = await toggleLike('offer', offer.id);
     if (result.needsLogin) {
       Alert.alert(
-        t('login_to_favorite'),
+        t('login_required'),
         t('login_to_access_features'),
         [
           { text: t('cancel'), style: 'cancel' },
@@ -189,22 +188,22 @@ export default function OfferDetailModal({
               <TouchableOpacity style={styles.iconButton} onPress={onClose} activeOpacity={0.7}>
                 <Text style={styles.closeText}>×</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton} onPress={onFavoritePress} activeOpacity={0.7}>
-                <View style={{ position: 'relative', width: 20, height: 20 }}>
+              <View style={styles.headerRightButtons}>
+                <TouchableOpacity style={styles.iconButton} onPress={handleLikePress} activeOpacity={0.7}>
                   <IconSymbol
-                    name="star.fill"
-                    size={20}
-                    color={COLORS.teal}
-                    style={{ position: 'absolute' }}
+                    name={isLiked('offer', offer.id) ? "heart.fill" : "heart"}
+                    size={22}
+                    color={isLiked('offer', offer.id) ? "#FF4D6A" : COLORS.teal}
                   />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton} onPress={onFavoritePress} activeOpacity={0.7}>
                   <IconSymbol
-                    name={isFavorite ? "star.fill" : "star"}
-                    size={16}
-                    color={isFavorite ? "#E6B800" : COLORS.white}
-                    style={{ position: 'absolute', top: 2, left: 2 }}
+                    name={isFavorite ? "bookmark.fill" : "bookmark"}
+                    size={22}
+                    color={isFavorite ? COLORS.primary : COLORS.teal}
                   />
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </View>
             </SafeAreaView>
 
             {/* Boost badge on image */}
@@ -326,11 +325,8 @@ export default function OfferDetailModal({
             onNavigateToMap(address, coordinates);
           }
         }}
-        isFavorite={business ? isCommerceFavorite('commerce', business.id) : false}
-        onFavoritePress={handleBusinessFavoritePress}
         isFollowing={business ? isFollowing(business.id) : false}
         onFollowPress={handleBusinessFollowPress}
-        followerCount={business?.follower_count}
       />
     </Modal>
   );
@@ -399,6 +395,10 @@ const styles = StyleSheet.create({
     color: COLORS.teal,
     lineHeight: 28,
     marginTop: -2,
+  },
+  headerRightButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
   },
 
   heroBoostBadge: {

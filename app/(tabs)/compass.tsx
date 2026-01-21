@@ -1533,11 +1533,8 @@ export default function CompassScreen() {
             }
           }, 100);
         }}
-        isFavorite={selectedBusiness ? isFavorite('commerce', selectedBusiness.id) : false}
-        onFavoritePress={selectedBusiness ? () => handleFavoritePress(selectedBusiness.id) : undefined}
         isFollowing={selectedBusiness ? isFollowing(selectedBusiness.id) : false}
         onFollowPress={selectedBusiness ? () => handleFollowPress(selectedBusiness.id) : undefined}
-        followerCount={selectedBusiness?.follower_count}
       />
 
       {/* Full-Screen Search Overlay */}

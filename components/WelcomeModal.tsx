@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,14 +27,19 @@ const SPACING = {
 
 interface WelcomeModalProps {
   visible: boolean;
-  onClose: () => void;
+  onClose: (dontShowAgain: boolean) => void;
 }
 
 export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
   const { t } = useTranslation();
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const handleGetStarted = () => {
-    onClose(); // Close modal and stay on current tab
+    onClose(dontShowAgain);
+  };
+
+  const handleClose = () => {
+    onClose(dontShowAgain);
   };
 
 
@@ -42,7 +48,7 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.container}>
         <ScrollView
@@ -55,7 +61,7 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={onClose}
+              onPress={handleClose}
             >
               <Ionicons name="close" size={24} color={COLORS.darkGray} />
             </TouchableOpacity>
@@ -114,6 +120,20 @@ export default function WelcomeModal({ visible, onClose }: WelcomeModalProps) {
               </View>
             </View>
           </View>
+
+          {/* Don't show again checkbox */}
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => setDontShowAgain(!dontShowAgain)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
+              {dontShowAgain && (
+                <Ionicons name="checkmark" size={14} color={COLORS.white} />
+              )}
+            </View>
+            <Text style={styles.checkboxLabel}>{t('dont_show_again')}</Text>
+          </TouchableOpacity>
 
           {/* CTA Section */}
           <View style={styles.finalCtaSection}>
@@ -267,6 +287,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.darkGray,
     lineHeight: 20,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.xl,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.teal,
+    borderColor: COLORS.teal,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: COLORS.darkGray,
   },
   finalCtaSection: {
     paddingHorizontal: SPACING.xl,

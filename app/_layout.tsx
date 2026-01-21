@@ -101,9 +101,11 @@ export default function RootLayout() {
     checkWelcomeModal();
   }, []);
 
-  const handleCloseWelcomeModal = async () => {
+  const handleCloseWelcomeModal = async (dontShowAgain: boolean) => {
     try {
-      await AsyncStorage.setItem(WELCOME_MODAL_KEY, 'true');
+      if (dontShowAgain) {
+        await AsyncStorage.setItem(WELCOME_MODAL_KEY, 'true');
+      }
       setShowWelcomeModal(false);
     } catch (error) {
       console.error('Error saving welcome modal state:', error);

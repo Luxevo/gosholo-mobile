@@ -53,8 +53,6 @@ interface BusinessDetailModalProps {
   onClose: () => void;
   onGetDirections?: (business: Commerce) => void;
   onNavigateToMap?: (address: string, coordinates?: [number, number]) => void;
-  isFavorite?: boolean;
-  onFavoritePress?: () => void;
   isFollowing?: boolean;
   onFollowPress?: () => void;
   followerCount?: number;
@@ -66,8 +64,6 @@ export default function BusinessDetailModal({
   onClose,
   onGetDirections,
   onNavigateToMap,
-  isFavorite = false,
-  onFavoritePress,
   isFollowing = false,
   onFollowPress,
   followerCount,
@@ -158,28 +154,6 @@ export default function BusinessDetailModal({
               <Ionicons name="close" size={20} color={theme.ink} />
             </TouchableOpacity>
             <View style={styles.headerActions}>
-              {onFavoritePress && (
-                <TouchableOpacity
-                  style={[styles.favoriteButton, { backgroundColor: theme.gray }]}
-                  onPress={onFavoritePress}
-                  accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
-                >
-                  <View style={{ position: 'relative', width: 18, height: 18 }}>
-                    <Ionicons
-                      name="star"
-                      size={18}
-                      color={theme.teal}
-                      style={{ position: 'absolute' }}
-                    />
-                    <Ionicons
-                      name={isFavorite ? "star" : "star-outline"}
-                      size={14}
-                      color={isFavorite ? "#E6B800" : theme.ink}
-                      style={{ position: 'absolute', top: 2, left: 2 }}
-                    />
-                  </View>
-                </TouchableOpacity>
-              )}
               {onFollowPress && (
                 <TouchableOpacity
                   style={[
@@ -518,13 +492,6 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   shareButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  favoriteButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
