@@ -140,6 +140,7 @@ const calculateOpenStatus = (
 };
 
 // Helper to check if current time is within opening hours
+// Handles overnight hours (e.g., bar open 16:00-03:00)
 const isWithinHours = (now: Date, openTime: string, closeTime: string): boolean => {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -149,6 +150,14 @@ const isWithinHours = (now: Date, openTime: string, closeTime: string): boolean 
   const [closeHour, closeMin] = closeTime.split(':').map(Number);
   const closeMinutes = closeHour * 60 + closeMin;
 
+  // Handle overnight hours (close time is before open time, meaning it closes after midnight)
+  if (closeMinutes < openMinutes) {
+    // Business closes after midnight
+    // Open if: current >= open OR current < close
+    return currentMinutes >= openMinutes || currentMinutes < closeMinutes;
+  }
+
+  // Normal same-day hours
   return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
 };
 
