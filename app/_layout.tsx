@@ -50,7 +50,7 @@ export default function RootLayout() {
 
       // Handle offer deep links
       // Formats: gosholomobile://offer/[id] or https://app.gosholo.com/offer-mobile/[id]
-      const offerMatch = url.match(/\/offer(?:-mobile)?\/([a-zA-Z0-9-]+)/);
+      const offerMatch = url.match(/offer(?:-mobile)?\/([a-zA-Z0-9-]+)/);
       if (offerMatch) {
         const offerId = offerMatch[1];
         await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'offer', id: offerId }));
@@ -60,11 +60,21 @@ export default function RootLayout() {
 
       // Handle event deep links
       // Formats: gosholomobile://event/[id] or https://app.gosholo.com/event-mobile/[id]
-      const eventMatch = url.match(/\/event(?:-mobile)?\/([a-zA-Z0-9-]+)/);
+      const eventMatch = url.match(/event(?:-mobile)?\/([a-zA-Z0-9-]+)/);
       if (eventMatch) {
         const eventId = eventMatch[1];
         await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'event', id: eventId }));
         router.replace('/(tabs)/events');
+        return;
+      }
+
+      // Handle commerce deep links
+      // Format: gosholomobile://commerce/[id]
+      const commerceMatch = url.match(/commerce\/([a-zA-Z0-9-]+)/);
+      if (commerceMatch) {
+        const commerceId = commerceMatch[1];
+        await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'commerce', id: commerceId }));
+        router.replace('/(tabs)');
         return;
       }
     };
