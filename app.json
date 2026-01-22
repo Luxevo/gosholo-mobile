@@ -17,7 +17,7 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to share images to social media."
       },
-      "associatedDomains": ["applinks:app.gosholo.com"]
+      "associatedDomains": ["applinks:app.gosholo.com", "applinks:gosholo.com"]
     },
     "android": {
       "edgeToEdgeEnabled": true,
@@ -51,6 +51,16 @@
               "scheme": "https",
               "host": "app.gosholo.com",
               "path": "/download"
+            },
+            {
+              "scheme": "https",
+              "host": "gosholo.com",
+              "pathPrefix": "/offer-mobile"
+            },
+            {
+              "scheme": "https",
+              "host": "gosholo.com",
+              "pathPrefix": "/event-mobile"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
