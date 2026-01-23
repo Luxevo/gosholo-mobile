@@ -31,7 +31,7 @@ export function AppHeader({
       {/* Left side: Logo */}
       <View style={styles.leftSection}>
         <Image
-          source={require('@/assets/images/dark_green.png')}
+          source={require('@/assets/images/darker-logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -59,7 +59,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 6,
+    paddingBottom: 0,
     backgroundColor: COLORS.white,
   },
   leftSection: {
@@ -68,8 +69,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logo: {
-    width: 60,
-    height: 32,
+    width: 95,
+    height: 50,
   },
   locationChip: {
     flexDirection: 'row',
