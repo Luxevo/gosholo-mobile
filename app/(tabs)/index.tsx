@@ -190,7 +190,7 @@ export default function HomeScreen() {
           </View>
         )}
         <View style={styles.businessInfo}>
-          <Text style={styles.businessName} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.businessName} numberOfLines={2}>{item.name}</Text>
           {categoryName && (
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryText} numberOfLines={1}>{categoryName}</Text>
@@ -426,12 +426,14 @@ const styles = StyleSheet.create({
   },
   businessInfo: {
     padding: SPACING.sm,
+    height: 85,
   },
   businessName: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.ink,
     marginBottom: SPACING.xs,
+    minHeight: 32,
   },
   categoryBadge: {
     backgroundColor: COLORS.gray,

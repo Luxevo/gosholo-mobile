@@ -167,7 +167,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
       {/* Content */}
       <View style={styles.body}>
         <View style={styles.contentSection}>
-          <View style={styles.headerRow}>
+          <View style={styles.businessSection}>
             <Text style={styles.businessName} numberOfLines={1}>
               {event.commerces?.name || t('event')}
             </Text>
@@ -180,7 +180,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             )}
           </View>
 
-          <Text style={styles.eventTitle} numberOfLines={1}>
+          <Text style={styles.eventTitle} numberOfLines={2}>
             {event.title}
           </Text>
 
@@ -355,19 +355,16 @@ const styles = StyleSheet.create({
 
   contentSection: {
     gap: SPACING.sm,
+    minHeight: 140,
   },
 
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
+  businessSection: {
     marginBottom: SPACING.xs,
   },
   businessName: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.ink,
-    flexShrink: 1,
   },
   categoryChip: {
     backgroundColor: COLORS.bgMuted,
@@ -376,6 +373,8 @@ const styles = StyleSheet.create({
     borderRadius: RAD.md,
     borderWidth: 1,
     borderColor: COLORS.line,
+    alignSelf: 'flex-start',
+    marginTop: SPACING.xs,
   },
   categoryText: {
     fontSize: 10,
