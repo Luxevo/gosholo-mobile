@@ -167,6 +167,20 @@ export default function HomeScreen() {
     }
   };
 
+  const handleQuickFollow = async (commerceId: string) => {
+    const result = await toggleFollow(commerceId);
+    if (result.needsLogin) {
+      Alert.alert(
+        t('login_required'),
+        t('login_to_access_features'),
+        [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+    }
+  };
+
   const renderBusinessCard = (item: Commerce) => {
     const categoryName = item.category
       ? (i18n.language === 'fr' ? item.category.name_fr : item.category.name_en)
@@ -190,7 +204,26 @@ export default function HomeScreen() {
           </View>
         )}
         <View style={styles.businessInfo}>
-          <Text style={styles.businessName} numberOfLines={2}>{item.name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.businessName} numberOfLines={2}>{item.name}</Text>
+            <TouchableOpacity
+              style={[
+                styles.followButton,
+                isFollowing(item.id) && styles.followButtonActive,
+              ]}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleQuickFollow(item.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isFollowing(item.id) ? 'checkmark' : 'add'}
+                size={12}
+                color={isFollowing(item.id) ? COLORS.white : COLORS.teal}
+              />
+            </TouchableOpacity>
+          </View>
           {categoryName && (
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryText} numberOfLines={1}>{categoryName}</Text>
@@ -428,12 +461,19 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     height: 85,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: SPACING.xs,
+    marginBottom: SPACING.xs,
+    minHeight: 32,
+  },
   businessName: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.ink,
-    marginBottom: SPACING.xs,
-    minHeight: 32,
+    flex: 1,
   },
   categoryBadge: {
     backgroundColor: COLORS.gray,
@@ -468,6 +508,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  followButton: {
+    backgroundColor: COLORS.white,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.teal,
+  },
+  followButtonActive: {
+    backgroundColor: COLORS.teal,
+    borderColor: COLORS.teal,
   },
   sectionList: {
     flex: 1,
