@@ -24,7 +24,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   const getIconName = (routeName: string, focused: boolean) => {
     switch (routeName) {
       case 'index':
-        return 'house.fill';
+        return 'storefront.fill';
       case 'offers':
         return 'tag.fill';
       case 'compass':
