@@ -1,15 +1,18 @@
 import BusinessDetailModal from '@/components/BusinessDetailModal';
+import { AppHeader } from '@/components/shared/AppHeader';
+import { SearchBar } from '@/components/shared/SearchBar';
 import { Commerce, useCommerces } from '@/hooks/useCommerces';
 import { useFollows } from '@/hooks/useFollows';
+import { matchesSearch } from '@/utils/searchUtils';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  Platform,
   RefreshControl,
   SectionList,
   StatusBar,
@@ -57,14 +60,50 @@ export default function HomeScreen() {
   const [selectedBusiness, setSelectedBusiness] = useState<Commerce | null>(null);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userCity, setUserCity] = useState('');
+
+  // Get user location on mount
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        try {
+          const [address] = await Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+          if (address.city) {
+            setUserCity(address.city);
+          }
+        } catch (error) {
+          console.error('Error reverse geocoding:', error);
+        }
+      }
+    })();
+  }, []);
+
+  // Filter commerces by search
+  const filteredCommerces = useMemo(() => {
+    if (!searchQuery.trim()) return commerces;
+
+    const query = searchQuery.trim();
+    return commerces.filter((commerce) =>
+      matchesSearch(commerce.name, query) ||
+      matchesSearch(commerce.address, query) ||
+      matchesSearch(commerce.category?.name_fr, query) ||
+      matchesSearch(commerce.category?.name_en, query)
+    );
+  }, [commerces, searchQuery]);
 
   // Group businesses into sections: Featured first, then by letter
   const sections = useMemo(() => {
     const result: Section[] = [];
 
     // Separate boosted and regular businesses
-    const boosted = commerces.filter(c => c.boosted);
-    const regular = commerces.filter(c => !c.boosted);
+    const boosted = filteredCommerces.filter(c => c.boosted);
+    const regular = filteredCommerces.filter(c => !c.boosted);
 
     // Sort regular businesses alphabetically
     const sortedRegular = [...regular].sort((a, b) =>
@@ -124,7 +163,7 @@ export default function HomeScreen() {
     });
 
     return result;
-  }, [commerces]);
+  }, [filteredCommerces]);
 
 
   const handleBusinessPress = (business: Commerce) => {
@@ -272,17 +311,9 @@ export default function HomeScreen() {
 
   const renderHeader = () => (
     <View style={styles.headerSection}>
-      <Image
-        source={require('@/assets/images/darker-logo.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-      <Text style={styles.tagline}>
-        {t('welcome_subtitle')}
-      </Text>
       <View style={styles.businessCountRow}>
         <Text style={styles.businessCount}>
-          {commerces.length} {t('businesses')}
+          {filteredCommerces.length} {t('businesses')}
         </Text>
       </View>
     </View>
@@ -317,6 +348,16 @@ export default function HomeScreen() {
         </View>
       ) : (
         <View style={styles.listWrapper}>
+          {/* Header */}
+          <AppHeader location={userCity} />
+
+          {/* Search Bar */}
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t('search_placeholder_businesses')}
+          />
+
           <SectionList<Commerce[], SectionData>
             sections={sections}
             renderItem={renderRow}
@@ -362,31 +403,13 @@ const styles = StyleSheet.create({
   },
   listWrapper: {
     flex: 1,
-    flexDirection: 'row',
   },
   headerSection: {
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingTop: Platform.OS === 'android' ? SPACING.xl : 0,
-    paddingBottom: SPACING.lg,
-  },
-  logo: {
-    width: 200,
-    height: 65,
-  },
-  tagline: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    textAlign: 'center',
-    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
   },
   businessCountRow: {
-    marginTop: SPACING.lg,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray,
-    width: '100%',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   businessCount: {
     fontSize: 14,
