@@ -4,6 +4,7 @@ import { AppHeader } from '@/components/shared/AppHeader';
 import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
 import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
 import { SearchBar } from '@/components/shared/SearchBar';
+import { SkeletonPage } from '@/components/SkeletonCard';
 import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCategories } from '@/hooks/useCategories';
@@ -17,7 +18,6 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    ActivityIndicator,
     Alert,
     RefreshControl,
     ScrollView,
@@ -291,11 +291,11 @@ export default function OffersScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.text}>{t('loading_offers')}</Text>
-        </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <AppHeader location={userCity} />
+          <SkeletonPage count={2} type="offer" />
+        </ScrollView>
       </SafeAreaView>
     );
   }

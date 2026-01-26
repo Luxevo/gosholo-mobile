@@ -497,11 +497,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.sm,
     alignSelf: 'flex-start',
+    maxWidth: '100%',
     backgroundColor: 'rgba(1, 111, 115, 0.1)',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: 'rgba(1, 111, 115, 0.25)',
   },
   businessName: {
@@ -509,6 +510,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.teal,
     textDecorationLine: 'underline',
+    flexShrink: 1,
   },
   categoryPill: {
     alignSelf: 'flex-start',

@@ -78,7 +78,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
   if (!visible) return null;
 
-  const hasResults = commerceResults.length > 0 || addressResults.length > 0;
+  const hasResults = commerceResults.length > 0;
 
   return (
     <View style={styles.container}>
@@ -112,7 +112,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
           </TouchableWithoutFeedback>
         </View>
 
-        {/* Search Results */}
+        {/* Search Results - GoSholo businesses only */}
         <View style={styles.resultsContainer}>
           {isSearching ? (
             <View style={styles.loadingContainer}>
@@ -120,106 +120,60 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             </View>
           ) : hasResults ? (
             <FlatList
-              data={[
-                // Local commerces first
-                ...commerceResults.slice(0, 8).map((commerce) => ({
-                  type: 'commerce',
-                  data: commerce,
-                  id: `commerce-${commerce.id}`,
-                })),
-                // Mapbox addresses second
-                ...addressResults.slice(0, 8).map((result) => ({
-                  type: 'address',
-                  data: result,
-                  id: `address-${result.id}`,
-                })),
-              ]}
+              data={commerceResults.slice(0, 10)}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               onScrollBeginDrag={dismissKeyboard}
-              renderItem={({ item }) => {
-                if (item.type === 'commerce') {
-                  const commerce = item.data;
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.resultItem,
-                        commerce.boosted && styles.resultItemBoosted
-                      ]}
-                      onPress={() => {
-                        onSelectCommerce(commerce);
-                        onClose();
-                      }}
-                    >
-                      {commerce.image_url ? (
-                        <Image
-                          source={{ uri: commerce.image_url }}
-                          style={styles.resultLogo}
-                        />
-                      ) : (
-                        <View style={[
-                          styles.resultIconContainer,
-                          commerce.boosted && styles.resultIconContainerBoosted
-                        ]}>
-                          <IconSymbol
-                            name="storefront.fill"
-                            size={24}
-                            color={commerce.boosted ? COLORS.primary : COLORS.teal}
-                          />
+              renderItem={({ item: commerce }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.resultItem,
+                    commerce.boosted && styles.resultItemBoosted
+                  ]}
+                  onPress={() => {
+                    onSelectCommerce(commerce);
+                    onClose();
+                  }}
+                >
+                  {commerce.image_url ? (
+                    <Image
+                      source={{ uri: commerce.image_url }}
+                      style={styles.resultLogo}
+                    />
+                  ) : (
+                    <View style={[
+                      styles.resultIconContainer,
+                      commerce.boosted && styles.resultIconContainerBoosted
+                    ]}>
+                      <IconSymbol
+                        name="storefront.fill"
+                        size={24}
+                        color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                      />
+                    </View>
+                  )}
+                  <View style={styles.resultTextContainer}>
+                    <View style={styles.resultTitleRow}>
+                      <Text style={[
+                        styles.resultTitle,
+                        commerce.boosted && styles.resultTitleBoosted
+                      ]} numberOfLines={1}>
+                        {commerce.name}
+                      </Text>
+                      {commerce.boosted && (
+                        <View style={styles.boostedBadge}>
+                          <IconSymbol name="star.fill" size={10} color={COLORS.white} />
                         </View>
                       )}
-                      <View style={styles.resultTextContainer}>
-                        <View style={styles.resultTitleRow}>
-                          <Text style={[
-                            styles.resultTitle,
-                            commerce.boosted && styles.resultTitleBoosted
-                          ]} numberOfLines={1}>
-                            {commerce.name}
-                          </Text>
-                          {commerce.boosted && (
-                            <View style={styles.boostedBadge}>
-                              <IconSymbol name="star.fill" size={10} color={COLORS.white} />
-                            </View>
-                          )}
-                        </View>
-                        <Text style={styles.resultSubtitle} numberOfLines={1}>
-                          {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
-                        </Text>
-                      </View>
-                      <IconSymbol name="chevron.right" size={20} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
-                  );
-                } else {
-                  const address = item.data;
-                  return (
-                    <TouchableOpacity
-                      style={styles.resultItem}
-                      onPress={() => {
-                        onSelectAddress(address);
-                        onClose();
-                      }}
-                    >
-                      <View style={styles.resultIconContainer}>
-                        <IconSymbol
-                          name={address.properties?.feature_type === 'address' ? 'mappin.circle.fill' : 'building.2.fill'}
-                          size={24}
-                          color={COLORS.primary}
-                        />
-                      </View>
-                      <View style={styles.resultTextContainer}>
-                        <Text style={styles.resultTitle} numberOfLines={1}>
-                          {address.text}
-                        </Text>
-                        <Text style={styles.resultSubtitle} numberOfLines={1}>
-                          {address.place_name}
-                        </Text>
-                      </View>
-                      <IconSymbol name="chevron.right" size={20} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
-                  );
-                }
-              }}
+                    </View>
+                    <Text style={styles.resultSubtitle} numberOfLines={1}>
+                      {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
+                    </Text>
+                  </View>
+                  <IconSymbol name="chevron.right" size={20} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              )}
               contentContainerStyle={styles.resultsList}
               ItemSeparatorComponent={() => <View style={styles.separator} />}
             />

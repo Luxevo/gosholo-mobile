@@ -460,6 +460,8 @@ const styles = StyleSheet.create({
   businessCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(0,0,0,0.08)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -472,6 +474,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 100,
     backgroundColor: COLORS.gray,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   businessImagePlaceholder: {
     width: '100%',
@@ -479,6 +483,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gray,
     justifyContent: 'center',
     alignItems: 'center',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   businessInfo: {
     padding: SPACING.sm,

@@ -271,8 +271,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     marginBottom: Platform.OS === 'android' ? 4 : SPACING.sm,
     overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: COLORS.line,
+    borderWidth: 2,
+    borderColor: 'rgba(0,0,0,0.15)',
     width: Platform.OS === 'android' ? 340 : 356,
     // Modern subtle shadow
     shadowColor: '#000',
@@ -314,10 +314,13 @@ const styles = StyleSheet.create({
   media: {
     position: 'relative',
     aspectRatio: 4 / 5,
-    backgroundColor: COLORS.bgMuted
+    backgroundColor: COLORS.bgMuted,
+    borderTopLeftRadius: RAD.lg - 2,
+    borderTopRightRadius: RAD.lg - 2,
+    overflow: 'hidden',
   },
   mediaBg: { flex: 1 },
-  mediaImg: { width: '100%', height: '100%' },
+  mediaImg: { width: '100%', height: '100%', borderTopLeftRadius: RAD.lg - 2, borderTopRightRadius: RAD.lg - 2 },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#8B5CF6' },
   mediaOverlay: {
     ...StyleSheet.absoluteFillObject,

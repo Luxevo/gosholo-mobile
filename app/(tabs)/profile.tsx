@@ -340,9 +340,29 @@ export default function ProfileScreen() {
     </View>
   );
 
+  // Custom profile header with logo and settings gear
+  const ProfileHeader = () => (
+    <View style={styles.profileHeader}>
+      <Image
+        source={require('@/assets/images/darker-logo.png')}
+        style={styles.profileLogo}
+        resizeMode="contain"
+      />
+      <TouchableOpacity
+        style={styles.gearButton}
+        onPress={() => router.push('/settings' as any)}
+        accessibilityRole="button"
+        accessibilityLabel={t('settings')}
+      >
+        <Ionicons name="settings-outline" size={24} color={COLORS.ink} />
+      </TouchableOpacity>
+    </View>
+  );
+
   if (authLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <ProfileHeader />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
@@ -354,6 +374,7 @@ export default function ProfileScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <ProfileHeader />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.unauthContent}
@@ -426,18 +447,7 @@ export default function ProfileScreen() {
   // Authenticated - show Instagram-style profile
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header with username and settings */}
-      <View style={styles.header}>
-        <Text style={styles.headerUsername}>
-          {profile?.username ? `@${profile.username}` : 'GoSholo'}
-        </Text>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => router.push('/settings' as any)}
-        >
-          <Ionicons name="settings-outline" size={26} color={COLORS.ink} />
-        </TouchableOpacity>
-      </View>
+      <ProfileHeader />
 
       <FlatList
         data={currentGridData}
@@ -646,6 +656,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Profile Header (logo + gear)
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 0,
+    backgroundColor: COLORS.white,
+  },
+  profileLogo: {
+    width: 95,
+    height: 50,
+  },
+  gearButton: {
+    padding: SPACING.xs,
   },
   // Header
   header: {

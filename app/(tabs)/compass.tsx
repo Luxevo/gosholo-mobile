@@ -1,13 +1,18 @@
 import BusinessDetailModal from '@/components/BusinessDetailModal';
+import EventDetailModal from '@/components/EventDetailModal';
+import OfferDetailModal from '@/components/OfferDetailModal';
 import { LOGO_BASE64 } from '@/components/LogoBase64';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useFollows } from '@/hooks/useFollows';
+import { useLikes } from '@/hooks/useLikes';
 import { NavigationBanner } from '@/components/navigation/NavigationBanner';
 import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
 import { POIModal } from '@/components/POIModal';
 import { SearchOverlay } from '@/components/SearchOverlay';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
+import { useOffers, type OfferWithCommerce } from '@/hooks/useOffers';
+import { useEvents, type EventWithCommerce } from '@/hooks/useEvents';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
 import {
   groupCommercesByLocation,
@@ -254,6 +259,124 @@ const DestinationMarker = React.memo(({ coordinate }: { coordinate: LngLat }) =>
   </MarkerView>
 ));
 
+// Offer Marker Component
+const OfferMarker = React.memo(({ offer, onPress }: { offer: OfferWithCommerce; onPress: (offer: OfferWithCommerce) => void }) => {
+  const isBoosted = offer.boosted;
+  const isAndroid = Platform.OS === 'android';
+
+  const lat = offer.latitude || offer.commerces?.latitude;
+  const lng = offer.longitude || offer.commerces?.longitude;
+
+  if (!lat || !lng) return null;
+
+  if (isAndroid) {
+    return (
+      <PointAnnotation
+        id={`offer-${offer.id}`}
+        coordinate={[lng, lat]}
+        anchor={{ x: 0.5, y: 0.5 }}
+        draggable={false}
+        onSelected={() => onPress(offer)}
+      >
+        <View
+          style={[
+            styles.offerMarkerPin,
+            isBoosted && styles.offerMarkerPinBoosted
+          ]}
+          collapsable={false}
+        >
+          <IconSymbol name="tag.fill" size={16} color={COLORS.white} />
+        </View>
+      </PointAnnotation>
+    );
+  } else {
+    return (
+      <MarkerView
+        id={`offer-${offer.id}`}
+        coordinate={[lng, lat]}
+        allowOverlap={true}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <TouchableOpacity
+          onPress={() => onPress(offer)}
+          activeOpacity={0.7}
+          style={styles.markerContainer}
+        >
+          {isBoosted && <View style={styles.offerBoostGlow} pointerEvents="none" />}
+          <View
+            style={[
+              styles.offerMarkerPin,
+              isBoosted && styles.offerMarkerPinBoosted
+            ]}
+          >
+            <IconSymbol name="tag.fill" size={16} color={COLORS.white} />
+          </View>
+        </TouchableOpacity>
+      </MarkerView>
+    );
+  }
+});
+
+// Event Marker Component
+const EventMarker = React.memo(({ event, onPress }: { event: EventWithCommerce; onPress: (event: EventWithCommerce) => void }) => {
+  const isBoosted = event.boosted;
+  const isAndroid = Platform.OS === 'android';
+
+  const lat = event.latitude || event.commerces?.latitude;
+  const lng = event.longitude || event.commerces?.longitude;
+
+  if (!lat || !lng) return null;
+
+  if (isAndroid) {
+    return (
+      <PointAnnotation
+        id={`event-${event.id}`}
+        coordinate={[lng, lat]}
+        anchor={{ x: 0.5, y: 0.5 }}
+        draggable={false}
+        onSelected={() => onPress(event)}
+      >
+        <View
+          style={[
+            styles.eventMarkerPin,
+            isBoosted && styles.eventMarkerPinBoosted
+          ]}
+          collapsable={false}
+        >
+          <IconSymbol name="calendar" size={16} color={COLORS.white} />
+        </View>
+      </PointAnnotation>
+    );
+  } else {
+    return (
+      <MarkerView
+        id={`event-${event.id}`}
+        coordinate={[lng, lat]}
+        allowOverlap={true}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <TouchableOpacity
+          onPress={() => onPress(event)}
+          activeOpacity={0.7}
+          style={styles.markerContainer}
+        >
+          {isBoosted && <View style={styles.eventBoostGlow} pointerEvents="none" />}
+          <View
+            style={[
+              styles.eventMarkerPin,
+              isBoosted && styles.eventMarkerPinBoosted
+            ]}
+          >
+            <IconSymbol name="calendar" size={16} color={COLORS.white} />
+          </View>
+        </TouchableOpacity>
+      </MarkerView>
+    );
+  }
+});
+
+type MapTab = 'businesses' | 'offers' | 'events';
+
 export default function CompassScreen() {
   const [userLocation, setUserLocation] = useState<LngLat | null>(null);
   const [userHeading, setUserHeading] = useState<number>(0);
@@ -310,6 +433,11 @@ export default function CompassScreen() {
   });
   
   const [routingProfile, setRoutingProfile] = useState<'driving-traffic' | 'driving' | 'walking' | 'cycling'>('driving-traffic');
+  const [activeTab, setActiveTab] = useState<MapTab>('businesses');
+  const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
   const headingSubscription = useRef<Location.LocationSubscription | null>(null);
 
   // Extract individual states for easier access
@@ -324,8 +452,11 @@ export default function CompassScreen() {
   const params = useLocalSearchParams();
 
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
+  const { offers, loading: offersLoading } = useOffers({ userLocation: userLocation || undefined });
+  const { events, loading: eventsLoading } = useEvents();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isFollowing, toggleFollow } = useFollows();
+  const { isLiked, toggleLike } = useLikes();
 
   // Memoized filtered commerces - no side effects (accent-insensitive search)
   const filteredCommerces = useMemo(() => {
@@ -344,6 +475,49 @@ export default function CompassScreen() {
   const markerClusters = useMemo(() => {
     return groupCommercesByLocation(filteredCommerces, 20); // 20m threshold (same building)
   }, [filteredCommerces]);
+
+  // Filter offers with valid locations
+  const filteredOffers = useMemo(() => {
+    return offers.filter(offer => {
+      const hasLocation = (offer.latitude && offer.longitude) ||
+                         (offer.commerces?.latitude && offer.commerces?.longitude);
+      if (!hasLocation) return false;
+
+      if (!searchQuery.trim()) return true;
+
+      const query = searchQuery.trim();
+      return matchesSearch(offer.title, query) ||
+             matchesSearch(offer.description, query) ||
+             matchesSearch(offer.commerces?.name, query);
+    });
+  }, [offers, searchQuery]);
+
+  // Filter events with valid locations
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      const hasLocation = (event.latitude && event.longitude) ||
+                         (event.commerces?.latitude && event.commerces?.longitude);
+      if (!hasLocation) return false;
+
+      if (!searchQuery.trim()) return true;
+
+      const query = searchQuery.trim();
+      return matchesSearch(event.title, query) ||
+             matchesSearch(event.description, query) ||
+             matchesSearch(event.commerces?.name, query);
+    });
+  }, [events, searchQuery]);
+
+  // Handlers for offer/event press
+  const handleOfferPress = useCallback((offer: OfferWithCommerce) => {
+    setSelectedOffer(offer);
+    setShowOfferModal(true);
+  }, []);
+
+  const handleEventPress = useCallback((event: EventWithCommerce) => {
+    setSelectedEvent(event);
+    setShowEventModal(true);
+  }, []);
 
   useEffect(() => {
     requestLocationPermission();
@@ -654,10 +828,11 @@ export default function CompassScreen() {
 
   const handleCommerceSelect = useCallback((commerce: Commerce) => {
     if (!commerce.latitude || !commerce.longitude) return;
-    
-    setSearchState(prev => ({ ...prev, query: commerce.name || '' }));
+
+    // Clear search state completely to prevent dropdown from reappearing
+    setSearchState({ query: '', results: [], isSearchingAddress: false, showFullScreenSearch: false });
     setModalState(prev => ({ ...prev, showSearchResults: false }));
-    
+
     // Center map on commerce
     if (cameraRef.current) {
       cameraRef.current.setCamera({
@@ -666,7 +841,7 @@ export default function CompassScreen() {
         animationDuration: 1000,
       });
     }
-    
+
     // Open commerce modal or start navigation
     handleBusinessPress(commerce);
   }, []);
@@ -1052,8 +1227,8 @@ export default function CompassScreen() {
               </ShapeSource>
             )}
 
-            {/* Optimized Markers with clustering - Show number when multiple at same location */}
-            {(MarkerView || PointAnnotation) &&
+            {/* Business Markers - Show when businesses tab is active */}
+            {(MarkerView || PointAnnotation) && activeTab === 'businesses' &&
               markerClusters
                 .slice(0, 50) // Limit to 50 markers for performance
                 .map((cluster: MarkerCluster) => {
@@ -1076,6 +1251,30 @@ export default function CompassScreen() {
                     );
                   }
                 })}
+
+            {/* Offer Markers - Show when offers tab is active */}
+            {(MarkerView || PointAnnotation) && activeTab === 'offers' &&
+              filteredOffers
+                .slice(0, 50)
+                .map((offer) => (
+                  <OfferMarker
+                    key={offer.id}
+                    offer={offer}
+                    onPress={handleOfferPress}
+                  />
+                ))}
+
+            {/* Event Markers - Show when events tab is active */}
+            {(MarkerView || PointAnnotation) && activeTab === 'events' &&
+              filteredEvents
+                .slice(0, 50)
+                .map((event) => (
+                  <EventMarker
+                    key={event.id}
+                    event={event}
+                    onPress={handleEventPress}
+                  />
+                ))}
             
             {/* Optimized Destination Marker */}
             {MarkerView && destinationMarker && (
@@ -1088,6 +1287,47 @@ export default function CompassScreen() {
           </View>
         )}
       </View>
+
+      {/* Floating Chip Tabs - Hide when navigating */}
+      {!isNavigating && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipTabsContainer}
+          contentContainerStyle={styles.chipTabsContent}
+        >
+          <TouchableOpacity
+            style={[styles.chipTab, activeTab === 'businesses' && styles.chipTabActive]}
+            onPress={() => setActiveTab('businesses')}
+            activeOpacity={0.8}
+          >
+            <IconSymbol name="storefront.fill" size={14} color={activeTab === 'businesses' ? COLORS.white : COLORS.teal} />
+            <Text style={[styles.chipTabText, activeTab === 'businesses' && styles.chipTabTextActive]}>
+              {t('businesses')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chipTab, activeTab === 'offers' && styles.chipTabActiveOffer]}
+            onPress={() => setActiveTab('offers')}
+            activeOpacity={0.8}
+          >
+            <IconSymbol name="tag.fill" size={14} color={activeTab === 'offers' ? COLORS.white : COLORS.primary} />
+            <Text style={[styles.chipTabText, activeTab === 'offers' && styles.chipTabTextActive]}>
+              {t('offers')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chipTab, activeTab === 'events' && styles.chipTabActiveEvent]}
+            onPress={() => setActiveTab('events')}
+            activeOpacity={0.8}
+          >
+            <IconSymbol name="calendar" size={14} color={activeTab === 'events' ? COLORS.white : COLORS.blue} />
+            <Text style={[styles.chipTabText, activeTab === 'events' && styles.chipTabTextActive]}>
+              {t('events')}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
 
       {/* Search Pill - Hide when navigating - Tap to open full screen */}
       {!isNavigating && (
@@ -1103,91 +1343,50 @@ export default function CompassScreen() {
             </Text>
           </TouchableOpacity>
         
-        {/* Search Results Dropdown */}
-        {showSearchResults && (filteredCommerces.length > 0 || searchResults.length > 0) && (
+        {/* Search Results Dropdown - GoSholo businesses only */}
+        {showSearchResults && filteredCommerces.length > 0 && (
           <View style={styles.searchResultsContainer}>
             <FlatList
-              data={[
-                // First: Local commerces (marked with a flag)
-                ...filteredCommerces.slice(0, 5).map((commerce) => ({ 
-                  type: 'commerce', 
-                  data: commerce,
-                  id: `commerce-${commerce.id}` 
-                })),
-                // Then: Mapbox addresses
-                ...searchResults.slice(0, 5).map((result) => ({ 
-                  type: 'address', 
-                  data: result,
-                  id: `address-${result.id}` 
-                })),
-              ]}
+              data={filteredCommerces.slice(0, 8)}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                if (item.type === 'commerce') {
-                  const commerce = item.data as Commerce;
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.searchResultItem,
-                        commerce.boosted && styles.searchResultItemBoosted
-                      ]}
-                      onPress={() => handleCommerceSelect(commerce)}
-                    >
-                      {commerce.image_url ? (
-                        <Image
-                          source={{ uri: commerce.image_url }}
-                          style={styles.searchResultLogo}
-                        />
-                      ) : (
-                        <IconSymbol
-                          name="storefront.fill"
-                          size={20}
-                          color={commerce.boosted ? COLORS.primary : COLORS.teal}
-                        />
-                      )}
-                      <View style={styles.searchResultTextContainer}>
-                        <View style={styles.searchResultNameRow}>
-                          <Text style={[styles.searchResultText, commerce.boosted && styles.searchResultTextBoosted]} numberOfLines={1}>
-                            {commerce.name}
-                          </Text>
-                          {commerce.boosted && (
-                            <View style={styles.searchBoostedBadge}>
-                              <IconSymbol name="star.fill" size={10} color={COLORS.white} />
-                            </View>
-                          )}
+              renderItem={({ item: commerce }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.searchResultItem,
+                    commerce.boosted && styles.searchResultItemBoosted
+                  ]}
+                  onPress={() => handleCommerceSelect(commerce)}
+                >
+                  {commerce.image_url ? (
+                    <Image
+                      source={{ uri: commerce.image_url }}
+                      style={styles.searchResultLogo}
+                    />
+                  ) : (
+                    <IconSymbol
+                      name="storefront.fill"
+                      size={20}
+                      color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                    />
+                  )}
+                  <View style={styles.searchResultTextContainer}>
+                    <View style={styles.searchResultNameRow}>
+                      <Text style={[styles.searchResultText, commerce.boosted && styles.searchResultTextBoosted]} numberOfLines={1}>
+                        {commerce.name}
+                      </Text>
+                      {commerce.boosted && (
+                        <View style={styles.searchBoostedBadge}>
+                          <IconSymbol name="star.fill" size={10} color={COLORS.white} />
                         </View>
-                        <Text style={styles.searchResultSubtext} numberOfLines={1}>
-                          {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
-                        </Text>
-                      </View>
-                      <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
-                    </TouchableOpacity>
-                  );
-                } else {
-                  const address = item.data as any;
-                  return (
-                    <TouchableOpacity
-                      style={styles.searchResultItem}
-                      onPress={() => handleAddressSelect(address)}
-                    >
-                      <IconSymbol 
-                        name={address.properties?.category === 'address' ? 'mappin.circle.fill' : 'building.2.fill'} 
-                        size={20} 
-                        color={COLORS.primary} 
-                      />
-                      <View style={styles.searchResultTextContainer}>
-                        <Text style={styles.searchResultText} numberOfLines={1}>
-                          {address.text}
-                        </Text>
-                        <Text style={styles.searchResultSubtext} numberOfLines={1}>
-                          {address.place_name}
-                        </Text>
-                      </View>
-                      <IconSymbol name="arrow.up.left" size={16} color={COLORS.darkGray} />
-                    </TouchableOpacity>
-                  );
-                }
-              }}
+                      )}
+                    </View>
+                    <Text style={styles.searchResultSubtext} numberOfLines={1}>
+                      {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
+                    </Text>
+                  </View>
+                  <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
+                </TouchableOpacity>
+              )}
               style={styles.searchResultsList}
             />
           </View>
@@ -1537,6 +1736,48 @@ export default function CompassScreen() {
         onFollowPress={selectedBusiness ? () => handleFollowPress(selectedBusiness.id) : undefined}
       />
 
+      {/* Offer Detail Modal */}
+      <OfferDetailModal
+        visible={showOfferModal}
+        offer={selectedOffer}
+        onClose={() => {
+          setShowOfferModal(false);
+          setSelectedOffer(null);
+        }}
+        isFavorite={selectedOffer ? isFavorite('offer', selectedOffer.id) : false}
+        onFavoritePress={selectedOffer ? () => toggleFavorite('offer', selectedOffer.id) : undefined}
+        onNavigateToMap={(address, coordinates) => {
+          setShowOfferModal(false);
+          setSelectedOffer(null);
+          setTimeout(() => {
+            if (coordinates) {
+              fetchDirections(coordinates);
+            }
+          }, 100);
+        }}
+      />
+
+      {/* Event Detail Modal */}
+      <EventDetailModal
+        visible={showEventModal}
+        event={selectedEvent}
+        onClose={() => {
+          setShowEventModal(false);
+          setSelectedEvent(null);
+        }}
+        isFavorite={selectedEvent ? isFavorite('event', selectedEvent.id) : false}
+        onFavoritePress={selectedEvent ? () => toggleFavorite('event', selectedEvent.id) : undefined}
+        onNavigateToMap={(address, coordinates) => {
+          setShowEventModal(false);
+          setSelectedEvent(null);
+          setTimeout(() => {
+            if (coordinates) {
+              fetchDirections(coordinates);
+            }
+          }, 100);
+        }}
+      />
+
       {/* Full-Screen Search Overlay */}
       <SearchOverlay
         visible={showFullScreenSearch}
@@ -1653,7 +1894,7 @@ const styles = StyleSheet.create({
     top: 60,
     left: 16,
     right: 16,
-    zIndex: 1001,
+    zIndex: 1003,
   },
   searchPill: {
     flexDirection: 'row',
@@ -1682,7 +1923,7 @@ const styles = StyleSheet.create({
   },
   topLeftControls: {
     position: 'absolute',
-    top: 125,
+    top: 165,
     left: 20,
     zIndex: 1000,
   },
@@ -2321,5 +2562,119 @@ const styles = StyleSheet.create({
   clusterCommerceAddress: {
     fontSize: 12,
     color: COLORS.darkGray,
+  },
+  // Floating Chip Tab styles
+  chipTabsContainer: {
+    position: 'absolute',
+    top: 115,
+    left: 0,
+    right: 0,
+    zIndex: 1002,
+  },
+  chipTabsContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  chipTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    gap: 6,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+  },
+  chipTabActive: {
+    backgroundColor: COLORS.teal,
+    borderColor: COLORS.teal,
+  },
+  chipTabActiveOffer: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  chipTabActiveEvent: {
+    backgroundColor: COLORS.blue,
+    borderColor: COLORS.blue,
+  },
+  chipTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.darkGray,
+  },
+  chipTabTextActive: {
+    color: COLORS.white,
+  },
+  // Offer marker styles
+  offerMarkerPin: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  offerMarkerPinBoosted: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOpacity: 0.5,
+  },
+  offerBoostGlow: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: COLORS.primary,
+    opacity: 0.3,
+  },
+  // Event marker styles
+  eventMarkerPin: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  eventMarkerPinBoosted: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOpacity: 0.5,
+  },
+  eventBoostGlow: {
+    position: 'absolute',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: COLORS.blue,
+    opacity: 0.3,
   },
 });

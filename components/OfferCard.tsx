@@ -70,32 +70,15 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
     }
   };
 
-  const getTimeLeft = () => {
-    if (!offer.end_date) return null;
-    const end = new Date(offer.end_date);
-    const now = new Date();
-    const diff = end.getTime() - now.getTime();
-    const hrs = Math.ceil(diff / (1000 * 3600));
-    const days = Math.ceil(diff / (1000 * 3600 * 24));
-    if (hrs <= 0) return t('expired_caps');
-    if (hrs < 24) return t('ends_in_hours', { hours: hrs });
-    if (days <= 7) return t('ends_in_days', { days });
-    return null;
-  };
-
   const locationText = offer.custom_location || offer.commerces?.address || t('location_not_specified');
-  const timeLeft = getTimeLeft();
-  const isExpired = timeLeft === t('expired_caps');
 
   return (
     <TouchableOpacity
       style={[
-        styles.card, 
-        isExpired && styles.cardDisabled,
+        styles.card,
         offer.boosted && styles.cardBoosted
       ]}
       onPress={onPress}
-      disabled={isExpired}
       activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityLabel={`${offer.title} at ${offer.commerces?.name || t('business')}`}
@@ -127,11 +110,6 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         {/* Bottom bar */}
         <View style={styles.bar}>
           <Text style={styles.barText} numberOfLines={1}>{locationText}</Text>
-          {!!timeLeft && (
-            <View style={[styles.timePill, isExpired && styles.timePillExpired]}>
-              <Text style={[styles.timeText, isExpired && styles.timeTextExpired]}>{timeLeft}</Text>
-            </View>
-          )}
         </View>
       </View>
 
@@ -162,9 +140,9 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
 
         {/* CTA */}
         <View style={styles.actions}>
-          <TouchableOpacity style={[styles.primaryBtn, isExpired && styles.primaryBtnDisabled]} onPress={onPress}>
-            <Text style={[styles.primaryText, isExpired && styles.primaryTextDisabled]}>
-              {isExpired ? t('expired') : t('view_offer')}
+          <TouchableOpacity style={styles.primaryBtn} onPress={onPress}>
+            <Text style={styles.primaryText}>
+              {t('view_offer')}
             </Text>
           </TouchableOpacity>
 
@@ -222,8 +200,8 @@ const styles = StyleSheet.create({
     marginTop: SPACING.sm,
     marginBottom: Platform.OS === 'android' ? 4 : SPACING.sm,
     overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: COLORS.line,
+    borderWidth: 2,
+    borderColor: 'rgba(0,0,0,0.15)',
     width: Platform.OS === 'android' ? 340 : 356,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -232,8 +210,6 @@ const styles = StyleSheet.create({
     elevation: 3,
     alignSelf: 'center',
   },
-  cardDisabled: { opacity: 0.6 },
-  
   cardBoosted: {
     borderWidth: 2,
     borderColor: '#FFD700',
@@ -247,10 +223,13 @@ const styles = StyleSheet.create({
   media: {
     position: 'relative',
     aspectRatio: 4 / 5,
-    backgroundColor: COLORS.bgMuted
+    backgroundColor: COLORS.bgMuted,
+    borderTopLeftRadius: RAD.lg - 2,
+    borderTopRightRadius: RAD.lg - 2,
+    overflow: 'hidden',
   },
   mediaBg: { flex: 1 },
-  mediaImg: { width: '100%', height: '100%' },
+  mediaImg: { width: '100%', height: '100%', borderTopLeftRadius: RAD.lg - 2, borderTopRightRadius: RAD.lg - 2 },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.teal },
   mediaOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent' },
 
@@ -301,18 +280,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   barText: { fontSize: 12, fontWeight: '500', color: COLORS.white },
-
-  timePill: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.sm,
-    borderRadius: RAD.pill,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timePillExpired: { backgroundColor: COLORS.inkDim },
-  timeText: { fontSize: 11, fontWeight: '700', color: COLORS.white },
-  timeTextExpired: { color: COLORS.white },
 
   body: {
     paddingHorizontal: SPACING.md,
@@ -379,9 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
   primaryText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
-  primaryTextDisabled: { color: COLORS.inkDim },
 
   actionButtons: {
     flexDirection: 'row',
