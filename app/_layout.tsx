@@ -1,5 +1,8 @@
 // app/_layout.tsx - Root layout
 import WelcomeModal from '@/components/WelcomeModal';
+import { FavoritesProvider } from '@/contexts/FavoritesContext';
+import { FollowsProvider } from '@/contexts/FollowsContext';
+import { LikesProvider } from '@/contexts/LikesContext';
 import i18n from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -115,17 +118,23 @@ export default function RootLayout() {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade',
-          animationDuration: 400,
-        }}
-      />
-      <WelcomeModal
-        visible={showWelcomeModal}
-        onClose={handleCloseWelcomeModal}
-      />
+      <FavoritesProvider>
+        <LikesProvider>
+          <FollowsProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'fade',
+                animationDuration: 400,
+              }}
+            />
+            <WelcomeModal
+              visible={showWelcomeModal}
+              onClose={handleCloseWelcomeModal}
+            />
+          </FollowsProvider>
+        </LikesProvider>
+      </FavoritesProvider>
     </I18nextProvider>
   );
 }

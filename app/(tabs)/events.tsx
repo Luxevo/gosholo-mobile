@@ -14,7 +14,7 @@ import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Alert,
@@ -55,7 +55,8 @@ export default function EventsScreen() {
   const [userCity, setUserCity] = useState<string>('');
   const { events, loading, error, refetch } = useEvents({ userLocation });
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
-  const { isLiked, toggleLike } = useLikes();
+  const { isLiked, toggleLike, getLikeCount, setLikeCount } = useLikes();
+  const likeCountsInitialized = useRef(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,6 +89,18 @@ export default function EventsScreen() {
       }
     })();
   }, []);
+
+  // Initialize like counts from fetched events
+  useEffect(() => {
+    if (events.length > 0 && !likeCountsInitialized.current) {
+      events.forEach(event => {
+        if (event.like_count !== undefined) {
+          setLikeCount('event', event.id, event.like_count);
+        }
+      });
+      likeCountsInitialized.current = true;
+    }
+  }, [events, setLikeCount]);
 
   // Check for deep link data when screen focuses
   useFocusEffect(
@@ -398,7 +411,7 @@ export default function EventsScreen() {
             isFavorite={isFavorite('event', event.id)}
             onLikePress={() => handleLikePress(event.id)}
             isLiked={isLiked('event', event.id)}
-            likeCount={event.like_count}
+            likeCount={getLikeCount('event', event.id) || event.like_count}
           />
         ))}
       </ScrollView>

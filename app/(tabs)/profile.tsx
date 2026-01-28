@@ -63,8 +63,8 @@ interface GridItem {
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const { profile, refetch: refetchProfile } = useMobileUser();
-  const { favorites, refetch: refetchFavorites } = useFavorites();
-  const { follows, refetch: refetchFollows } = useFollows();
+  const { favorites, toggleFavorite, refetch: refetchFavorites } = useFavorites();
+  const { follows, toggleFollow, refetch: refetchFollows } = useFollows();
   const { likes, refetch: refetchLikes } = useLikes();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -559,22 +559,7 @@ export default function ProfileScreen() {
           isFavorite={favorites.offers.has(selectedOffer.id)}
           onFavoritePress={async () => {
             if (!selectedOffer) return;
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
-
-            const isCurrentlyFavorite = favorites.offers.has(selectedOffer.id);
-            if (isCurrentlyFavorite) {
-              await supabase
-                .from('user_favorite_offers')
-                .delete()
-                .eq('user_id', session.user.id)
-                .eq('offer_id', selectedOffer.id);
-            } else {
-              await supabase
-                .from('user_favorite_offers')
-                .insert({ user_id: session.user.id, offer_id: selectedOffer.id });
-            }
-            refetchFavorites();
+            await toggleFavorite('offer', selectedOffer.id);
           }}
         />
       )}
@@ -590,22 +575,7 @@ export default function ProfileScreen() {
           isFavorite={favorites.events.has(selectedEvent.id)}
           onFavoritePress={async () => {
             if (!selectedEvent) return;
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
-
-            const isCurrentlyFavorite = favorites.events.has(selectedEvent.id);
-            if (isCurrentlyFavorite) {
-              await supabase
-                .from('user_favorite_events')
-                .delete()
-                .eq('user_id', session.user.id)
-                .eq('event_id', selectedEvent.id);
-            } else {
-              await supabase
-                .from('user_favorite_events')
-                .insert({ user_id: session.user.id, event_id: selectedEvent.id });
-            }
-            refetchFavorites();
+            await toggleFavorite('event', selectedEvent.id);
           }}
         />
       )}
@@ -621,22 +591,7 @@ export default function ProfileScreen() {
           isFollowing={follows.has(selectedCommerce.id)}
           onFollowPress={async () => {
             if (!selectedCommerce) return;
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
-
-            const isCurrentlyFollowing = follows.has(selectedCommerce.id);
-            if (isCurrentlyFollowing) {
-              await supabase
-                .from('user_favorite_commerces')
-                .delete()
-                .eq('user_id', session.user.id)
-                .eq('commerce_id', selectedCommerce.id);
-            } else {
-              await supabase
-                .from('user_favorite_commerces')
-                .insert({ user_id: session.user.id, commerce_id: selectedCommerce.id });
-            }
-            refetchFollows();
+            await toggleFollow(selectedCommerce.id);
           }}
         />
       )}

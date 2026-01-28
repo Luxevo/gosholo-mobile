@@ -15,7 +15,7 @@ import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Alert,
@@ -51,7 +51,8 @@ export default function OffersScreen() {
   const { offers, loading, error, refetch } = useOffers({ userLocation });
   const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
-  const { isLiked, toggleLike } = useLikes();
+  const { isLiked, toggleLike, getLikeCount, setLikeCount } = useLikes();
+  const likeCountsInitialized = useRef(false);
   const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,6 +85,18 @@ export default function OffersScreen() {
       }
     })();
   }, []);
+
+  // Initialize like counts from fetched offers
+  useEffect(() => {
+    if (offers.length > 0 && !likeCountsInitialized.current) {
+      offers.forEach(offer => {
+        if (offer.like_count !== undefined) {
+          setLikeCount('offer', offer.id, offer.like_count);
+        }
+      });
+      likeCountsInitialized.current = true;
+    }
+  }, [offers, setLikeCount]);
 
   // Check for deep link data when screen focuses
   useFocusEffect(
@@ -384,7 +397,7 @@ export default function OffersScreen() {
             isFavorite={isFavorite('offer', offer.id)}
             onLikePress={() => handleLikePress(offer.id)}
             isLiked={isLiked('offer', offer.id)}
-            likeCount={offer.like_count}
+            likeCount={getLikeCount('offer', offer.id) || offer.like_count}
           />
         ))}
       </ScrollView>
