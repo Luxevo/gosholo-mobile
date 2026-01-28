@@ -10,6 +10,7 @@ import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar
 import { POIModal } from '@/components/POIModal';
 import { SearchOverlay } from '@/components/SearchOverlay';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useCategories } from '@/hooks/useCategories';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
 import { useOffers, type OfferWithCommerce } from '@/hooks/useOffers';
 import { useEvents, type EventWithCommerce } from '@/hooks/useEvents';
@@ -377,6 +378,10 @@ const EventMarker = React.memo(({ event, onPress }: { event: EventWithCommerce; 
 
 type MapTab = 'businesses' | 'offers' | 'events';
 
+// Popular category IDs to show directly as chips (based on commerce count)
+// 95: Restaurant (13), 4: Beauté & Bien-être (2), 70: Gym (2)
+const POPULAR_CATEGORY_IDS = [95, 4, 70];
+
 export default function CompassScreen() {
   const [userLocation, setUserLocation] = useState<LngLat | null>(null);
   const [userHeading, setUserHeading] = useState<number>(0);
@@ -438,6 +443,8 @@ export default function CompassScreen() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const headingSubscription = useRef<Location.LocationSubscription | null>(null);
 
   // Extract individual states for easier access
@@ -454,34 +461,58 @@ export default function CompassScreen() {
   const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
   const { offers, loading: offersLoading } = useOffers({ userLocation: userLocation || undefined });
   const { events, loading: eventsLoading } = useEvents();
+  const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { isFollowing, toggleFollow } = useFollows();
   const { isLiked, toggleLike } = useLikes();
 
-  // Memoized filtered commerces - no side effects (accent-insensitive search)
+  const popularCategories = useMemo(() => {
+    return dbCategories.filter(cat => POPULAR_CATEGORY_IDS.includes(cat.id));
+  }, [dbCategories]);
+
+  const otherCategories = useMemo(() => {
+    return dbCategories.filter(cat => !POPULAR_CATEGORY_IDS.includes(cat.id));
+  }, [dbCategories]);
+
+  // Memoized filtered commerces - no side effects (accent-insensitive search + category filter)
   const filteredCommerces = useMemo(() => {
-    if (!searchQuery.trim()) return commerces;
+    let result = commerces;
+
+    // Apply category filter
+    if (selectedCategory) {
+      result = result.filter(c => c.category_id === Number(selectedCategory));
+    }
+
+    // Apply search filter
+    if (!searchQuery.trim()) return result;
 
     const query = searchQuery.trim();
-    return commerces.filter((commerce) =>
+    return result.filter((commerce) =>
       matchesSearch(commerce.name, query) ||
       matchesSearch(commerce.category?.name_en, query) ||
       matchesSearch(commerce.category?.name_fr, query) ||
       matchesSearch(commerce.address, query)
     );
-  }, [commerces, searchQuery]);
+  }, [commerces, searchQuery, selectedCategory]);
 
   // Group commerces by location to show numbered markers for co-located businesses
   const markerClusters = useMemo(() => {
     return groupCommercesByLocation(filteredCommerces, 20); // 20m threshold (same building)
   }, [filteredCommerces]);
 
-  // Filter offers with valid locations
+  // Filter offers with valid locations + category filter
   const filteredOffers = useMemo(() => {
     return offers.filter(offer => {
       const hasLocation = (offer.latitude && offer.longitude) ||
                          (offer.commerces?.latitude && offer.commerces?.longitude);
       if (!hasLocation) return false;
+
+      // Apply category filter (filter by commerce's category)
+      if (selectedCategory) {
+        if (offer.commerces?.category_id !== Number(selectedCategory)) {
+          return false;
+        }
+      }
 
       if (!searchQuery.trim()) return true;
 
@@ -490,14 +521,21 @@ export default function CompassScreen() {
              matchesSearch(offer.description, query) ||
              matchesSearch(offer.commerces?.name, query);
     });
-  }, [offers, searchQuery]);
+  }, [offers, searchQuery, selectedCategory]);
 
-  // Filter events with valid locations
+  // Filter events with valid locations + category filter
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
       const hasLocation = (event.latitude && event.longitude) ||
                          (event.commerces?.latitude && event.commerces?.longitude);
       if (!hasLocation) return false;
+
+      // Apply category filter (filter by commerce's category)
+      if (selectedCategory) {
+        if (event.commerces?.category_id !== Number(selectedCategory)) {
+          return false;
+        }
+      }
 
       if (!searchQuery.trim()) return true;
 
@@ -506,7 +544,7 @@ export default function CompassScreen() {
              matchesSearch(event.description, query) ||
              matchesSearch(event.commerces?.name, query);
     });
-  }, [events, searchQuery]);
+  }, [events, searchQuery, selectedCategory]);
 
   // Handlers for offer/event press
   const handleOfferPress = useCallback((offer: OfferWithCommerce) => {
@@ -1326,6 +1364,44 @@ export default function CompassScreen() {
               {t('events')}
             </Text>
           </TouchableOpacity>
+
+          {/* Separator between type tabs and category tabs */}
+          <View style={styles.chipSeparator} />
+
+          {/* Popular Categories */}
+          {popularCategories.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.chipTab,
+                styles.categoryChip,
+                selectedCategory === String(cat.id) && styles.categoryChipActive
+              ]}
+              onPress={() => setSelectedCategory(
+                selectedCategory === String(cat.id) ? null : String(cat.id)
+              )}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.chipTabText,
+                selectedCategory === String(cat.id) && styles.chipTabTextActive
+              ]}>
+                {i18n.language === 'fr' ? cat.name_fr : cat.name_en}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          {/* Plus... chip for remaining categories */}
+          {otherCategories.length > 0 && (
+            <TouchableOpacity
+              style={[styles.chipTab, styles.categoryChip, styles.plusChip]}
+              onPress={() => setShowCategoryModal(true)}
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="plus" size={12} color={COLORS.teal} />
+              <Text style={styles.plusChipText}>{t('plus')}</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       )}
 
@@ -1546,7 +1622,7 @@ export default function CompassScreen() {
           <IconSymbol
             name="location.fill"
             size={24}
-            color={followUserLocation ? COLORS.teal : COLORS.white}
+            color={COLORS.teal}
           />
         </TouchableOpacity>
 
@@ -1879,6 +1955,60 @@ export default function CompassScreen() {
           fetchDirections(coordinates);
         }}
       />
+
+      {/* Categories Modal */}
+      <Modal visible={showCategoryModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={() => setShowCategoryModal(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.categoryModalContainer}>
+            <View style={styles.categoryModalHeader}>
+              <Text style={styles.categoryModalTitle}>{t('all_categories')}</Text>
+              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Clear filter option */}
+            <TouchableOpacity
+              style={[styles.categoryModalItem, !selectedCategory && styles.categoryModalItemActive]}
+              onPress={() => {
+                setSelectedCategory(null);
+                setShowCategoryModal(false);
+              }}
+            >
+              <Text style={styles.categoryModalItemText}>{t('all')}</Text>
+              {!selectedCategory && <IconSymbol name="checkmark" size={16} color={COLORS.teal} />}
+            </TouchableOpacity>
+
+            <ScrollView style={styles.categoryModalScroll}>
+              {dbCategories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[
+                    styles.categoryModalItem,
+                    selectedCategory === String(cat.id) && styles.categoryModalItemActive
+                  ]}
+                  onPress={() => {
+                    setSelectedCategory(String(cat.id));
+                    setShowCategoryModal(false);
+                  }}
+                >
+                  <Text style={styles.categoryModalItemText}>
+                    {i18n.language === 'fr' ? cat.name_fr : cat.name_en}
+                  </Text>
+                  {selectedCategory === String(cat.id) && (
+                    <IconSymbol name="checkmark" size={16} color={COLORS.teal} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2379,17 +2509,17 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#1C1C1E', // Dark gray like Google
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
   },
   sideButtonActive: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: COLORS.white,
   },
   searchResultsContainer: {
     marginTop: 8,
@@ -2610,6 +2740,71 @@ const styles = StyleSheet.create({
   },
   chipTabTextActive: {
     color: COLORS.white,
+  },
+  // Category chip styles
+  chipSeparator: {
+    width: 1,
+    height: 20,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 4,
+    alignSelf: 'center',
+  },
+  categoryChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderWidth: 0,
+  },
+  categoryChipActive: {
+    backgroundColor: COLORS.teal,
+    borderColor: COLORS.teal,
+  },
+  plusChip: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  plusChipText: {
+    fontSize: 13,
+    color: COLORS.teal,
+    fontWeight: '500',
+  },
+  // Category Modal styles
+  categoryModalContainer: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+    paddingBottom: 30,
+  },
+  categoryModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  categoryModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.black,
+  },
+  categoryModalScroll: {
+    maxHeight: 400,
+  },
+  categoryModalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  categoryModalItemActive: {
+    backgroundColor: 'rgba(1, 97, 103, 0.08)',
+  },
+  categoryModalItemText: {
+    fontSize: 16,
+    color: COLORS.black,
   },
   // Offer marker styles
   offerMarkerPin: {

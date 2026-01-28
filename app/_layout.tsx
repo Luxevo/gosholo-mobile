@@ -3,6 +3,7 @@ import WelcomeModal from '@/components/WelcomeModal';
 import { FavoritesProvider } from '@/contexts/FavoritesContext';
 import { FollowsProvider } from '@/contexts/FollowsContext';
 import { LikesProvider } from '@/contexts/LikesContext';
+import { LocationProvider } from '@/contexts/LocationContext';
 import i18n from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,6 +31,7 @@ export default function RootLayout() {
             const params = new URLSearchParams(hashParams);
             const accessToken = params.get('access_token');
             const refreshToken = params.get('refresh_token');
+            const type = params.get('type');
 
             if (accessToken && refreshToken) {
               // Set the session with the tokens
@@ -39,6 +41,12 @@ export default function RootLayout() {
               });
 
               if (!error) {
+                // Check if this is a password recovery flow
+                if (type === 'recovery') {
+                  // Navigate to reset password screen
+                  router.replace('/(auth)/reset-password');
+                  return;
+                }
                 // Successfully authenticated, navigate to main app
                 router.replace('/(tabs)');
                 return;
@@ -118,23 +126,25 @@ export default function RootLayout() {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <FavoritesProvider>
-        <LikesProvider>
-          <FollowsProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'fade',
-                animationDuration: 400,
-              }}
-            />
-            <WelcomeModal
-              visible={showWelcomeModal}
-              onClose={handleCloseWelcomeModal}
-            />
-          </FollowsProvider>
-        </LikesProvider>
-      </FavoritesProvider>
+      <LocationProvider>
+        <FavoritesProvider>
+          <LikesProvider>
+            <FollowsProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'fade',
+                  animationDuration: 400,
+                }}
+              />
+              <WelcomeModal
+                visible={showWelcomeModal}
+                onClose={handleCloseWelcomeModal}
+              />
+            </FollowsProvider>
+          </LikesProvider>
+        </FavoritesProvider>
+      </LocationProvider>
     </I18nextProvider>
   );
 }

@@ -1,3 +1,4 @@
+import { LocationPicker, LocationPill } from '@/components/LocationPicker';
 import { OfferCard } from '@/components/OfferCard';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import { AppHeader } from '@/components/shared/AppHeader';
@@ -7,13 +8,14 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { SkeletonPage } from '@/components/SkeletonCard';
 import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useLocation } from '@/contexts/LocationContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
+import { useMobileUser } from '@/hooks/useMobileUser';
 import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -46,45 +48,25 @@ const getFiltersConfig = (t: any, sortOrder: 'new_to_old' | 'old_to_new'): Filte
 
 export default function OffersScreen() {
   const { t, i18n } = useTranslation();
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [userCity, setUserCity] = useState<string>('');
-  const { offers, loading, error, refetch } = useOffers({ userLocation });
+  const { activeLocation } = useLocation();
+  const userLocation = activeLocation;
+  const { profile } = useMobileUser();
+  const { offers, loading, error, refetch } = useOffers({ userLocation: userLocation || undefined });
   const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
   const { isLiked, toggleLike, getLikeCount, setLikeCount } = useLikes();
+
+  const userName = profile?.first_name || profile?.username;
   const likeCountsInitialized = useRef(false);
   const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'new_to_old' | 'old_to_new'>('new_to_old');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
-
-  // Get user location on mount
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({});
-        setUserLocation([location.coords.longitude, location.coords.latitude]);
-
-        // Reverse geocode to get city name
-        try {
-          const [address] = await Location.reverseGeocodeAsync({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          });
-          if (address.city) {
-            setUserCity(address.city);
-          }
-        } catch (error) {
-          console.error('Error reverse geocoding:', error);
-        }
-      }
-    })();
-  }, []);
 
   // Initialize like counts from fetched offers
   useEffect(() => {
@@ -306,7 +288,7 @@ export default function OffersScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <AppHeader location={userCity} />
+          <AppHeader userName={userName} />
           <SkeletonPage count={2} type="offer" />
         </ScrollView>
       </SafeAreaView>
@@ -343,11 +325,14 @@ export default function OffersScreen() {
       >
         {/* Header */}
         <AppHeader
-          location={userCity}
-          onLocationPress={() => console.log('Location pressed')}
-          onNotificationPress={() => console.log('Notifications pressed')}
-          onProfilePress={() => console.log('Profile pressed')}
+          userName={userName}
+          onProfilePress={() => router.push('/(tabs)/profile')}
         />
+
+        {/* Location Pill */}
+        <View style={styles.locationPillContainer}>
+          <LocationPill onPress={() => setShowLocationPicker(true)} />
+        </View>
 
         {/* Search Bar */}
         <SearchBar
@@ -443,6 +428,11 @@ export default function OffersScreen() {
         visible={showToast}
         onHide={() => setShowToast(false)}
       />
+
+      <LocationPicker
+        visible={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -456,6 +446,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingBottom: 4,
+  },
+  locationPillContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 4,
   },
 

@@ -8,7 +8,6 @@ import { router } from 'expo-router';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -23,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import EventDetailModal from '@/components/EventDetailModal';
 import BusinessDetailModal from '@/components/BusinessDetailModal';
+import { SkeletonProfilePage, SkeletonProfileGrid } from '@/components/SkeletonCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 8;
@@ -59,6 +59,25 @@ interface GridItem {
   name?: string;
   type: 'offer' | 'event' | 'commerce';
 }
+
+// Moved outside to prevent re-creation on every render
+const ProfileHeader = ({ onSettingsPress }: { onSettingsPress: () => void }) => (
+  <View style={styles.profileHeader}>
+    <Image
+      source={require('@/assets/images/darker-logo.png')}
+      style={styles.profileLogo}
+      resizeMode="contain"
+    />
+    <TouchableOpacity
+      style={styles.gearButton}
+      onPress={onSettingsPress}
+      accessibilityRole="button"
+      accessibilityLabel="Settings"
+    >
+      <Ionicons name="settings-outline" size={24} color={COLORS.ink} />
+    </TouchableOpacity>
+  </View>
+);
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -340,32 +359,15 @@ export default function ProfileScreen() {
     </View>
   );
 
-  // Custom profile header with logo and settings gear
-  const ProfileHeader = () => (
-    <View style={styles.profileHeader}>
-      <Image
-        source={require('@/assets/images/darker-logo.png')}
-        style={styles.profileLogo}
-        resizeMode="contain"
-      />
-      <TouchableOpacity
-        style={styles.gearButton}
-        onPress={() => router.push('/settings' as any)}
-        accessibilityRole="button"
-        accessibilityLabel={t('settings')}
-      >
-        <Ionicons name="settings-outline" size={24} color={COLORS.ink} />
-      </TouchableOpacity>
-    </View>
-  );
+  const handleSettingsPress = useCallback(() => {
+    router.push('/settings' as any);
+  }, []);
 
   if (authLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <ProfileHeader />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
+        <ProfileHeader onSettingsPress={handleSettingsPress} />
+        <SkeletonProfilePage />
       </SafeAreaView>
     );
   }
@@ -374,7 +376,7 @@ export default function ProfileScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <ProfileHeader />
+        <ProfileHeader onSettingsPress={handleSettingsPress} />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.unauthContent}
@@ -447,7 +449,7 @@ export default function ProfileScreen() {
   // Authenticated - show Instagram-style profile
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ProfileHeader />
+      <ProfileHeader onSettingsPress={handleSettingsPress} />
 
       <FlatList
         data={currentGridData}
@@ -531,9 +533,7 @@ export default function ProfileScreen() {
           </>
         }
         ListEmptyComponent={dataLoading ? (
-          <View style={styles.loadingGrid}>
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          </View>
+          <SkeletonProfileGrid count={4} />
         ) : renderEmptyState()}
         contentContainerStyle={styles.gridContainer}
         columnWrapperStyle={styles.gridRow}

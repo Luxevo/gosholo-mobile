@@ -255,7 +255,16 @@
   "forgot_password_subtitle": "Entre ton courriel et nous t'enverrons un lien pour réinitialiser ton mot de passe.",
   "send_reset_link": "Envoyer le lien",
   "remember_password": "Tu te souviens de ton mot de passe ?",
-  "dont_show_again": "Ne plus afficher"
+  "dont_show_again": "Ne plus afficher",
+  "plus": "Plus...",
+  "all_categories": "Toutes les catégories",
+  "reset_password_title": "Nouveau mot de passe",
+  "reset_password_subtitle": "Entre ton nouveau mot de passe ci-dessous",
+  "change_location": "Changer de lieu",
+  "search_city_placeholder": "Rechercher une ville ou adresse...",
+  "use_current_location": "Utiliser ma position actuelle",
+  "reset_to_gps": "Revenir à la position GPS",
+  "currently_viewing": "Affichage"
 }
 
 

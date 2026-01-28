@@ -251,7 +251,16 @@
   "forgot_password_subtitle": "Enter your email and we'll send you a link to reset your password.",
   "send_reset_link": "Send Reset Link",
   "remember_password": "Remember your password?",
-  "dont_show_again": "Don't show again"
+  "dont_show_again": "Don't show again",
+  "plus": "More...",
+  "all_categories": "All categories",
+  "reset_password_title": "New Password",
+  "reset_password_subtitle": "Enter your new password below",
+  "change_location": "Change Location",
+  "search_city_placeholder": "Search city or address...",
+  "use_current_location": "Use my current location",
+  "reset_to_gps": "Reset to GPS location",
+  "currently_viewing": "Currently viewing"
 }
 
 

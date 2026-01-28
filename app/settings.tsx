@@ -124,6 +124,18 @@ export default function SettingsScreen() {
 
             <View style={styles.separator} />
 
+            {/* Forgot Password */}
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => router.push('/(auth)/forgot-password' as any)}
+            >
+              <Ionicons name="mail-outline" size={22} color={COLORS.ink} />
+              <Text style={styles.settingLabel}>{t('forgot_password')}</Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.lightGray} />
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+
             {/* Logout */}
             <TouchableOpacity
               style={styles.settingRow}

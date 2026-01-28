@@ -14,16 +14,12 @@ const COLORS = {
 };
 
 interface AppHeaderProps {
-  location?: string;
-  onLocationPress?: () => void;
-  onNotificationPress?: () => void;
+  userName?: string;
   onProfilePress?: () => void;
 }
 
 export function AppHeader({
-  location = 'New York',
-  onLocationPress,
-  onNotificationPress,
+  userName,
   onProfilePress,
 }: AppHeaderProps) {
   return (
@@ -37,18 +33,20 @@ export function AppHeader({
         />
       </View>
 
-      {/* Right side: Location */}
-      <View style={styles.rightSection}>
-        <TouchableOpacity
-          style={styles.locationChip}
-          onPress={onLocationPress}
-          accessibilityRole="button"
-          accessibilityLabel={`Location: ${location}`}
-        >
-          <IconSymbol name="mappin" size={14} color={COLORS.teal} />
-          <Text style={styles.locationText}>{location}</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Right side: User name */}
+      {userName && (
+        <View style={styles.rightSection}>
+          <TouchableOpacity
+            style={styles.userChip}
+            onPress={onProfilePress}
+            accessibilityRole="button"
+            accessibilityLabel={`User: ${userName}`}
+          >
+            <IconSymbol name="person.fill" size={14} color={COLORS.teal} />
+            <Text style={styles.userText}>{userName}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -72,7 +70,7 @@ const styles = StyleSheet.create({
     width: 95,
     height: 50,
   },
-  locationChip: {
+  userChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.lightGreen,
@@ -81,7 +79,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     gap: 4,
   },
-  locationText: {
+  userText: {
     fontSize: 13,
     fontWeight: '500',
     color: COLORS.teal,

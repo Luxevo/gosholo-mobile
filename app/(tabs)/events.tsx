@@ -1,5 +1,6 @@
 import { EventCard } from '@/components/EventCard';
 import EventDetailModal from '@/components/EventDetailModal';
+import { LocationPicker, LocationPill } from '@/components/LocationPicker';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
 import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
@@ -7,12 +8,13 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { SkeletonPage } from '@/components/SkeletonCard';
 import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useLocation } from '@/contexts/LocationContext';
 import { useEvents, EventWithCommerce } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
+import { useMobileUser } from '@/hooks/useMobileUser';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -51,44 +53,24 @@ const getDistanceFiltersConfig = (t: any, sortOrder: 'new_to_old' | 'old_to_new'
 
 export default function EventsScreen() {
   const { t } = useTranslation();
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [userCity, setUserCity] = useState<string>('');
-  const { events, loading, error, refetch } = useEvents({ userLocation });
+  const { activeLocation } = useLocation();
+  const userLocation = activeLocation;
+  const { profile } = useMobileUser();
+  const { events, loading, error, refetch } = useEvents({ userLocation: userLocation || undefined });
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
   const { isLiked, toggleLike, getLikeCount, setLikeCount } = useLikes();
+
+  const userName = profile?.first_name || profile?.username;
   const likeCountsInitialized = useRef(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'new_to_old' | 'old_to_new'>('new_to_old');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
-
-  // Get user location on mount
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({});
-        setUserLocation([location.coords.longitude, location.coords.latitude]);
-
-        // Reverse geocode to get city name
-        try {
-          const [address] = await Location.reverseGeocodeAsync({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          });
-          if (address.city) {
-            setUserCity(address.city);
-          }
-        } catch (error) {
-          console.error('Error reverse geocoding:', error);
-        }
-      }
-    })();
-  }, []);
 
   // Initialize like counts from fetched events
   useEffect(() => {
@@ -321,7 +303,7 @@ export default function EventsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <AppHeader location={userCity} />
+          <AppHeader userName={userName} />
           <SkeletonPage count={2} type="event" />
         </ScrollView>
       </SafeAreaView>
@@ -372,11 +354,14 @@ export default function EventsScreen() {
       >
         {/* Header */}
         <AppHeader
-          location={userCity}
-          onLocationPress={() => console.log('Location pressed')}
-          onNotificationPress={() => console.log('Notifications pressed')}
-          onProfilePress={() => console.log('Profile pressed')}
+          userName={userName}
+          onProfilePress={() => router.push('/(tabs)/profile')}
         />
+
+        {/* Location Pill */}
+        <View style={styles.locationPillContainer}>
+          <LocationPill onPress={() => setShowLocationPicker(true)} />
+        </View>
 
         {/* Search Bar */}
         <SearchBar
@@ -457,6 +442,11 @@ export default function EventsScreen() {
         visible={showToast}
         onHide={() => setShowToast(false)}
       />
+
+      <LocationPicker
+        visible={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -465,6 +455,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.white },
   scrollView: { flex: 1 },
   scrollContent: {
+    paddingBottom: 4,
+  },
+  locationPillContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: 4,
   },
 
