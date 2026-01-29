@@ -382,16 +382,17 @@ export default function ProfileScreen() {
           contentContainerStyle={styles.unauthContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Icon Section */}
-          <View style={styles.iconContainer}>
-            <View style={styles.iconBackground}>
-              <Ionicons name="person-outline" size={64} color={COLORS.primary} />
-            </View>
+          {/* Logo Section */}
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('@/assets/images/darker-logo.png')}
+              style={styles.unauthLogo}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Main Message */}
           <View style={styles.messageSection}>
-            <Text style={styles.title}>{t('welcome_to_gosholo')}</Text>
             <Text style={styles.subtitle}>
               {t('login_to_access_features')}
             </Text>
@@ -418,8 +419,6 @@ export default function ProfileScreen() {
 
           {/* Features List */}
           <View style={styles.featuresSection}>
-            <Text style={styles.featuresTitle}>{t('soon_you_can')}</Text>
-
             <View style={styles.featureItem}>
               <View style={styles.featureIcon}>
                 <Ionicons name="heart" size={20} color={COLORS.primary} />
@@ -810,16 +809,13 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.xxl,
     alignItems: 'center',
   },
-  iconContainer: {
-    marginBottom: SPACING.xxl * 2,
-  },
-  iconBackground: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.gray,
-    justifyContent: 'center',
+  logoContainer: {
+    marginBottom: SPACING.xxl,
     alignItems: 'center',
+  },
+  unauthLogo: {
+    width: 180,
+    height: 80,
   },
   messageSection: {
     alignItems: 'center',
@@ -877,13 +873,6 @@ const styles = StyleSheet.create({
   featuresSection: {
     width: '100%',
     marginBottom: SPACING.xxl,
-  },
-  featuresTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.teal,
-    textAlign: 'center',
-    marginBottom: SPACING.xl,
   },
   featureItem: {
     flexDirection: 'row',

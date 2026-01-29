@@ -243,24 +243,33 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ visible, onClose
 // Location Pill Component - shows current location, tap to open picker
 interface LocationPillProps {
   onPress: () => void;
+  compact?: boolean;
 }
 
-export const LocationPill: React.FC<LocationPillProps> = ({ onPress }) => {
+export const LocationPill: React.FC<LocationPillProps> = ({ onPress, compact = false }) => {
   const { locationName, isCustomLocation, loading } = useLocation();
 
   return (
     <TouchableOpacity
-      style={[styles.locationPill, isCustomLocation && styles.locationPillCustom]}
+      style={[
+        styles.locationPill,
+        isCustomLocation && styles.locationPillCustom,
+        compact && styles.locationPillCompact
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <IconSymbol
         name={isCustomLocation ? "mappin.circle.fill" : "location.fill"}
-        size={14}
+        size={compact ? 16 : 14}
         color={isCustomLocation ? COLORS.primary : COLORS.teal}
       />
       <Text
-        style={[styles.locationPillText, isCustomLocation && styles.locationPillTextCustom]}
+        style={[
+          styles.locationPillText,
+          isCustomLocation && styles.locationPillTextCustom,
+          compact && styles.locationPillTextCompact
+        ]}
         numberOfLines={1}
       >
         {loading ? '...' : locationName}
@@ -425,6 +434,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     backgroundColor: 'rgba(255, 98, 51, 0.05)',
   },
+  locationPillCompact: {
+    paddingHorizontal: SPACING.md,
+    maxWidth: 140,
+    alignSelf: undefined,
+  },
   locationPillText: {
     fontSize: 13,
     fontWeight: '500',
@@ -433,5 +447,9 @@ const styles = StyleSheet.create({
   },
   locationPillTextCustom: {
     color: COLORS.primary,
+  },
+  locationPillTextCompact: {
+    fontSize: 12,
+    maxWidth: 80,
   },
 });

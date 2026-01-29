@@ -2,7 +2,6 @@ import { LocationPicker, LocationPill } from '@/components/LocationPicker';
 import { OfferCard } from '@/components/OfferCard';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import { AppHeader } from '@/components/shared/AppHeader';
-import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
 import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { SkeletonPage } from '@/components/SkeletonCard';
@@ -21,6 +20,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
     Alert,
+    Modal,
     RefreshControl,
     ScrollView,
     StyleSheet,
@@ -38,8 +38,7 @@ const COLORS = {
   black: '#000000',
 };
 
-const getFiltersConfig = (t: any, sortOrder: 'new_to_old' | 'old_to_new'): Filter[] => [
-  { id: 'sort_toggle', label: sortOrder === 'new_to_old' ? `↓ ${t('recent') || 'Recent'}` : `↑ ${t('oldest') || 'Oldest'}` },
+const getFiltersConfig = (t: any): Filter[] => [
   { id: 'near-100m', label: '100m' },
   { id: 'near-250m', label: '250m' },
   { id: 'near-500m', label: '500m' },
@@ -61,10 +60,10 @@ export default function OffersScreen() {
   const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<'new_to_old' | 'old_to_new'>('new_to_old');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -152,10 +151,10 @@ export default function OffersScreen() {
       );
     }
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
+    // Filter by categories (multi-select)
+    if (selectedCategories.length > 0) {
       filtered = filtered.filter((offer) => {
-        return offer.commerces?.category_id === Number(selectedCategory);
+        return selectedCategories.includes(String(offer.commerces?.category_id));
       });
     }
 
@@ -184,21 +183,8 @@ export default function OffersScreen() {
       });
     }
 
-    // Sort based on selectedFilter
-    if (selectedFilter === 'sort_toggle') {
-      // Sort by date when sort_toggle is selected
-      filtered = [...filtered].sort((a, b) => {
-        const dateA = new Date(a.created_at || 0).getTime();
-        const dateB = new Date(b.created_at || 0).getTime();
-
-        if (sortOrder === 'new_to_old') {
-          return dateB - dateA; // Newest first
-        } else {
-          return dateA - dateB; // Oldest first
-        }
-      });
-    } else if (userLocation) {
-      // Default: Sort by distance (closest to farthest)
+    // Sort by distance (closest to farthest) if user location available
+    if (userLocation) {
       filtered = [...filtered].sort((a, b) => {
         const aLat = a.latitude || a.commerces?.latitude;
         const aLng = a.longitude || a.commerces?.longitude;
@@ -213,7 +199,7 @@ export default function OffersScreen() {
     }
 
     return filtered;
-  }, [activeOffers, searchQuery, selectedCategory, selectedFilter, userLocation, sortOrder]);
+  }, [activeOffers, searchQuery, selectedCategories, selectedFilter, userLocation]);
 
   const handleOfferPress = (offer: OfferWithCommerce) => {
     setSelectedOffer(offer);
@@ -261,27 +247,8 @@ export default function OffersScreen() {
     }
   };
 
-  // Convert database categories to UI categories
-  const categories = useMemo(() => {
-    const allCategory: Category = { id: 'all', label: t('all'), icon: 'square.grid.2x2' };
-    const mapped: Category[] = dbCategories.map((cat) => ({
-      id: String(cat.id),
-      label: i18n.language === 'fr' ? cat.name_fr : cat.name_en,
-    }));
-    return [allCategory, ...mapped];
-  }, [dbCategories, i18n.language, t]);
-
-  const handleCategoryPress = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-  };
-
   const handleFilterPress = (filterId: string) => {
-    if (filterId === 'sort_toggle') {
-      // Toggle sort order
-      setSortOrder(prev => prev === 'new_to_old' ? 'old_to_new' : 'new_to_old');
-    } else {
-      setSelectedFilter(prev => prev === filterId ? null : filterId);
-    }
+    setSelectedFilter(prev => prev === filterId ? null : filterId);
   };
 
   if (loading) {
@@ -314,15 +281,8 @@ export default function OffersScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />
-        }
-      >
+      {/* Fixed Header Section */}
+      <View style={styles.fixedHeader}>
         {/* Header */}
         <AppHeader
           userName={userName}
@@ -341,21 +301,50 @@ export default function OffersScreen() {
           placeholder={t('search_placeholder_offers')}
         />
 
-        {/* Categories */}
-        <CategoriesSection
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategoryPress={handleCategoryPress}
-          onSeeAllPress={() => setSelectedCategory('all')}
-        />
+        {/* Categories Button */}
+        <View style={styles.filtersRow}>
+          <TouchableOpacity
+            style={[
+              styles.categoryButton,
+              selectedCategories.length > 0 && styles.categoryButtonActive
+            ]}
+            onPress={() => setShowCategoryModal(true)}
+          >
+            <IconSymbol
+              name="plus"
+              size={12}
+              color={selectedCategories.length > 0 ? COLORS.white : COLORS.primary}
+            />
+            <Text style={[
+              styles.categoryButtonText,
+              selectedCategories.length > 0 && styles.categoryButtonTextActive
+            ]}>
+              {selectedCategories.length > 0
+                ? t('categories_with_count', { count: selectedCategories.length })
+                : t('categories')
+              }
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Filters */}
+        {/* Distance Filters */}
         <FiltersSection
-          filters={getFiltersConfig(t, sortOrder)}
+          filters={getFiltersConfig(t)}
           selectedFilter={selectedFilter}
           onFilterPress={handleFilterPress}
         />
+      </View>
 
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+        }
+      >
         {/* Offers */}
         {hasNoOffers && (
           <View style={styles.emptyContainer}>
@@ -433,6 +422,83 @@ export default function OffersScreen() {
         visible={showLocationPicker}
         onClose={() => setShowLocationPicker(false)}
       />
+
+      {/* Categories Modal - Multi-select */}
+      <Modal visible={showCategoryModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={() => setShowCategoryModal(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.categoryModalContainer}>
+            <View style={styles.categoryModalHeader}>
+              <Text style={styles.categoryModalTitle}>{t('categories')}</Text>
+              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Clear filters button */}
+            {selectedCategories.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={() => setSelectedCategories([])}
+              >
+                <IconSymbol name="xmark.circle.fill" size={16} color={COLORS.primary} />
+                <Text style={styles.clearFiltersText}>{t('clear_filters')}</Text>
+              </TouchableOpacity>
+            )}
+
+            <ScrollView style={styles.categoryModalScroll}>
+              {dbCategories.map((cat) => {
+                const isSelected = selectedCategories.includes(String(cat.id));
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryModalItem,
+                      isSelected && styles.categoryModalItemActive
+                    ]}
+                    onPress={() => {
+                      setSelectedCategories(prev =>
+                        isSelected
+                          ? prev.filter(id => id !== String(cat.id))
+                          : [...prev, String(cat.id)]
+                      );
+                    }}
+                  >
+                    <Text style={styles.categoryModalItemText}>
+                      {i18n.language === 'fr' ? cat.name_fr : cat.name_en}
+                    </Text>
+                    <View style={[
+                      styles.categoryCheckbox,
+                      isSelected && styles.categoryCheckboxActive
+                    ]}>
+                      {isSelected && (
+                        <IconSymbol name="checkmark" size={12} color={COLORS.white} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Apply button */}
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={() => setShowCategoryModal(false)}
+            >
+              <Text style={styles.applyButtonText}>
+                {selectedCategories.length > 0
+                  ? `${t('apply')} (${selectedCategories.length})`
+                  : t('apply')
+                }
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -440,6 +506,9 @@ export default function OffersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  fixedHeader: {
     backgroundColor: COLORS.white,
   },
   scrollView: {
@@ -505,5 +574,116 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.white,
+  },
+  // Category button and modal styles
+  filtersRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.gray,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  categoryButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  categoryButtonTextActive: {
+    color: COLORS.white,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  categoryModalContainer: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  categoryModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  categoryModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.black,
+  },
+  categoryModalScroll: {
+    maxHeight: 400,
+  },
+  categoryModalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray,
+  },
+  categoryModalItemActive: {
+    backgroundColor: 'rgba(255, 98, 51, 0.08)',
+  },
+  categoryModalItemText: {
+    fontSize: 16,
+    color: COLORS.black,
+    flex: 1,
+  },
+  categoryCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.darkGray,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryCheckboxActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  applyButton: {
+    backgroundColor: COLORS.primary,
+    marginHorizontal: 20,
+    marginVertical: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
