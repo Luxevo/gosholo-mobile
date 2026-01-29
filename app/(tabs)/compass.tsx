@@ -1195,7 +1195,7 @@ export default function CompassScreen() {
             <Camera
               ref={cameraRef}
               centerCoordinate={defaultCenter}
-              zoomLevel={14}
+              zoomLevel={12}
               pitch={is3D ? 70 : 0}
               heading={is3D ? 45 : 0}
               animationDuration={2000}
@@ -1358,7 +1358,7 @@ export default function CompassScreen() {
           >
             <IconSymbol name="tag.fill" size={14} color={activeTab === 'offers' ? COLORS.white : COLORS.primary} />
             <Text style={[styles.chipTabText, activeTab === 'offers' && styles.chipTabTextActive]}>
-              {t('offers')}
+              {t('tab_offers')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1368,7 +1368,7 @@ export default function CompassScreen() {
           >
             <IconSymbol name="calendar" size={14} color={activeTab === 'events' ? COLORS.white : COLORS.blue} />
             <Text style={[styles.chipTabText, activeTab === 'events' && styles.chipTabTextActive]}>
-              {t('events')}
+              {t('tab_events')}
             </Text>
           </TouchableOpacity>
 

@@ -2,8 +2,7 @@ import { EventCard } from '@/components/EventCard';
 import EventDetailModal from '@/components/EventDetailModal';
 import { LocationPicker, LocationPill } from '@/components/LocationPicker';
 import { AppHeader } from '@/components/shared/AppHeader';
-import { CategoriesSection, type Category } from '@/components/shared/CategoriesSection';
-import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
+import { type Category } from '@/components/shared/CategoriesSection';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { SkeletonPage } from '@/components/SkeletonCard';
 import { Toast } from '@/components/Toast';
@@ -45,7 +44,12 @@ const getDateFiltersConfig = (t: any): Category[] => [
   { id: 'upcoming', label: t('upcoming'), icon: 'calendar' },
 ];
 
-const getDistanceFiltersConfig = (t: any): Filter[] => [
+interface Filter {
+  id: string;
+  label: string;
+}
+
+const getDistanceFiltersConfig = (_t: any): Filter[] => [
   { id: 'near-100m', label: '100m' },
   { id: 'near-250m', label: '250m' },
   { id: 'near-500m', label: '500m' },
@@ -59,7 +63,7 @@ export default function EventsScreen() {
   const { profile } = useMobileUser();
   const { events, loading, error, refetch } = useEvents({ userLocation: userLocation || undefined });
   const { categories: dbCategories } = useCategories();
-  const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const { isLiked, toggleLike, getLikeCount, setLikeCount } = useLikes();
 
   const userName = profile?.first_name || profile?.username;
@@ -68,6 +72,7 @@ export default function EventsScreen() {
   const [showModal, setShowModal] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showDistanceModal, setShowDistanceModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDateFilter, setSelectedDateFilter] = useState<string | null>(null);
@@ -341,11 +346,6 @@ export default function EventsScreen() {
           onProfilePress={() => router.push('/(tabs)/profile')}
         />
 
-        {/* Location Pill */}
-        <View style={styles.locationPillContainer}>
-          <LocationPill onPress={() => setShowLocationPicker(true)} />
-        </View>
-
         {/* Search Bar */}
         <SearchBar
           value={searchQuery}
@@ -353,8 +353,13 @@ export default function EventsScreen() {
           placeholder={t('search_placeholder_events')}
         />
 
-        {/* Categories Button */}
-        <View style={styles.filtersRow}>
+        {/* Filter Pills Row */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersRow}
+        >
+          <LocationPill onPress={() => setShowLocationPicker(true)} compact />
           <TouchableOpacity
             style={[
               styles.categoryButton,
@@ -377,23 +382,47 @@ export default function EventsScreen() {
               }
             </Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Date Filters */}
-        <CategoriesSection
-          title={t('date')}
-          categories={getDateFiltersConfig(t)}
-          selectedCategory={selectedDateFilter || 'all'}
-          onCategoryPress={handleDateFilterPress}
-          onSeeAllPress={() => setSelectedDateFilter(null)}
-        />
-
-        {/* Distance Filters */}
-        <FiltersSection
-          filters={getDistanceFiltersConfig(t)}
-          selectedFilter={selectedFilter}
-          onFilterPress={handleFilterPress}
-        />
+          <TouchableOpacity
+            style={[
+              styles.categoryButton,
+              selectedFilter && styles.categoryButtonActive
+            ]}
+            onPress={() => setShowDistanceModal(true)}
+          >
+            <IconSymbol
+              name="location"
+              size={12}
+              color={selectedFilter ? COLORS.white : COLORS.primary}
+            />
+            <Text style={[
+              styles.categoryButtonText,
+              selectedFilter && styles.categoryButtonTextActive
+            ]}>
+              {selectedFilter
+                ? getDistanceFiltersConfig(t).find(f => f.id === selectedFilter)?.label || t('distance')
+                : t('distance')
+              }
+            </Text>
+          </TouchableOpacity>
+          {/* Date filters as pills */}
+          {getDateFiltersConfig(t).map((filter) => (
+            <TouchableOpacity
+              key={filter.id}
+              style={[
+                styles.filterPill,
+                selectedDateFilter === filter.id && styles.filterPillActive
+              ]}
+              onPress={() => handleDateFilterPress(filter.id)}
+            >
+              <Text style={[
+                styles.filterPillText,
+                selectedDateFilter === filter.id && styles.filterPillTextActive
+              ]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Scrollable Content */}
@@ -549,6 +578,64 @@ export default function EventsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Distance Modal */}
+      <Modal visible={showDistanceModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={() => setShowDistanceModal(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.categoryModalContainer}>
+            <View style={styles.categoryModalHeader}>
+              <Text style={styles.categoryModalTitle}>{t('distance')}</Text>
+              <TouchableOpacity onPress={() => setShowDistanceModal(false)}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedFilter && (
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={() => {
+                  setSelectedFilter(null);
+                  setShowDistanceModal(false);
+                }}
+              >
+                <IconSymbol name="xmark.circle.fill" size={16} color={COLORS.primary} />
+                <Text style={styles.clearFiltersText}>{t('clear_filters')}</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.distanceOptions}>
+              {getDistanceFiltersConfig(t).map((filter) => {
+                const isSelected = selectedFilter === filter.id;
+                return (
+                  <TouchableOpacity
+                    key={filter.id}
+                    style={[
+                      styles.distanceOption,
+                      isSelected && styles.distanceOptionActive
+                    ]}
+                    onPress={() => {
+                      handleFilterPress(filter.id);
+                      setShowDistanceModal(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.distanceOptionText,
+                      isSelected && styles.distanceOptionTextActive
+                    ]}>
+                      {filter.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -590,8 +677,10 @@ const styles = StyleSheet.create({
   // Category button and modal styles
   filtersRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
+    gap: 8,
   },
   categoryButton: {
     flexDirection: 'row',
@@ -611,6 +700,26 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   categoryButtonTextActive: {
+    color: COLORS.white,
+  },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    backgroundColor: COLORS.white,
+  },
+  filterPillActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  filterPillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.darkGray,
+  },
+  filterPillTextActive: {
     color: COLORS.white,
   },
   modalOverlay: {
@@ -697,5 +806,31 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  distanceOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 16,
+    gap: 12,
+  },
+  distanceOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.gray,
+    backgroundColor: COLORS.white,
+  },
+  distanceOptionActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  distanceOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.darkGray,
+  },
+  distanceOptionTextActive: {
+    color: COLORS.white,
   },
 });

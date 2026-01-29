@@ -30,8 +30,8 @@ export default function Index() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          // User is logged in, go to home
-          router.replace('/(tabs)');
+          // User is logged in, go to map
+          router.replace('/(tabs)/compass');
         } else {
           // Not logged in - show auth screen
           router.replace('/(auth)/login');

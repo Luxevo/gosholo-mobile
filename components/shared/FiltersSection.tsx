@@ -21,12 +21,14 @@ interface FiltersSectionProps {
   filters: Filter[];
   selectedFilter: string | null;
   onFilterPress: (filterId: string) => void;
+  renderPrefix?: () => React.ReactNode;
 }
 
 export function FiltersSection({
   filters,
   selectedFilter,
   onFilterPress,
+  renderPrefix,
 }: FiltersSectionProps) {
   return (
     <View style={styles.container}>
@@ -35,6 +37,7 @@ export function FiltersSection({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {renderPrefix && renderPrefix()}
         {filters.map((filter) => {
           const isSelected = filter.id === selectedFilter;
           const isFiltersButton = filter.id === 'filters';
@@ -81,7 +84,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   scrollContent: {
-    paddingBottom: 4,
+    alignItems: 'center',
+    gap: 8,
   },
   filterChip: {
     flexDirection: 'row',
@@ -92,7 +96,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    marginRight: 8,
     gap: 6,
   },
   selectedFilterChip: {

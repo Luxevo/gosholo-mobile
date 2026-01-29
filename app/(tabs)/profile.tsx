@@ -348,14 +348,9 @@ export default function ProfileScreen() {
         color={COLORS.lightGray}
       />
       <Text style={styles.emptyText}>
-        {activeTab === 'saved' && t('no_saved_items', 'No saved items')}
-        {activeTab === 'liked' && t('no_liked_items', 'No liked items')}
-        {activeTab === 'following' && t('no_following', 'Aucun commerce suivi')}
-      </Text>
-      <Text style={styles.emptySubtext}>
-        {activeTab === 'saved' && t('tap_bookmark_to_save', 'Tap ⭐ to save offers and events')}
-        {activeTab === 'liked' && t('tap_heart_to_like', 'Tap ❤️ to like offers and events')}
-        {activeTab === 'following' && t('tap_follow_to_follow', 'Appuie sur Suivre pour suivre des commerces')}
+        {activeTab === 'saved' && t('no_saved_items')}
+        {activeTab === 'liked' && t('no_liked_items')}
+        {activeTab === 'following' && t('no_following')}
       </Text>
     </View>
   );

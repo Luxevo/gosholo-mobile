@@ -2,7 +2,6 @@ import { LocationPicker, LocationPill } from '@/components/LocationPicker';
 import { OfferCard } from '@/components/OfferCard';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import { AppHeader } from '@/components/shared/AppHeader';
-import { FiltersSection, type Filter } from '@/components/shared/FiltersSection';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { SkeletonPage } from '@/components/SkeletonCard';
 import { Toast } from '@/components/Toast';
@@ -38,7 +37,12 @@ const COLORS = {
   black: '#000000',
 };
 
-const getFiltersConfig = (t: any): Filter[] => [
+interface Filter {
+  id: string;
+  label: string;
+}
+
+const getFiltersConfig = (_t: any): Filter[] => [
   { id: 'near-100m', label: '100m' },
   { id: 'near-250m', label: '250m' },
   { id: 'near-500m', label: '500m' },
@@ -61,6 +65,7 @@ export default function OffersScreen() {
   const [showModal, setShowModal] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showDistanceModal, setShowDistanceModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -292,11 +297,6 @@ export default function OffersScreen() {
           onProfilePress={() => router.push('/(tabs)/profile')}
         />
 
-        {/* Location Pill */}
-        <View style={styles.locationPillContainer}>
-          <LocationPill onPress={() => setShowLocationPicker(true)} />
-        </View>
-
         {/* Search Bar */}
         <SearchBar
           value={searchQuery}
@@ -304,8 +304,9 @@ export default function OffersScreen() {
           placeholder={t('search_placeholder_offers')}
         />
 
-        {/* Categories Button */}
+        {/* Filter Pills Row */}
         <View style={styles.filtersRow}>
+          <LocationPill onPress={() => setShowLocationPicker(true)} compact />
           <TouchableOpacity
             style={[
               styles.categoryButton,
@@ -328,14 +329,29 @@ export default function OffersScreen() {
               }
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.categoryButton,
+              selectedFilter && styles.categoryButtonActive
+            ]}
+            onPress={() => setShowDistanceModal(true)}
+          >
+            <IconSymbol
+              name="location"
+              size={12}
+              color={selectedFilter ? COLORS.white : COLORS.primary}
+            />
+            <Text style={[
+              styles.categoryButtonText,
+              selectedFilter && styles.categoryButtonTextActive
+            ]}>
+              {selectedFilter
+                ? getFiltersConfig(t).find(f => f.id === selectedFilter)?.label || t('distance')
+                : t('distance')
+              }
+            </Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Distance Filters */}
-        <FiltersSection
-          filters={getFiltersConfig(t)}
-          selectedFilter={selectedFilter}
-          onFilterPress={handleFilterPress}
-        />
       </View>
 
       {/* Scrollable Content */}
@@ -502,6 +518,65 @@ export default function OffersScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Distance Modal */}
+      <Modal visible={showDistanceModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={() => setShowDistanceModal(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.categoryModalContainer}>
+            <View style={styles.categoryModalHeader}>
+              <Text style={styles.categoryModalTitle}>{t('distance')}</Text>
+              <TouchableOpacity onPress={() => setShowDistanceModal(false)}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Clear distance filter */}
+            {selectedFilter && (
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={() => {
+                  setSelectedFilter(null);
+                  setShowDistanceModal(false);
+                }}
+              >
+                <IconSymbol name="xmark.circle.fill" size={16} color={COLORS.primary} />
+                <Text style={styles.clearFiltersText}>{t('clear_filters')}</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.distanceOptions}>
+              {getFiltersConfig(t).map((filter) => {
+                const isSelected = selectedFilter === filter.id;
+                return (
+                  <TouchableOpacity
+                    key={filter.id}
+                    style={[
+                      styles.distanceOption,
+                      isSelected && styles.distanceOptionActive
+                    ]}
+                    onPress={() => {
+                      handleFilterPress(filter.id);
+                      setShowDistanceModal(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.distanceOptionText,
+                      isSelected && styles.distanceOptionTextActive
+                    ]}>
+                      {filter.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -581,8 +656,10 @@ const styles = StyleSheet.create({
   // Category button and modal styles
   filtersRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
+    gap: 8,
   },
   categoryButton: {
     flexDirection: 'row',
@@ -688,5 +765,31 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  distanceOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 16,
+    gap: 12,
+  },
+  distanceOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.gray,
+    backgroundColor: COLORS.white,
+  },
+  distanceOptionActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  distanceOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.darkGray,
+  },
+  distanceOptionTextActive: {
+    color: COLORS.white,
   },
 });
