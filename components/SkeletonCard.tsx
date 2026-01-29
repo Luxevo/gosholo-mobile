@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Platform, StyleSheet, View } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 8;
@@ -8,7 +8,6 @@ const PROFILE_CARD_WIDTH = (SCREEN_WIDTH - GRID_GAP * 3) / NUM_COLUMNS;
 
 const COLORS = {
   skeleton: '#E5E7EB',
-  skeletonHighlight: '#F3F4F6',
   bg: '#FFFFFF',
   line: 'rgba(0,0,0,0.08)',
 };
@@ -56,65 +55,12 @@ const useShimmer = () => {
   });
 };
 
-// Skeleton Search Bar
-export const SkeletonSearchBar: React.FC = () => {
-  const opacity = useShimmer();
-
-  return (
-    <View style={styles.searchContainer}>
-      <Animated.View style={[styles.searchBar, { opacity }]} />
-    </View>
-  );
-};
-
-// Skeleton Categories
-export const SkeletonCategories: React.FC = () => {
-  const opacity = useShimmer();
-
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.categoriesContainer}
-      contentContainerStyle={styles.categoriesContent}
-    >
-      {[80, 100, 70, 90, 85, 75].map((width, index) => (
-        <Animated.View
-          key={index}
-          style={[styles.categoryChip, { opacity, width }]}
-        />
-      ))}
-    </ScrollView>
-  );
-};
-
-// Skeleton Filters
-export const SkeletonFilters: React.FC = () => {
-  const opacity = useShimmer();
-
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.filtersContainer}
-      contentContainerStyle={styles.filtersContent}
-    >
-      {[70, 55, 60, 55, 50].map((width, index) => (
-        <Animated.View
-          key={index}
-          style={[styles.filterChip, { opacity, width }]}
-        />
-      ))}
-    </ScrollView>
-  );
-};
-
 // Skeleton Card
 interface SkeletonCardProps {
   type?: 'offer' | 'event';
 }
 
-export const SkeletonCard: React.FC<SkeletonCardProps> = ({ type = 'offer' }) => {
+export const SkeletonCard: React.FC<SkeletonCardProps> = () => {
   const opacity = useShimmer();
 
   return (
@@ -122,8 +68,6 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({ type = 'offer' }) =>
       {/* Media skeleton with overlay bar */}
       <View style={styles.mediaContainer}>
         <Animated.View style={[styles.media, { opacity }]} />
-
-        {/* Bottom bar skeleton - location only */}
         <View style={styles.bar}>
           <Animated.View style={[styles.barItem, { opacity, width: 140 }]} />
         </View>
@@ -132,18 +76,12 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({ type = 'offer' }) =>
       {/* Content skeleton */}
       <View style={styles.body}>
         <View style={styles.contentSection}>
-          {/* Business name */}
           <View style={styles.businessSection}>
             <Animated.View style={[styles.skeletonLine, { opacity, width: '45%', height: 14 }]} />
-            {/* Category chip */}
             <Animated.View style={[styles.skeletonChip, { opacity }]} />
           </View>
-
-          {/* Title - 2 lines */}
           <Animated.View style={[styles.skeletonLine, { opacity, width: '90%', height: 18, marginTop: SPACING.sm }]} />
           <Animated.View style={[styles.skeletonLine, { opacity, width: '55%', height: 18, marginTop: SPACING.xs }]} />
-
-          {/* Description - 2 lines */}
           <Animated.View style={[styles.skeletonLine, { opacity, width: '100%', height: 13, marginTop: SPACING.md }]} />
           <Animated.View style={[styles.skeletonLine, { opacity, width: '75%', height: 13, marginTop: SPACING.xs }]} />
         </View>
@@ -162,26 +100,7 @@ export const SkeletonCard: React.FC<SkeletonCardProps> = ({ type = 'offer' }) =>
   );
 };
 
-// Full Skeleton Page (search + categories + filters + cards)
-export const SkeletonPage: React.FC<{ count?: number; type?: 'offer' | 'event' }> = ({
-  count = 2,
-  type = 'offer'
-}) => {
-  return (
-    <View style={styles.pageContainer}>
-      <SkeletonSearchBar />
-      <SkeletonCategories />
-      <SkeletonFilters />
-      <View style={styles.listContainer}>
-        {Array.from({ length: count }).map((_, index) => (
-          <SkeletonCard key={index} type={type} />
-        ))}
-      </View>
-    </View>
-  );
-};
-
-// Just the list of cards (for backward compatibility)
+// Skeleton List (cards only)
 export const SkeletonList: React.FC<{ count?: number; type?: 'offer' | 'event' }> = ({
   count = 3,
   type = 'offer'
@@ -196,14 +115,11 @@ export const SkeletonList: React.FC<{ count?: number; type?: 'offer' | 'event' }
 };
 
 // Profile Grid Card Skeleton
-export const SkeletonProfileCard: React.FC = () => {
+const SkeletonProfileCard: React.FC = () => {
   const opacity = useShimmer();
-
   return (
     <View style={styles.profileCard}>
-      {/* Image placeholder */}
       <Animated.View style={[styles.profileCardImage, { opacity }]} />
-      {/* Title placeholder */}
       <View style={styles.profileCardContent}>
         <Animated.View style={[styles.skeletonLine, { opacity, width: '80%', height: 12 }]} />
         <Animated.View style={[styles.skeletonLine, { opacity, width: '50%', height: 12, marginTop: SPACING.xs }]} />
@@ -212,23 +128,16 @@ export const SkeletonProfileCard: React.FC = () => {
   );
 };
 
-// Profile Header Skeleton (avatar + stats)
-export const SkeletonProfileHeader: React.FC = () => {
+// Profile Header Skeleton
+const SkeletonProfileHeader: React.FC = () => {
   const opacity = useShimmer();
-
   return (
     <View style={styles.profileSection}>
-      {/* Avatar */}
       <View style={styles.avatarContainer}>
         <Animated.View style={[styles.avatarSkeleton, { opacity }]} />
       </View>
-
-      {/* Stats and Name */}
       <View style={styles.statsAndNameContainer}>
-        {/* Display name */}
         <Animated.View style={[styles.skeletonLine, { opacity, width: 100, height: 16, marginBottom: SPACING.md }]} />
-
-        {/* Stats Row */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Animated.View style={[styles.skeletonLine, { opacity, width: 24, height: 17 }]} />
@@ -248,26 +157,19 @@ export const SkeletonProfileHeader: React.FC = () => {
   );
 };
 
-// Profile Tab Switcher Skeleton
-export const SkeletonProfileTabs: React.FC = () => {
+// Profile Tab Skeleton
+const SkeletonProfileTabs: React.FC = () => {
   const opacity = useShimmer();
-
   return (
     <View style={styles.tabContainer}>
-      <View style={styles.tab}>
-        <Animated.View style={[styles.tabIconSkeleton, { opacity }]} />
-      </View>
-      <View style={styles.tab}>
-        <Animated.View style={[styles.tabIconSkeleton, { opacity }]} />
-      </View>
-      <View style={styles.tab}>
-        <Animated.View style={[styles.tabIconSkeleton, { opacity }]} />
-      </View>
+      <View style={styles.tab}><Animated.View style={[styles.tabIconSkeleton, { opacity }]} /></View>
+      <View style={styles.tab}><Animated.View style={[styles.tabIconSkeleton, { opacity }]} /></View>
+      <View style={styles.tab}><Animated.View style={[styles.tabIconSkeleton, { opacity }]} /></View>
     </View>
   );
 };
 
-// Profile Grid Skeleton (multiple cards)
+// Profile Grid Skeleton
 export const SkeletonProfileGrid: React.FC<{ count?: number }> = ({ count = 4 }) => {
   return (
     <View style={styles.profileGridContainer}>
@@ -293,52 +195,11 @@ const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
   },
-  // Search bar
-  searchContainer: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.sm,
-  },
-  searchBar: {
-    height: 48,
-    backgroundColor: COLORS.skeleton,
-    borderRadius: RAD.pill,
-  },
-  // Categories
-  categoriesContainer: {
-    marginTop: SPACING.xs,
-  },
-  categoriesContent: {
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.sm,
-    flexDirection: 'row',
-  },
-  categoryChip: {
-    height: 36,
-    backgroundColor: COLORS.skeleton,
-    borderRadius: RAD.pill,
-  },
-  // Filters
-  filtersContainer: {
-    marginTop: SPACING.md,
-  },
-  filtersContent: {
-    paddingHorizontal: SPACING.lg,
-    gap: SPACING.sm,
-    flexDirection: 'row',
-  },
-  filterChip: {
-    height: 32,
-    backgroundColor: COLORS.skeleton,
-    borderRadius: RAD.pill,
-  },
-  // Cards list
   listContainer: {
     alignItems: 'center',
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.sm,
   },
-  // Card
   card: {
     backgroundColor: COLORS.bg,
     borderRadius: RAD.lg,
@@ -421,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: RAD.pill,
     backgroundColor: COLORS.skeleton,
   },
-  // Profile Skeleton Styles
+  // Profile styles
   profileSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
