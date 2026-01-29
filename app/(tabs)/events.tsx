@@ -156,7 +156,9 @@ export default function EventsScreen() {
       filtered = filtered.filter((event) =>
         matchesSearch(event.title, query) ||
         matchesSearch(event.description, query) ||
-        matchesSearch(event.commerces?.name, query)
+        matchesSearch(event.commerces?.name, query) ||
+        matchesSearch(event.commerces?.category?.name_fr, query) ||
+        matchesSearch(event.commerces?.category?.name_en, query)
       );
     }
 
@@ -295,7 +297,7 @@ export default function EventsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <AppHeader userName={userName} />
+          <AppHeader userName={userName} avatarId={profile?.avatar_url} />
           <SkeletonPage count={2} type="event" />
         </ScrollView>
       </SafeAreaView>
@@ -335,6 +337,7 @@ export default function EventsScreen() {
         {/* Header */}
         <AppHeader
           userName={userName}
+          avatarId={profile?.avatar_url}
           onProfilePress={() => router.push('/(tabs)/profile')}
         />
 

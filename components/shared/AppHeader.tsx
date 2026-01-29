@@ -1,4 +1,4 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { AvatarDisplay } from '@/components/AvatarPicker';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -15,11 +15,13 @@ const COLORS = {
 
 interface AppHeaderProps {
   userName?: string;
+  avatarId?: string | null;
   onProfilePress?: () => void;
 }
 
 export function AppHeader({
   userName,
+  avatarId,
   onProfilePress,
 }: AppHeaderProps) {
   return (
@@ -33,7 +35,7 @@ export function AppHeader({
         />
       </View>
 
-      {/* Right side: User name */}
+      {/* Right side: User avatar and name */}
       {userName && (
         <View style={styles.rightSection}>
           <TouchableOpacity
@@ -42,7 +44,7 @@ export function AppHeader({
             accessibilityRole="button"
             accessibilityLabel={`User: ${userName}`}
           >
-            <IconSymbol name="person.fill" size={14} color={COLORS.teal} />
+            <AvatarDisplay avatarId={avatarId} size={24} />
             <Text style={styles.userText}>{userName}</Text>
           </TouchableOpacity>
         </View>

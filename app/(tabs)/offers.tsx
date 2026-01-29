@@ -147,7 +147,9 @@ export default function OffersScreen() {
       filtered = filtered.filter((offer) =>
         matchesSearch(offer.title, query) ||
         matchesSearch(offer.description, query) ||
-        matchesSearch(offer.commerces?.name, query)
+        matchesSearch(offer.commerces?.name, query) ||
+        matchesSearch(offer.commerces?.category?.name_fr, query) ||
+        matchesSearch(offer.commerces?.category?.name_en, query)
       );
     }
 
@@ -255,7 +257,7 @@ export default function OffersScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <AppHeader userName={userName} />
+          <AppHeader userName={userName} avatarId={profile?.avatar_url} />
           <SkeletonPage count={2} type="offer" />
         </ScrollView>
       </SafeAreaView>
@@ -286,6 +288,7 @@ export default function OffersScreen() {
         {/* Header */}
         <AppHeader
           userName={userName}
+          avatarId={profile?.avatar_url}
           onProfilePress={() => router.push('/(tabs)/profile')}
         />
 

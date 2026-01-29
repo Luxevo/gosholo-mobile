@@ -511,7 +511,9 @@ export default function CompassScreen() {
       const query = searchQuery.trim();
       return matchesSearch(offer.title, query) ||
              matchesSearch(offer.description, query) ||
-             matchesSearch(offer.commerces?.name, query);
+             matchesSearch(offer.commerces?.name, query) ||
+             matchesSearch(offer.commerces?.category?.name_fr, query) ||
+             matchesSearch(offer.commerces?.category?.name_en, query);
     });
   }, [offers, searchQuery, selectedCategories]);
 
@@ -534,7 +536,9 @@ export default function CompassScreen() {
       const query = searchQuery.trim();
       return matchesSearch(event.title, query) ||
              matchesSearch(event.description, query) ||
-             matchesSearch(event.commerces?.name, query);
+             matchesSearch(event.commerces?.name, query) ||
+             matchesSearch(event.commerces?.category?.name_fr, query) ||
+             matchesSearch(event.commerces?.category?.name_en, query);
     });
   }, [events, searchQuery, selectedCategories]);
 

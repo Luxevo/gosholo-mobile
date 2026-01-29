@@ -1,3 +1,4 @@
+import { AvatarDisplay } from '@/components/AvatarPicker';
 import { supabase } from '@/lib/supabase';
 import { useMobileUser } from '@/hooks/useMobileUser';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -462,11 +463,7 @@ export default function ProfileScreen() {
               {/* Avatar with ring */}
               <View style={styles.avatarContainer}>
                 <View style={styles.avatarRing}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {(profile?.username || profile?.first_name || profile?.email || '?').charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
+                  <AvatarDisplay avatarId={profile?.avatar_url} size={80} />
                 </View>
               </View>
 

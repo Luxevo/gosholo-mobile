@@ -64,18 +64,48 @@ export default function SettingsScreen() {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      t('delete_account', 'Delete Account'),
-      t('delete_account_confirm', 'Are you sure you want to delete your account? This action cannot be undone.'),
+      t('delete_account'),
+      t('delete_account_confirm'),
       [
         { text: t('cancel'), style: 'cancel' },
         {
-          text: t('delete', 'Delete'),
+          text: t('delete'),
           style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              t('contact_support', 'Contact Support'),
-              t('delete_account_support', 'To delete your account, please contact support at support@gosholo.com')
-            );
+          onPress: async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                // Get profile info for logging
+                const { data: profile } = await supabase
+                  .from('mobile_user_profiles')
+                  .select('username, email')
+                  .eq('id', user.id)
+                  .single();
+
+                // Log deletion for records
+                await supabase.from('deleted_accounts').insert({
+                  user_id: user.id,
+                  email: profile?.email || user.email,
+                  username: profile?.username,
+                });
+
+                // Delete user data from related tables
+                await supabase.from('user_favorite_offers').delete().eq('user_id', user.id);
+                await supabase.from('user_favorite_events').delete().eq('user_id', user.id);
+                await supabase.from('user_favorite_commerces').delete().eq('user_id', user.id);
+                await supabase.from('mobile_user_profiles').delete().eq('id', user.id);
+
+                // Delete from auth.users via Edge Function
+                await supabase.functions.invoke('delete-user');
+
+                // Sign out and redirect
+                await supabase.auth.signOut();
+                router.replace('/(tabs)');
+              }
+            } catch (err) {
+              console.error('Delete account error:', err);
+              Alert.alert(t('error'), t('delete_account_error'));
+            }
           }
         }
       ]

@@ -1,3 +1,4 @@
+import { AvatarPicker, type AvatarId } from '@/components/AvatarPicker';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -46,6 +47,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarId | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -102,13 +104,14 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      // Create user with username in metadata (triggers profile creation)
+      // Create user with username and avatar in metadata (triggers profile creation)
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
         options: {
           data: {
             username: username.trim(),
+            avatar_id: selectedAvatar || 'cat', // Default to cat if none selected
           },
           emailRedirectTo: 'gosholomobile://auth/callback',
         },
@@ -209,6 +212,12 @@ export default function RegisterScreen() {
               </View>
               <Text style={styles.hint}>{t('username_hint')}</Text>
             </View>
+
+            {/* Avatar Picker */}
+            <AvatarPicker
+              selectedAvatar={selectedAvatar}
+              onSelect={setSelectedAvatar}
+            />
 
             {/* Email Input */}
             <View style={styles.inputContainer}>
