@@ -1,5 +1,5 @@
 import { supabase, type Event } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export type EventWithCommerce = Event & {
   commerces: {
@@ -25,9 +25,18 @@ interface UseEventsOptions {
   radius?: number; // in km
 }
 
+// Module-level cache for events data
+let eventsCache: EventWithCommerce[] | null = null;
+let eventsCacheListeners: Set<(events: EventWithCommerce[]) => void> = new Set();
+
+const notifyEventsListeners = (events: EventWithCommerce[]) => {
+  eventsCache = events;
+  eventsCacheListeners.forEach(listener => listener(events));
+};
+
 export const useEvents = (options: UseEventsOptions = {}) => {
-  const [events, setEvents] = useState<EventWithCommerce[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<EventWithCommerce[]>(eventsCache || []);
+  const [loading, setLoading] = useState(eventsCache === null);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -37,9 +46,24 @@ export const useEvents = (options: UseEventsOptions = {}) => {
     radius = 10
   } = options;
 
-  const fetchEvents = async () => {
+  // Subscribe to cache updates
+  useEffect(() => {
+    const listener = (newEvents: EventWithCommerce[]) => {
+      setEvents(newEvents);
+      setLoading(false);
+    };
+    eventsCacheListeners.add(listener);
+    return () => {
+      eventsCacheListeners.delete(listener);
+    };
+  }, []);
+
+  const fetchEvents = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show loading if no cached data
+      if (!eventsCache) {
+        setLoading(true);
+      }
       setError(null);
 
       // Get all active events that haven't expired - RLS policy handles security
@@ -65,7 +89,7 @@ export const useEvents = (options: UseEventsOptions = {}) => {
       }
 
       if (!eventsData || eventsData.length === 0) {
-        setEvents([]);
+        notifyEventsListeners([]);
         return;
       }
 
@@ -141,22 +165,22 @@ export const useEvents = (options: UseEventsOptions = {}) => {
         return a.distance - b.distance;
       });
 
-      setEvents(filteredData);
+      notifyEventsListeners(filteredData);
     } catch (err) {
       console.error('Error fetching events:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch events');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userLocation, radius]);
 
   useEffect(() => {
     fetchEvents();
-  }, [searchQuery, filterType, userLocation]);
+  }, [fetchEvents, searchQuery, filterType]);
 
-  const refetch = () => {
+  const refetch = useCallback(() => {
     fetchEvents();
-  };
+  }, [fetchEvents]);
 
   return {
     events,

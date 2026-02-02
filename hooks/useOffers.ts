@@ -158,22 +158,22 @@ export const useOffers = (options: UseOffersOptions = {}) => {
         return a.distance - b.distance;
       });
 
-      setOffers(filteredData);
+      notifyOffersListeners(filteredData);
     } catch (err) {
       console.error('Error fetching offers:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch offers');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userLocation, radius]);
 
   useEffect(() => {
     fetchOffers();
-  }, [searchQuery, filterType, userLocation]);
+  }, [fetchOffers, searchQuery, filterType]);
 
-  const refetch = () => {
+  const refetch = useCallback(() => {
     fetchOffers();
-  };
+  }, [fetchOffers]);
 
   return {
     offers,
