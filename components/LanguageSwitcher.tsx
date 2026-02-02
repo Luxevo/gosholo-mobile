@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,6 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+const LANGUAGE_STORAGE_KEY = '@gosholo_language';
 
 const COLORS = {
   primary: '#FF6233',
@@ -41,8 +44,14 @@ export default function LanguageSwitcher({ style }: LanguageSwitcherProps) {
     { code: 'fr', name: 'Français', flag: require('../assets/images/flags/quebec.png') },
   ];
 
-  const handleLanguageChange = (languageCode: string) => {
+  const handleLanguageChange = async (languageCode: string) => {
     i18n.changeLanguage(languageCode);
+    // Persist language choice
+    try {
+      await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, languageCode);
+    } catch (error) {
+      console.error('Error saving language preference:', error);
+    }
   };
 
   return (

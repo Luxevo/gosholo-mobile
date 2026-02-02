@@ -4,7 +4,7 @@ import { FavoritesProvider } from '@/contexts/FavoritesContext';
 import { FollowsProvider } from '@/contexts/FollowsContext';
 import { LikesProvider } from '@/contexts/LikesContext';
 import { LocationProvider } from '@/contexts/LocationContext';
-import i18n from '@/i18n';
+import i18n, { loadSavedLanguage } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
@@ -16,6 +16,11 @@ const WELCOME_MODAL_KEY = '@gosholo_welcome_seen';
 
 export default function RootLayout() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  // Load saved language preference on app startup
+  useEffect(() => {
+    loadSavedLanguage();
+  }, []);
 
   // Handle deep links for auth callbacks and content sharing
   useEffect(() => {
