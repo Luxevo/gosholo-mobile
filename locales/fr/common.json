@@ -204,7 +204,7 @@
   "check_email_confirmation": "Vérifie ton courriel pour confirmer ton compte",
   "welcome_to_gosholo": "Bienvenue sur GoSholo !",
   "login_to_access_features": "Connecte-toi ou crée un compte pour accéder à toutes les fonctionnalités",
-  "my_favorites": "Mes Favoris",
+  "my_favorites": "Favoris",
   "favorites_subtitle": "Tes offres et événements sauvegardés",
   "my_wishlist": "Ma Liste de souhaits",
   "wishlist_subtitle": "Ce que tu veux essayer",
@@ -222,7 +222,7 @@
   "login_required": "Connexion requise",
   "follow": "Suivre",
   "unfollow": "Ne plus suivre",
-  "following": "Abonné",
+  "following": "Suivi(e)s",
   "followed": "Abonné!",
   "unfollowed": "Désabonné",
   "no_favorite_offers": "Aucune offre favorite",
@@ -244,9 +244,9 @@
   "contact_support": "Contactez le support",
   "delete": "Supprimer",
   "made_with_love": "Fait avec ❤️ à Montréal",
-  "my_likes": "Mes J'aime",
+  "my_likes": "J'aime",
   "likes_subtitle": "Les offres et événements que tu as aimés",
-  "my_follows": "Mes Abonnements",
+  "my_follows": "Abonnements",
   "follows_subtitle": "Les commerces que tu suis",
   "no_saved_items": "Aucun élément sauvegardé",
   "no_liked_items": "Aucun élément aimé",
@@ -270,7 +270,9 @@
   "search_city_placeholder": "Rechercher une ville ou adresse...",
   "use_current_location": "Utiliser ma position actuelle",
   "reset_to_gps": "Revenir à la position GPS",
-  "currently_viewing": "Affichage"
+  "currently_viewing": "Affichage",
+  "profile_updated": "Profil mis à jour avec succès",
+  "profile_update_failed": "Échec de la mise à jour du profil"
 }
 
 

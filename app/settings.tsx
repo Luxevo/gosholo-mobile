@@ -1,8 +1,10 @@
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { AvatarPicker, AvatarDisplay, AvatarId } from '@/components/AvatarPicker';
 import { supabase } from '@/lib/supabase';
+import { useMobileUser } from '@/hooks/useMobileUser';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -10,6 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -22,6 +25,8 @@ const COLORS = {
   darkGray: '#666666',
   lightGray: '#9CA3AF',
   border: '#E5E5E5',
+  primary: '#FF6233',
+  success: '#10B981',
 };
 
 const SPACING = {
@@ -35,7 +40,85 @@ const SPACING = {
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
+  const { profile, updateProfile, refetch: refetchProfile } = useMobileUser();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Profile editing state
+  const [username, setUsername] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarId | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Initialize form with current profile data
+  useEffect(() => {
+    if (profile) {
+      setUsername(profile.username || '');
+      setSelectedAvatar((profile.avatar_url as AvatarId) || null);
+    }
+  }, [profile]);
+
+  // Track changes
+  useEffect(() => {
+    if (profile) {
+      const usernameChanged = username !== (profile.username || '');
+      const avatarChanged = selectedAvatar !== (profile.avatar_url || null);
+      setHasChanges(usernameChanged || avatarChanged);
+    }
+  }, [username, selectedAvatar, profile]);
+
+  const handleSaveProfile = async () => {
+    if (!profile) {
+      Alert.alert(t('error'), 'No profile found');
+      return;
+    }
+
+    // Validate username
+    if (username.length < 3 || username.length > 20) {
+      Alert.alert(t('error'), t('invalid_username'));
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      // Check if username is taken (if changed)
+      if (username && username !== profile.username) {
+        const { data: existing, error: checkError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', username)
+          .neq('id', profile.id)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error('Username check error:', checkError);
+        }
+
+        if (existing) {
+          Alert.alert(t('error'), t('username_taken'));
+          setSavingProfile(false);
+          return;
+        }
+      }
+
+      // Update profile using the hook's updateProfile function
+      await updateProfile({
+        username: username || null,
+        avatar_url: selectedAvatar || null,
+      });
+
+      // Refetch to ensure profile screen gets updated data
+      await refetchProfile();
+
+      setHasChanges(false);
+      Alert.alert(t('success'), t('profile_updated', 'Profile updated successfully'));
+    } catch (err: any) {
+      console.error('Save profile error:', err);
+      const errorMessage = err?.message || t('profile_update_failed', 'Failed to update profile');
+      Alert.alert(t('error'), errorMessage);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -131,6 +214,65 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* Profile Section */}
+        {profile && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('tab_profile', 'Profile')}</Text>
+
+            <View style={styles.settingsGroup}>
+              {/* Avatar Picker */}
+              <View style={styles.avatarSection}>
+                <View style={styles.currentAvatarRow}>
+                  <AvatarDisplay avatarId={selectedAvatar} size={60} />
+                  <Text style={styles.avatarHint}>{t('choose_avatar')}</Text>
+                </View>
+                <View style={styles.avatarPickerContainer}>
+                  <AvatarPicker
+                    selectedAvatar={selectedAvatar}
+                    onSelect={setSelectedAvatar}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.separator} />
+
+              {/* Username Input */}
+              <View style={styles.inputSection}>
+                <Text style={styles.inputLabel}>{t('username')}</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={username}
+                  onChangeText={setUsername}
+                  placeholder={t('enter_username')}
+                  placeholderTextColor={COLORS.lightGray}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={20}
+                />
+                <Text style={styles.inputHint}>{t('username_hint')}</Text>
+              </View>
+
+              {/* Save Button */}
+              {hasChanges && (
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSaveProfile}
+                  disabled={savingProfile}
+                >
+                  {savingProfile ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={20} color={COLORS.white} />
+                      <Text style={styles.saveButtonText}>{t('apply', 'Save')}</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Language Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('language')}</Text>
@@ -265,5 +407,61 @@ const styles = StyleSheet.create({
   },
   spacer: {
     width: 20,
+  },
+  avatarSection: {
+    padding: SPACING.lg,
+  },
+  currentAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  avatarHint: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+  },
+  avatarPickerContainer: {
+    marginTop: SPACING.sm,
+  },
+  inputSection: {
+    padding: SPACING.lg,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.ink,
+    marginBottom: SPACING.sm,
+  },
+  textInput: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    fontSize: 16,
+    color: COLORS.ink,
+  },
+  inputHint: {
+    fontSize: 12,
+    color: COLORS.lightGray,
+    marginTop: SPACING.xs,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: 10,
+    gap: SPACING.sm,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });

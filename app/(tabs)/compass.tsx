@@ -1185,6 +1185,8 @@ export default function CompassScreen() {
           <MapView
             style={styles.map}
             styleURL={Mapbox?.StyleURL?.Streets ?? 'mapbox://styles/mapbox/streets-v12'}
+            logoEnabled={false}
+            attributionEnabled={false}
             onTouchStart={useCallback(() => {
               // Disable follow mode when user manually moves the map
               if (followUserLocation) {
@@ -1331,6 +1333,7 @@ export default function CompassScreen() {
             <Text style={styles.mapFallbackText}>📍 Map available in a native dev build.</Text>
           </View>
         )}
+
       </View>
 
       {/* Floating Chip Tabs - Hide when navigating */}
@@ -1342,38 +1345,26 @@ export default function CompassScreen() {
           contentContainerStyle={styles.chipTabsContent}
         >
           <TouchableOpacity
-            style={[styles.chipTab, activeTab === 'businesses' && styles.chipTabActive]}
+            style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'businesses' && styles.chipTabActive]}
             onPress={() => setActiveTab('businesses')}
             activeOpacity={0.8}
           >
-            <IconSymbol name="storefront.fill" size={14} color={activeTab === 'businesses' ? COLORS.white : COLORS.teal} />
-            <Text style={[styles.chipTabText, activeTab === 'businesses' && styles.chipTabTextActive]}>
-              {t('businesses')}
-            </Text>
+            <IconSymbol name="storefront.fill" size={16} color={activeTab === 'businesses' ? COLORS.white : COLORS.teal} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.chipTab, activeTab === 'offers' && styles.chipTabActiveOffer]}
+            style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'offers' && styles.chipTabActiveOffer]}
             onPress={() => setActiveTab('offers')}
             activeOpacity={0.8}
           >
-            <IconSymbol name="tag.fill" size={14} color={activeTab === 'offers' ? COLORS.white : COLORS.primary} />
-            <Text style={[styles.chipTabText, activeTab === 'offers' && styles.chipTabTextActive]}>
-              {t('tab_offers')}
-            </Text>
+            <IconSymbol name="tag.fill" size={16} color={activeTab === 'offers' ? COLORS.white : COLORS.primary} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.chipTab, activeTab === 'events' && styles.chipTabActiveEvent]}
+            style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'events' && styles.chipTabActiveEvent]}
             onPress={() => setActiveTab('events')}
             activeOpacity={0.8}
           >
-            <IconSymbol name="calendar" size={14} color={activeTab === 'events' ? COLORS.white : COLORS.blue} />
-            <Text style={[styles.chipTabText, activeTab === 'events' && styles.chipTabTextActive]}>
-              {t('tab_events')}
-            </Text>
+            <IconSymbol name="calendar" size={16} color={activeTab === 'events' ? COLORS.white : COLORS.blue} />
           </TouchableOpacity>
-
-          {/* Separator between type tabs and category tabs */}
-          <View style={styles.chipSeparator} />
 
           {/* Categories button with count */}
           <TouchableOpacity
@@ -2092,7 +2083,7 @@ const styles = StyleSheet.create({
   },
   topLeftControls: {
     position: 'absolute',
-    top: 165,
+    bottom: 30,
     left: 16,
     zIndex: 1000,
     gap: 8,
@@ -2760,6 +2751,11 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.08)',
+  },
+  chipTabIconOnly: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 0,
   },
   chipTabActive: {
     backgroundColor: COLORS.teal,

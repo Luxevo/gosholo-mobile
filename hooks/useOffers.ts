@@ -1,5 +1,5 @@
 import { supabase, type Offer } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export type OfferWithCommerce = Offer & {
   commerces: {
@@ -25,9 +25,18 @@ interface UseOffersOptions {
   radius?: number; // in km
 }
 
+// Module-level cache for offers data
+let offersCache: OfferWithCommerce[] | null = null;
+let offersCacheListeners: Set<(offers: OfferWithCommerce[]) => void> = new Set();
+
+const notifyOffersListeners = (offers: OfferWithCommerce[]) => {
+  offersCache = offers;
+  offersCacheListeners.forEach(listener => listener(offers));
+};
+
 export const useOffers = (options: UseOffersOptions = {}) => {
-  const [offers, setOffers] = useState<OfferWithCommerce[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [offers, setOffers] = useState<OfferWithCommerce[]>(offersCache || []);
+  const [loading, setLoading] = useState(offersCache === null);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -37,9 +46,24 @@ export const useOffers = (options: UseOffersOptions = {}) => {
     radius = 10
   } = options;
 
-  const fetchOffers = async () => {
+  // Subscribe to cache updates
+  useEffect(() => {
+    const listener = (newOffers: OfferWithCommerce[]) => {
+      setOffers(newOffers);
+      setLoading(false);
+    };
+    offersCacheListeners.add(listener);
+    return () => {
+      offersCacheListeners.delete(listener);
+    };
+  }, []);
+
+  const fetchOffers = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show loading if no cached data
+      if (!offersCache) {
+        setLoading(true);
+      }
       setError(null);
 
       // Get all active offers that haven't expired - RLS policy handles security

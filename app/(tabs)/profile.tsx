@@ -6,6 +6,7 @@ import { useFollows } from '@/hooks/useFollows';
 import { useLikes } from '@/hooks/useLikes';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -124,6 +125,15 @@ export default function ProfileScreen() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Refetch profile when screen gains focus (e.g., returning from settings)
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        refetchProfile();
+      }
+    }, [isAuthenticated, refetchProfile])
+  );
 
   const checkAuthState = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -455,12 +465,20 @@ export default function ProfileScreen() {
           <>
             {/* Profile Info Section - Instagram Style */}
             <View style={styles.profileSection}>
-              {/* Avatar with ring */}
-              <View style={styles.avatarContainer}>
+              {/* Avatar with ring and edit button */}
+              <TouchableOpacity
+                style={styles.avatarContainer}
+                onPress={() => router.push('/settings' as any)}
+                activeOpacity={0.8}
+              >
                 <View style={styles.avatarRing}>
                   <AvatarDisplay avatarId={profile?.avatar_url} size={80} />
                 </View>
-              </View>
+                {/* Edit pencil badge */}
+                <View style={styles.editAvatarBadge}>
+                  <Ionicons name="pencil" size={12} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
 
               {/* Stats and Name */}
               <View style={styles.statsAndNameContainer}>
@@ -656,6 +674,19 @@ const styles = StyleSheet.create({
     padding: 3,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  editAvatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
   avatar: {
     width: 80,

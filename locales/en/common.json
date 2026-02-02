@@ -200,7 +200,7 @@
   "check_email_confirmation": "Please check your email to confirm your account",
   "welcome_to_gosholo": "Welcome to GoSholo!",
   "login_to_access_features": "Login or create an account to access all features",
-  "my_favorites": "My Favorites",
+  "my_favorites": "Favorites",
   "favorites_subtitle": "Your saved offers and events",
   "my_wishlist": "My Wishlist",
   "wishlist_subtitle": "Items you want to try",
@@ -240,9 +240,9 @@
   "contact_support": "Contact Support",
   "delete": "Delete",
   "made_with_love": "Made with ❤️ in Montreal",
-  "my_likes": "My Likes",
+  "my_likes": "Likes",
   "likes_subtitle": "Offers and events you liked",
-  "my_follows": "My Following",
+  "my_follows": "Following",
   "follows_subtitle": "Businesses you follow",
   "no_saved_items": "No saved items",
   "no_liked_items": "No liked items",
@@ -266,7 +266,9 @@
   "search_city_placeholder": "Search city or address...",
   "use_current_location": "Use my current location",
   "reset_to_gps": "Reset to GPS location",
-  "currently_viewing": "Currently viewing"
+  "currently_viewing": "Currently viewing",
+  "profile_updated": "Profile updated successfully",
+  "profile_update_failed": "Failed to update profile"
 }
 
 
