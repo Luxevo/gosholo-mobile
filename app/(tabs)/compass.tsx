@@ -29,6 +29,7 @@ import {
 } from '@/utils/navigationHelpers';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -603,6 +604,9 @@ export default function CompassScreen() {
   // Move camera when custom location is selected from LocationPicker
   useEffect(() => {
     if (isCustomLocation && activeLocation && cameraRef.current) {
+      // Disable follow mode so camera doesn't jump back to GPS
+      setMapState(prev => ({ ...prev, followUserLocation: false }));
+
       cameraRef.current.setCamera({
         centerCoordinate: activeLocation,
         zoomLevel: 14,
@@ -610,6 +614,27 @@ export default function CompassScreen() {
       });
     }
   }, [activeLocation, isCustomLocation]);
+
+  // Move camera to activeLocation when screen gains focus (e.g., after changing location in offers/events)
+  useFocusEffect(
+    useCallback(() => {
+      if (isCustomLocation && activeLocation && cameraRef.current) {
+        // Disable follow mode so camera doesn't jump back to GPS
+        setMapState(prev => ({ ...prev, followUserLocation: false }));
+
+        // Move camera to custom location
+        setTimeout(() => {
+          if (cameraRef.current) {
+            cameraRef.current.setCamera({
+              centerCoordinate: activeLocation,
+              zoomLevel: 14,
+              animationDuration: 1000,
+            });
+          }
+        }, 100);
+      }
+    }, [activeLocation, isCustomLocation])
+  );
 
   const requestLocationPermission = async () => {
     try {
@@ -1173,7 +1198,8 @@ export default function CompassScreen() {
 
   
 
-  const defaultCenter: LngLat = userLocation ?? [-73.5673, 45.5017]; // Montreal fallback
+  // Use activeLocation (custom or GPS) as default center, fallback to Montreal
+  const defaultCenter: LngLat = activeLocation ?? userLocation ?? [-73.5673, 45.5017];
 
   return (
     <View style={styles.container}>
