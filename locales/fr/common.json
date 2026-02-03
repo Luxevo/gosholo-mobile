@@ -272,7 +272,10 @@
   "reset_to_gps": "Revenir à la position GPS",
   "currently_viewing": "Affichage",
   "profile_updated": "Profil mis à jour avec succès",
-  "profile_update_failed": "Échec de la mise à jour du profil"
+  "profile_update_failed": "Échec de la mise à jour du profil",
+  "force_update_title": "Mise à jour requise",
+  "force_update_button": "Découvrir les nouveautés",
+  "force_update_footer": "Merci d'utiliser gosholo !"
 }
 
 
