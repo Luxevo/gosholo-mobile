@@ -227,10 +227,10 @@ export default function ProfileScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchFavorites(), refetchFollows(), refetchLikes()]);
+    await Promise.all([refetchProfile(), refetchFavorites(), refetchFollows(), refetchLikes()]);
     await fetchGridData();
     setRefreshing(false);
-  }, [refetchFavorites, refetchFollows, refetchLikes, fetchGridData]);
+  }, [refetchProfile, refetchFavorites, refetchFollows, refetchLikes, fetchGridData]);
 
   const handleItemPress = async (item: GridItem) => {
     try {
@@ -484,7 +484,7 @@ export default function ProfileScreen() {
               <View style={styles.statsAndNameContainer}>
                 {/* Full Name */}
                 <Text style={styles.displayName}>
-                  {profile?.first_name || profile?.username || t('user', 'Utilisateur')}
+                  {profile?.username || profile?.first_name || t('user', 'Utilisateur')}
                 </Text>
 
                 {/* Stats Row */}

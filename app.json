@@ -2,7 +2,10 @@
   "expo": {
     "name": "gosholo",
     "slug": "gosholo-mobile",
-    "version": "1.2.0",
+    "version": "1.2.1",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/ios-icon.png",
     "scheme": "gosholomobile",
@@ -10,7 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.jostinjarry1.gosholomobile",
-      "buildNumber": "58",
+      "buildNumber": "59",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map.",
@@ -20,7 +23,7 @@
       "associatedDomains": ["applinks:app.gosholo.com", "applinks:gosholo.com"]
     },
     "android": {
-      "versionCode": 58,
+      "versionCode": 59,
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "pan",
       "package": "com.gosholo.gosholo",
@@ -67,6 +70,9 @@
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2bab544a-7b3d-4844-8a22-4d92909ec243"
     },
     "plugins": [
       "expo-router",
