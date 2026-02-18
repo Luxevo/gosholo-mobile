@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import i18n from '@/i18n';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -66,6 +67,19 @@ export default function LoginScreen() {
       }
 
       if (data.user) {
+        // Add user to Brevo contact list (non-blocking)
+        try {
+          await supabase.functions.invoke('add-user-to-brevo', {
+            body: {
+              email: data.user.email!,
+              username: data.user.user_metadata?.username || '',
+              locale: i18n.language || 'fr',
+            },
+          });
+        } catch (brevoError) {
+          console.error('Failed to add to Brevo:', brevoError);
+        }
+
         router.replace('/(tabs)');
       }
     } catch (err: any) {
