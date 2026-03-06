@@ -1694,7 +1694,7 @@ export default function CompassScreen() {
             <IconSymbol
               name="magnifyingglass"
               size={24}
-              color={COLORS.white}
+              color={Platform.OS === 'android' ? COLORS.teal : COLORS.white}
             />
           </TouchableOpacity>
         )}
@@ -1708,7 +1708,7 @@ export default function CompassScreen() {
             <IconSymbol
               name={voiceNavigationEnabled ? "speaker.wave.3.fill" : "speaker.slash.fill"}
               size={24}
-              color={voiceNavigationEnabled ? COLORS.teal : COLORS.white}
+              color={voiceNavigationEnabled ? COLORS.teal : (Platform.OS === 'android' ? COLORS.teal : COLORS.white)}
             />
           </TouchableOpacity>
         )}

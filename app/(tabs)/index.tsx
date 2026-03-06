@@ -7,12 +7,13 @@ import { matchesSearch } from '@/utils/searchUtils';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   RefreshControl,
   SectionList,
   StatusBar,
@@ -220,7 +221,7 @@ export default function HomeScreen() {
     }
   };
 
-  const renderBusinessCard = (item: Commerce) => {
+  const renderBusinessCard = useCallback((item: Commerce) => {
     const categoryName = item.category
       ? (i18n.language === 'fr' ? item.category.name_fr : item.category.name_en)
       : null;
@@ -282,9 +283,9 @@ export default function HomeScreen() {
         )}
       </TouchableOpacity>
     );
-  };
+  }, [i18n.language, isFollowing, handleBusinessPress, handleQuickFollow]);
 
-  const renderRow = ({ item }: { item: Commerce[] }) => (
+  const renderRow = useCallback(({ item }: { item: Commerce[] }) => (
     <View style={styles.row}>
       {item.map((business, index) => (
         <View key={business.id} style={index === 0 ? styles.cardLeft : styles.cardRight}>
@@ -294,7 +295,7 @@ export default function HomeScreen() {
       {/* Add empty space if odd number */}
       {item.length === 1 && <View style={styles.cardRight} />}
     </View>
-  );
+  ), [renderBusinessCard]);
 
   const renderSectionHeader = ({ section }: { section: SectionData }) => (
     <View style={[styles.sectionHeader, section.isFeatured && styles.featuredHeader]}>
@@ -330,7 +331,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'android' ? ['top'] : ['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
       {loading && commerces.length === 0 ? (
@@ -349,7 +350,7 @@ export default function HomeScreen() {
       ) : (
         <View style={styles.listWrapper}>
           {/* Header */}
-          <AppHeader location={userCity} />
+          <AppHeader />
 
           {/* Search Bar */}
           <SearchBar
@@ -363,7 +364,12 @@ export default function HomeScreen() {
             renderItem={renderRow}
             renderSectionHeader={renderSectionHeader}
             keyExtractor={(item, index) => item.map(c => c.id).join('-') + index}
-            stickySectionHeadersEnabled={true}
+            stickySectionHeadersEnabled={Platform.OS === 'ios'}
+            removeClippedSubviews={Platform.OS === 'android'}
+            windowSize={Platform.OS === 'android' ? 5 : 21}
+            initialNumToRender={Platform.OS === 'android' ? 6 : 10}
+            maxToRenderPerBatch={Platform.OS === 'android' ? 4 : 10}
+            updateCellsBatchingPeriod={Platform.OS === 'android' ? 100 : 50}
             ListHeaderComponent={renderHeader}
             ListEmptyComponent={renderEmpty}
             contentContainerStyle={styles.listContent}
@@ -466,8 +472,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 2,
-    overflow: 'hidden',
+    elevation: Platform.OS === 'android' ? 1 : 2,
+    overflow: Platform.OS === 'android' ? 'visible' : 'hidden',
     position: 'relative',
   },
   businessImage: {
