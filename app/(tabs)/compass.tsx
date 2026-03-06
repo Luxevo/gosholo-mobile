@@ -1,35 +1,35 @@
 import BusinessDetailModal from '@/components/BusinessDetailModal';
 import EventDetailModal from '@/components/EventDetailModal';
 import { LocationPicker } from '@/components/LocationPicker';
-import OfferDetailModal from '@/components/OfferDetailModal';
 import { LOGO_BASE64 } from '@/components/LogoBase64';
-import { useLocation } from '@/contexts/LocationContext';
-import { useFavorites } from '@/hooks/useFavorites';
-import { useFollows } from '@/hooks/useFollows';
-import { useLikes } from '@/hooks/useLikes';
 import { NavigationBanner } from '@/components/navigation/NavigationBanner';
 import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
+import OfferDetailModal from '@/components/OfferDetailModal';
 import { POIModal } from '@/components/POIModal';
 import { SearchOverlay } from '@/components/SearchOverlay';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useLocation } from '@/contexts/LocationContext';
 import { useCategories } from '@/hooks/useCategories';
 import { useCommerces, type Commerce } from '@/hooks/useCommerces';
-import { useOffers, type OfferWithCommerce } from '@/hooks/useOffers';
 import { useEvents, type EventWithCommerce } from '@/hooks/useEvents';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useFollows } from '@/hooks/useFollows';
+import { useLikes } from '@/hooks/useLikes';
+import { useOffers, type OfferWithCommerce } from '@/hooks/useOffers';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
 import {
   groupCommercesByLocation,
   type MarkerCluster,
 } from '@/utils/markerClustering';
-import { matchesSearch } from '@/utils/searchUtils';
 import {
   calculateETA,
   getCurrentStepIndex,
   getDistanceFromLine,
 } from '@/utils/navigationHelpers';
+import { matchesSearch } from '@/utils/searchUtils';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -1303,7 +1303,7 @@ export default function CompassScreen() {
             {/* Business Markers - Show when businesses tab is active */}
             {(MarkerView || PointAnnotation) && activeTab === 'businesses' &&
               markerClusters
-                .slice(0, 50) // Limit to 50 markers for performance
+                .slice(0, 5000) // Limit to 50 markers for performance
                 .map((cluster: MarkerCluster) => {
                   // Render clustered marker if multiple commerces, otherwise single marker
                   if (cluster.commerces.length > 1) {
@@ -1328,7 +1328,7 @@ export default function CompassScreen() {
             {/* Offer Markers - Show when offers tab is active */}
             {(MarkerView || PointAnnotation) && activeTab === 'offers' &&
               filteredOffers
-                .slice(0, 50)
+                .slice(0, 5000)
                 .map((offer) => (
                   <OfferMarker
                     key={offer.id}
@@ -1340,7 +1340,7 @@ export default function CompassScreen() {
             {/* Event Markers - Show when events tab is active */}
             {(MarkerView || PointAnnotation) && activeTab === 'events' &&
               filteredEvents
-                .slice(0, 50)
+                .slice(0, 5000)
                 .map((event) => (
                   <EventMarker
                     key={event.id}
