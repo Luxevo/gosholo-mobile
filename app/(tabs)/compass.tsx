@@ -27,6 +27,7 @@ import {
   getDistanceFromLine,
 } from '@/utils/navigationHelpers';
 import { matchesSearch } from '@/utils/searchUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -616,6 +617,34 @@ export default function CompassScreen() {
   }, [activeLocation, isCustomLocation]);
 
   // Move camera to activeLocation when screen gains focus (e.g., after changing location in offers/events)
+  // Check for commerce deep link data when screen focuses
+  useFocusEffect(
+    useCallback(() => {
+      const checkDeepLink = async () => {
+        try {
+          const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
+          if (deepLinkData) {
+            const { type, id } = JSON.parse(deepLinkData);
+            if (type === 'commerce' && id) {
+              await AsyncStorage.removeItem('@gosholo_deep_link');
+              const commerce = commerces.find((c: Commerce) => c.id === id);
+              if (commerce) {
+                setModalState(prev => ({
+                  ...prev,
+                  selectedBusiness: commerce,
+                  showBusinessModal: true,
+                }));
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking deep link:', error);
+        }
+      };
+      checkDeepLink();
+    }, [commerces])
+  );
+
   useFocusEffect(
     useCallback(() => {
       if (isCustomLocation && activeLocation && cameraRef.current) {

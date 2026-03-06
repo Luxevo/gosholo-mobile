@@ -82,6 +82,16 @@ function RootLayoutContent() {
         router.replace('/(tabs)/events');
         return;
       }
+
+      // Handle commerce deep links
+      // Formats: gosholomobile://commerce/[id] or https://app.gosholo.com/commerce-mobile/[id]
+      const commerceMatch = url.match(/\/commerce(?:-mobile)?\/([a-zA-Z0-9-]+)/);
+      if (commerceMatch) {
+        const commerceId = commerceMatch[1];
+        await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'commerce', id: commerceId }));
+        router.replace('/(tabs)/compass');
+        return;
+      }
     };
 
     // Handle initial URL (app opened via deep link)

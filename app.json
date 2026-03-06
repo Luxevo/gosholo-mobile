@@ -54,6 +54,11 @@
             {
               "scheme": "https",
               "host": "app.gosholo.com",
+              "pathPrefix": "/commerce-mobile"
+            },
+            {
+              "scheme": "https",
+              "host": "app.gosholo.com",
               "path": "/download"
             },
             {
@@ -65,6 +70,11 @@
               "scheme": "https",
               "host": "gosholo.com",
               "pathPrefix": "/event-mobile"
+            },
+            {
+              "scheme": "https",
+              "host": "gosholo.com",
+              "pathPrefix": "/commerce-mobile"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
