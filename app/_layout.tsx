@@ -95,7 +95,8 @@ function RootLayoutContent() {
       if (commerceMatch) {
         const commerceId = commerceMatch[1];
         await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'commerce', id: commerceId }));
-        router.replace('/(tabs)/compass');
+        // Don't navigate here — let the splash screen handle normal navigation flow.
+        // The compass useFocusEffect will pick up the deep link data.
         return;
       }
     };

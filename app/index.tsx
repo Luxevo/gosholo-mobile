@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Image } from 'react-native';
@@ -24,12 +25,21 @@ export default function Index() {
       }),
     ]).start();
 
-    // Check auth state
+    // Check auth state and deep links
     const checkAuthAndNavigate = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
+          // Check if there's a commerce deep link — navigate to compass
+          const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
+          if (deepLinkData) {
+            const { type } = JSON.parse(deepLinkData);
+            if (type === 'commerce') {
+              router.replace('/(tabs)/compass');
+              return;
+            }
+          }
           // User is logged in, go to map
           router.replace('/(tabs)/compass');
         } else {
