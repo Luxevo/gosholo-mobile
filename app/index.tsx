@@ -31,10 +31,18 @@ export default function Index() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session?.user) {
-          // Check if there's a commerce deep link — navigate to compass
+          // Check if there's a deep link — navigate to the right tab
           const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
           if (deepLinkData) {
             const { type } = JSON.parse(deepLinkData);
+            if (type === 'offer') {
+              router.replace('/(tabs)/offers');
+              return;
+            }
+            if (type === 'event') {
+              router.replace('/(tabs)/events');
+              return;
+            }
             if (type === 'commerce') {
               router.replace('/(tabs)/compass');
               return;

@@ -25,7 +25,7 @@ function RootLayoutContent() {
   const handledUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const handleDeepLink = async (url: string) => {
+    const handleDeepLink = async (url: string, isColdStart = false) => {
       if (handledUrlRef.current === url) return;
       handledUrlRef.current = url;
       // Reset after 2s so the same link can be scanned again later
@@ -75,7 +75,7 @@ function RootLayoutContent() {
       if (offerMatch) {
         const offerId = offerMatch[1];
         await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'offer', id: offerId }));
-        router.replace('/(tabs)/offers');
+        if (!isColdStart) router.replace('/(tabs)/offers');
         return;
       }
 
@@ -85,7 +85,7 @@ function RootLayoutContent() {
       if (eventMatch) {
         const eventId = eventMatch[1];
         await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'event', id: eventId }));
-        router.replace('/(tabs)/events');
+        if (!isColdStart) router.replace('/(tabs)/events');
         return;
       }
 
@@ -95,20 +95,20 @@ function RootLayoutContent() {
       if (commerceMatch) {
         const commerceId = commerceMatch[1];
         await AsyncStorage.setItem('@gosholo_deep_link', JSON.stringify({ type: 'commerce', id: commerceId }));
-        // Don't navigate here — let the splash screen handle normal navigation flow.
-        // The compass useFocusEffect will pick up the deep link data.
+        if (!isColdStart) router.replace('/(tabs)/compass');
         return;
       }
     };
 
-    // Handle initial URL (app opened via deep link)
+    // Handle initial URL (cold start) — only save to AsyncStorage, don't navigate.
+    // The splash screen (index.tsx) will handle navigation once the app is mounted.
     Linking.getInitialURL().then((url) => {
-      if (url) handleDeepLink(url);
+      if (url) handleDeepLink(url, true);
     });
 
-    // Handle URL changes while app is open
+    // Handle URL changes while app is open (warm start) — navigate immediately
     const subscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url);
+      handleDeepLink(event.url, false);
     });
 
     return () => subscription.remove();

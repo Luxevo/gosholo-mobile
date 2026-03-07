@@ -1,0 +1,3 @@
+  npx eas update --branch production --message "fix: white screen on commerce deep link"
+  npx eas update --branch production --message "fix: white screen on commerce deep link"
+   --platform android 
