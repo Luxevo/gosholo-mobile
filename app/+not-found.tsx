@@ -8,20 +8,28 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 export default function NotFoundScreen() {
   const [showContent, setShowContent] = useState(false);
 
-  // Check if this is a deep link redirect — if so, go to the splash screen
-  // and let the normal flow handle it
+  // On cold start from deep links, Expo Router may land here before
+  // _layout.tsx has saved the deep link data to AsyncStorage.
+  // Retry a few times before giving up.
   useEffect(() => {
+    let cancelled = false;
+
     const checkDeepLink = async () => {
-      const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
-      if (deepLinkData) {
-        router.replace('/');
-        return;
+      for (let i = 0; i < 6; i++) {
+        if (cancelled) return;
+        const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
+        if (deepLinkData) {
+          router.replace('/');
+          return;
+        }
+        // Wait 300ms before retrying
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
-      // Delay showing "not found" to allow auth redirects to process
-      const timer = setTimeout(() => setShowContent(true), 1000);
-      return () => clearTimeout(timer);
+      if (!cancelled) setShowContent(true);
     };
     checkDeepLink();
+
+    return () => { cancelled = true; };
   }, []);
 
   if (!showContent) {
