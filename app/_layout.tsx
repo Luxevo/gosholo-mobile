@@ -100,10 +100,15 @@ function RootLayoutContent() {
       }
     };
 
-    // Handle initial URL (cold start) — only save to AsyncStorage, don't navigate.
-    // The splash screen (index.tsx) will handle navigation once the app is mounted.
-    Linking.getInitialURL().then((url) => {
-      if (url) handleDeepLink(url, true);
+    // Handle initial URL (cold start) — save to AsyncStorage, then redirect to splash.
+    // The splash screen (index.tsx) will handle auth check and deep link routing.
+    Linking.getInitialURL().then(async (url) => {
+      if (url) {
+        await handleDeepLink(url, true);
+        // Force navigate to splash — on cold start, Expo Router may have resolved
+        // the deep link URL to a non-existent route, so we must redirect.
+        setTimeout(() => router.replace('/'), 100);
+      }
     });
 
     // Handle URL changes while app is open (warm start) — navigate immediately
