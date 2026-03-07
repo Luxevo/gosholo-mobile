@@ -27,6 +27,7 @@ import {
   getDistanceFromLine,
 } from '@/utils/navigationHelpers';
 import { matchesSearch } from '@/utils/searchUtils';
+import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
@@ -626,9 +627,21 @@ export default function CompassScreen() {
           if (deepLinkData) {
             const { type, id } = JSON.parse(deepLinkData);
             if (type === 'commerce' && id) {
-              await AsyncStorage.removeItem('@gosholo_deep_link');
-              const commerce = commerces.find((c: Commerce) => c.id === id);
+              // Try local list first
+              let commerce = commerces.find((c: Commerce) => c.id === id);
+
+              // If not found locally, fetch from Supabase
+              if (!commerce) {
+                const { data } = await supabase
+                  .from('commerces')
+                  .select('*, category:category_id(*), sub_category:sub_category_id(*)')
+                  .eq('id', id)
+                  .single();
+                if (data) commerce = data as Commerce;
+              }
+
               if (commerce) {
+                await AsyncStorage.removeItem('@gosholo_deep_link');
                 setModalState(prev => ({
                   ...prev,
                   selectedBusiness: commerce,

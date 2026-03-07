@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { Stack, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 
 const WELCOME_MODAL_KEY = '@gosholo_welcome_seen';
@@ -22,8 +22,14 @@ function RootLayoutContent() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   // Handle deep links for auth callbacks and content sharing
+  const handledUrlRef = useRef<string | null>(null);
+
   useEffect(() => {
     const handleDeepLink = async (url: string) => {
+      if (handledUrlRef.current === url) return;
+      handledUrlRef.current = url;
+      // Reset after 2s so the same link can be scanned again later
+      setTimeout(() => { handledUrlRef.current = null; }, 2000);
       console.log('Deep link received:', url);
 
       // Check if this is an auth callback
