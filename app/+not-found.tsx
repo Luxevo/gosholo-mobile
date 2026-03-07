@@ -1,16 +1,27 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Link, Stack } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Link, Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function NotFoundScreen() {
   const [showContent, setShowContent] = useState(false);
 
-  // Delay showing "not found" to allow auth redirects to process
+  // Check if this is a deep link redirect — if so, go to the splash screen
+  // and let the normal flow handle it
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 1000);
-    return () => clearTimeout(timer);
+    const checkDeepLink = async () => {
+      const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
+      if (deepLinkData) {
+        router.replace('/');
+        return;
+      }
+      // Delay showing "not found" to allow auth redirects to process
+      const timer = setTimeout(() => setShowContent(true), 1000);
+      return () => clearTimeout(timer);
+    };
+    checkDeepLink();
   }, []);
 
   if (!showContent) {
