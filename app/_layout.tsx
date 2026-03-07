@@ -145,11 +145,6 @@ function RootLayoutContent() {
     }
   };
 
-  // Don't render app content while checking for updates
-  if (isChecking) {
-    return null;
-  }
-
   return (
     <LocationProvider>
       <FavoritesProvider>
@@ -163,7 +158,7 @@ function RootLayoutContent() {
               }}
             />
             <WelcomeModal
-              visible={showWelcomeModal && !needsUpdate}
+              visible={showWelcomeModal && !needsUpdate && !isChecking}
               onClose={handleCloseWelcomeModal}
             />
             <ForceUpdateModal
