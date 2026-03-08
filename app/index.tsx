@@ -35,23 +35,12 @@ export default function Index() {
           const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
           if (deepLinkData) {
             const { type } = JSON.parse(deepLinkData);
-            if (type === 'offer') {
-              router.replace('/(tabs)/offers');
-              return;
-            }
-            if (type === 'event') {
-              router.replace('/(tabs)/events');
-              return;
-            }
-            if (type === 'commerce') {
-              router.replace('/(tabs)/compass');
-              return;
-            }
+            if (type === 'offer') { router.replace('/(tabs)/offers'); return; }
+            if (type === 'event') { router.replace('/(tabs)/events'); return; }
+            if (type === 'commerce') { router.replace('/(tabs)/compass'); return; }
           }
-          // User is logged in, go to map
           router.replace('/(tabs)/compass');
         } else {
-          // Not logged in - show auth screen
           router.replace('/(auth)/login');
         }
       } catch (error) {

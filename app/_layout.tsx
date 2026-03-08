@@ -100,14 +100,27 @@ function RootLayoutContent() {
       }
     };
 
-    // Handle initial URL (cold start) — save to AsyncStorage, then redirect to splash.
-    // The splash screen (index.tsx) will handle auth check and deep link routing.
+    // Handle initial URL (cold start) — save to AsyncStorage, wait for auth, navigate directly.
+    // We bypass the splash screen because getSession() may not be ready yet on cold start.
     Linking.getInitialURL().then(async (url) => {
       if (url) {
         await handleDeepLink(url, true);
-        // Force navigate to splash — on cold start, Expo Router may have resolved
-        // the deep link URL to a non-existent route, so we must redirect.
-        setTimeout(() => router.replace('/'), 100);
+
+        // Wait for Supabase to restore the session from storage
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+            subscription.unsubscribe();
+            const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
+            if (session?.user && deepLinkData) {
+              const { type } = JSON.parse(deepLinkData);
+              if (type === 'commerce') { router.replace('/(tabs)/compass'); return; }
+              if (type === 'offer') { router.replace('/(tabs)/offers'); return; }
+              if (type === 'event') { router.replace('/(tabs)/events'); return; }
+            }
+            // Fallback: go to splash and let it handle auth
+            router.replace('/');
+          }
+        });
       }
     });
 
