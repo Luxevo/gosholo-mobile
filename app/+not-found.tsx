@@ -1,35 +1,17 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Link, Stack, router } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function NotFoundScreen() {
   const [showContent, setShowContent] = useState(false);
 
-  // On cold start from deep links, Expo Router may land here before
-  // _layout.tsx has saved the deep link data to AsyncStorage.
-  // Retry a few times before giving up.
+  // On deep links, _layout.tsx handles navigation. Show a spinner
+  // briefly to give it time, then show not-found content as fallback.
   useEffect(() => {
-    let cancelled = false;
-
-    const checkDeepLink = async () => {
-      for (let i = 0; i < 6; i++) {
-        if (cancelled) return;
-        const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
-        if (deepLinkData) {
-          router.replace('/');
-          return;
-        }
-        // Wait 300ms before retrying
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-      if (!cancelled) setShowContent(true);
-    };
-    checkDeepLink();
-
-    return () => { cancelled = true; };
+    const timer = setTimeout(() => setShowContent(true), 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   if (!showContent) {
