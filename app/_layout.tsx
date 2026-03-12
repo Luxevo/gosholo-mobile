@@ -11,7 +11,9 @@ import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { Stack, router } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 
 const WELCOME_MODAL_KEY = '@gosholo_welcome_seen';
@@ -140,6 +142,33 @@ function RootLayoutContent() {
     };
 
     checkWelcomeModal();
+  }, []);
+
+  // Check for OTA updates on launch and when app comes to foreground
+  useEffect(() => {
+    if (__DEV__) return;
+
+    const checkForOTAUpdate = async () => {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        console.log('OTA update check failed:', e);
+      }
+    };
+
+    checkForOTAUpdate();
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        checkForOTAUpdate();
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   const handleCloseWelcomeModal = async (dontShowAgain: boolean) => {
