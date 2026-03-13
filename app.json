@@ -3,9 +3,7 @@
     "name": "gosholo",
     "slug": "gosholo-mobile",
     "version": "1.2.6",
-    "runtimeVersion": {
-      "policy": "fingerprint"
-    },
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/ios-icon.png",
     "scheme": "gosholomobile",
