@@ -2,7 +2,7 @@
   "expo": {
     "name": "gosholo",
     "slug": "gosholo-mobile",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "runtimeVersion": {
       "policy": "fingerprint"
     },
@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.jostinjarry1.gosholomobile",
-      "buildNumber": "64",
+      "buildNumber": "65",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby restaurants and food events on the map.",

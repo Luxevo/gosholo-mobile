@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: COLORS.ink,
+    color: COLORS.teal,
     textAlign: 'center',
     marginBottom: SPACING.sm,
   },
