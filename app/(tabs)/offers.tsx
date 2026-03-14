@@ -3,7 +3,6 @@ import { OfferCard } from '@/components/OfferCard';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { SearchBar } from '@/components/shared/SearchBar';
-import { SkeletonList } from '@/components/SkeletonCard';
 import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useLocation } from '@/contexts/LocationContext';
@@ -258,36 +257,6 @@ export default function OffersScreen() {
     setSelectedFilter(prev => prev === filterId ? null : filterId);
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Fixed Header Section - shown immediately */}
-        <View style={styles.fixedHeader}>
-          <AppHeader userName={userName} avatarId={profile?.avatar_url} />
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('search_placeholder_offers')}
-          />
-          <View style={styles.filtersRow}>
-            <LocationPill onPress={() => setShowLocationPicker(true)} compact />
-            <TouchableOpacity style={styles.categoryButton} onPress={() => setShowCategoryModal(true)}>
-              <IconSymbol name="plus" size={12} color={COLORS.primary} />
-              <Text style={styles.categoryButtonText}>{t('categories')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton} onPress={() => setShowDistanceModal(true)}>
-              <IconSymbol name="location" size={12} color={COLORS.primary} />
-              <Text style={styles.categoryButtonText}>{t('distance')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        {/* Only cards show skeleton */}
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <SkeletonList count={3} type="offer" />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   if (error) {
     return (

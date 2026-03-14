@@ -24,7 +24,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import EventDetailModal from '@/components/EventDetailModal';
 import BusinessDetailModal from '@/components/BusinessDetailModal';
-import { SkeletonProfilePage, SkeletonProfileGrid } from '@/components/SkeletonCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 8;
@@ -369,14 +368,6 @@ export default function ProfileScreen() {
     router.push('/settings' as any);
   }, []);
 
-  if (authLoading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <ProfileHeader onSettingsPress={handleSettingsPress} />
-        <SkeletonProfilePage />
-      </SafeAreaView>
-    );
-  }
 
   // Not authenticated - show login/register options
   if (!isAuthenticated) {
@@ -541,9 +532,7 @@ export default function ProfileScreen() {
 
           </>
         }
-        ListEmptyComponent={dataLoading ? (
-          <SkeletonProfileGrid count={4} />
-        ) : renderEmptyState()}
+        ListEmptyComponent={dataLoading ? null : renderEmptyState()}
         contentContainerStyle={styles.gridContainer}
         columnWrapperStyle={styles.gridRow}
         refreshControl={

@@ -4,7 +4,6 @@ import { LocationPicker, LocationPill } from '@/components/LocationPicker';
 import { AppHeader } from '@/components/shared/AppHeader';
 import { type Category } from '@/components/shared/CategoriesSection';
 import { SearchBar } from '@/components/shared/SearchBar';
-import { SkeletonList } from '@/components/SkeletonCard';
 import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useLocation } from '@/contexts/LocationContext';
@@ -298,41 +297,6 @@ export default function EventsScreen() {
     setSelectedFilter(prev => prev === filterId ? null : filterId);
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* Fixed Header Section - shown immediately */}
-        <View style={styles.fixedHeader}>
-          <AppHeader userName={userName} avatarId={profile?.avatar_url} />
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('search_placeholder_events')}
-          />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersRow}>
-            <LocationPill onPress={() => setShowLocationPicker(true)} compact />
-            <TouchableOpacity style={styles.categoryButton} onPress={() => setShowCategoryModal(true)}>
-              <IconSymbol name="plus" size={12} color={COLORS.primary} />
-              <Text style={styles.categoryButtonText}>{t('categories')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.categoryButton} onPress={() => setShowDistanceModal(true)}>
-              <IconSymbol name="location" size={12} color={COLORS.primary} />
-              <Text style={styles.categoryButtonText}>{t('distance')}</Text>
-            </TouchableOpacity>
-            {getDateFiltersConfig(t).map((filter) => (
-              <TouchableOpacity key={filter.id} style={styles.filterPill}>
-                <Text style={styles.filterPillText}>{filter.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-        {/* Only cards show skeleton */}
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <SkeletonList count={3} type="event" />
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   if (error) {
     return (
