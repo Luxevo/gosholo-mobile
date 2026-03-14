@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { prefetchAppData } from '@/utils/prefetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
@@ -10,6 +11,9 @@ export default function Index() {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
+    // Start prefetching data immediately
+    prefetchAppData();
+
     // Start animation
     Animated.parallel([
       Animated.timing(fadeAnim, {

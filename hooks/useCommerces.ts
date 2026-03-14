@@ -36,36 +36,64 @@ export interface Commerce {
   follower_count?: number;
 }
 
+// Module-level cache for commerces data
+let commercesCache: Commerce[] | null = null;
+let commercesCacheListeners: Set<(commerces: Commerce[]) => void> = new Set();
+
+const notifyCommercesListeners = (commerces: Commerce[]) => {
+  commercesCache = commerces;
+  commercesCacheListeners.forEach(listener => listener(commerces));
+};
+
+export const fetchCommercesData = async (): Promise<Commerce[]> => {
+  const { data, error } = await supabase
+    .from('commerces')
+    .select('*, category:category_id(name_en, name_fr), sub_category(name_en, name_fr)')
+    .eq('status', 'active')
+    .not('latitude', 'is', null)
+    .not('longitude', 'is', null)
+    .order('boosted', { ascending: false })
+    .order('boosted_at', { ascending: false, nullsFirst: false });
+
+  if (error) throw error;
+
+  const commerces = data || [];
+  notifyCommercesListeners(commerces);
+  return commerces;
+};
+
 export function useCommerces() {
-  const [commerces, setCommerces] = useState<Commerce[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [commerces, setCommerces] = useState<Commerce[]>(commercesCache || []);
+  const [loading, setLoading] = useState(commercesCache === null);
   const [error, setError] = useState<string | null>(null);
 
+  // Subscribe to cache updates
   useEffect(() => {
+    const listener = (newCommerces: Commerce[]) => {
+      setCommerces(newCommerces);
+      setLoading(false);
+    };
+    commercesCacheListeners.add(listener);
+    return () => {
+      commercesCacheListeners.delete(listener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (commercesCache) return;
     fetchCommerces();
   }, []);
 
   const fetchCommerces = async () => {
     try {
-      setLoading(true);
+      if (!commercesCache) {
+        setLoading(true);
+      }
       setError(null);
       console.log('🏪 Fetching commerces...');
 
-      const { data, error: supabaseError } = await supabase
-        .from('commerces')
-        .select('*, category:category_id(name_en, name_fr), sub_category(name_en, name_fr)')
-        .eq('status', 'active')
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-        .order('boosted', { ascending: false })
-        .order('boosted_at', { ascending: false, nullsFirst: false });
-
-      if (supabaseError) {
-        throw supabaseError;
-      }
-
-      console.log(`🏪 Found ${data?.length || 0} commerces`);
-      setCommerces(data || []);
+      const data = await fetchCommercesData();
+      console.log(`🏪 Found ${data.length} commerces`);
     } catch (err) {
       console.error('🏪 Error fetching commerces:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch commerces');

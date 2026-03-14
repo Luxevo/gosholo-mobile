@@ -1,3 +1,15 @@
-  npx eas update --branch production --message "fix: white screen on commerce deep link"
-  npx eas update --branch production --message "fix: white screen on commerce deep link"
-   --platform android 
+ ┌────────────────────────────────────────────────┬─────────────────────────────┐        
+  │                    Command                     │        What it does         │
+  ├────────────────────────────────────────────────┼─────────────────────────────┤        
+  │ npm run ota -- --message "msg"                 │ Both platforms (production) │      
+  ├────────────────────────────────────────────────┼─────────────────────────────┤      
+  │ npm run ota:ios -- --message "msg"             │ iOS only                    │
+  ├────────────────────────────────────────────────┼─────────────────────────────┤
+  │ npm run ota:android -- --message "msg"         │ Android only                │
+  ├────────────────────────────────────────────────┼─────────────────────────────┤
+  │ npm run ota:preview -- --message "msg"         │ Both platforms (preview)    │
+  ├────────────────────────────────────────────────┼─────────────────────────────┤
+  │ npm run ota:preview:ios -- --message "msg"     │ iOS preview only            │
+  ├────────────────────────────────────────────────┼─────────────────────────────┤
+  │ npm run ota:preview:android -- --message "msg" │ Android preview only        │
+  └────────────────────────────────────────────────┴─────────────────────────────┘

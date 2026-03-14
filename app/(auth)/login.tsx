@@ -171,7 +171,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color={COLORS.lightGray}
+                    color={COLORS.teal}
                   />
                 </TouchableOpacity>
               </View>
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
   registerLink: {
     fontSize: 14,
-    color: COLORS.primary,
+    color: COLORS.teal,
     fontWeight: '600',
     marginLeft: SPACING.xs,
   },

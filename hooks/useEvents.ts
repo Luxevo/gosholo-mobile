@@ -29,7 +29,7 @@ interface UseEventsOptions {
 let eventsCache: EventWithCommerce[] | null = null;
 let eventsCacheListeners: Set<(events: EventWithCommerce[]) => void> = new Set();
 
-const notifyEventsListeners = (events: EventWithCommerce[]) => {
+export const notifyEventsListeners = (events: EventWithCommerce[]) => {
   eventsCache = events;
   eventsCacheListeners.forEach(listener => listener(events));
 };

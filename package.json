@@ -11,10 +11,10 @@
     "lint": "expo lint",
     "ota": "eas update --channel production --platform ios && eas update --channel production --platform android",
     "ota:ios": "npx eas update --channel production --platform ios", 
-    "ota:android": "eas update --channel production --platform android",
+    "ota:android": "npx eas update --channel production --platform android",
     "ota:preview": "eas update --channel preview --platform ios && eas update --channel preview --platform android",
     "ota:preview:ios": "npx eas update --channel preview --platform ios",
-    "ota:preview:android": "eas update --channel preview --platform android"
+    "ota:preview:android": "npx eas update --channel preview --platform android"
   },
   "dependencies": {
     "@api/fsq-developers": "file:.api/apis/fsq-developers",

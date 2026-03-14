@@ -29,7 +29,7 @@ interface UseOffersOptions {
 let offersCache: OfferWithCommerce[] | null = null;
 let offersCacheListeners: Set<(offers: OfferWithCommerce[]) => void> = new Set();
 
-const notifyOffersListeners = (offers: OfferWithCommerce[]) => {
+export const notifyOffersListeners = (offers: OfferWithCommerce[]) => {
   offersCache = offers;
   offersCacheListeners.forEach(listener => listener(offers));
 };
