@@ -47,7 +47,7 @@ const notifyCommercesListeners = (commerces: Commerce[]) => {
 
 export const fetchCommercesData = async (): Promise<Commerce[]> => {
   const { data, error } = await supabase
-    .from('commerces')
+    .from('commerces_map_visible')
     .select('*, category:category_id(name_en, name_fr), sub_category(name_en, name_fr)')
     .eq('status', 'active')
     .not('latitude', 'is', null)
