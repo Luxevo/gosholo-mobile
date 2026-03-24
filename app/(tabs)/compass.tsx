@@ -11,12 +11,13 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useLocation } from '@/contexts/LocationContext';
 import { useCategories } from '@/hooks/useCategories';
 import { type Commerce } from '@/hooks/useCommerces';
-import { useMapCommerces } from '@/hooks/useMapCommerces';
 import { useEvents, type EventWithCommerce } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useFollows } from '@/hooks/useFollows';
 import { useLikes } from '@/hooks/useLikes';
+import { useMapCommerces } from '@/hooks/useMapCommerces';
 import { useOffers, type OfferWithCommerce } from '@/hooks/useOffers';
+import { supabase } from '@/lib/supabase';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
 import {
   groupCommercesByLocation,
@@ -28,7 +29,6 @@ import {
   getDistanceFromLine,
 } from '@/utils/navigationHelpers';
 import { matchesSearch } from '@/utils/searchUtils';
-import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
@@ -704,7 +704,7 @@ export default function CompassScreen() {
       if (cameraRef.current && animateCamera) {
         cameraRef.current.setCamera({
           centerCoordinate: coord,
-          zoomLevel: 15,
+          zoomLevel: 5,
           animationDuration: 800,
         });
       }
@@ -1135,7 +1135,7 @@ export default function CompassScreen() {
           // Google Maps-style camera follow during navigation
           cameraRef.current.setCamera({
             centerCoordinate: location,
-            zoomLevel: isNavigating ? 18 : 15,
+            zoomLevel: isNavigating ? 18 : 10,
             pitch: isNavigating ? 60 : 0,  // Tilt view during navigation
             heading: isNavigating ? userHeading : 0,  // Rotate map to movement direction
             animationDuration: 1000,
@@ -1266,7 +1266,7 @@ export default function CompassScreen() {
             <Camera
               ref={cameraRef}
               centerCoordinate={defaultCenter}
-              zoomLevel={10}
+              zoomLevel={5}
               pitch={is3D ? 70 : 0}
               heading={is3D ? 45 : 0}
               animationDuration={2000}
