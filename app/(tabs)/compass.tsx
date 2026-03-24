@@ -1266,7 +1266,7 @@ export default function CompassScreen() {
             <Camera
               ref={cameraRef}
               centerCoordinate={defaultCenter}
-              zoomLevel={12}
+              zoomLevel={10}
               pitch={is3D ? 70 : 0}
               heading={is3D ? 45 : 0}
               animationDuration={2000}
