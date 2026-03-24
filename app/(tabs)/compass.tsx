@@ -10,7 +10,8 @@ import { SearchOverlay } from '@/components/SearchOverlay';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useLocation } from '@/contexts/LocationContext';
 import { useCategories } from '@/hooks/useCategories';
-import { useCommerces, type Commerce } from '@/hooks/useCommerces';
+import { type Commerce } from '@/hooks/useCommerces';
+import { useMapCommerces } from '@/hooks/useMapCommerces';
 import { useEvents, type EventWithCommerce } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useFollows } from '@/hooks/useFollows';
@@ -460,7 +461,7 @@ export default function CompassScreen() {
   const { t, i18n } = useTranslation();
   const params = useLocalSearchParams();
 
-  const { commerces, loading: commercesLoading, error: commercesError } = useCommerces();
+  const { commerces, loading: commercesLoading, error: commercesError } = useMapCommerces();
   const { offers, loading: offersLoading } = useOffers({ userLocation: userLocation || undefined });
   const { events, loading: eventsLoading } = useEvents();
   const { categories: dbCategories } = useCategories();
