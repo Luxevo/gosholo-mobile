@@ -11,8 +11,8 @@ interface LinkableTextProps extends Omit<TextProps, 'children'> {
  * Détecte automatiquement les URLs (http://, https://, www.) et les rend cliquables.
  */
 export function LinkableText({ children, style, linkColor = '#016167', numberOfLines, ...props }: LinkableTextProps) {
-  // Regex pour détecter les URLs
-  const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)/g;
+  // Regex pour détecter les emails d'abord, puis les URLs (l'ordre est important)
+  const linkRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)/g;
 
   if (!children) return null;
 
@@ -20,25 +20,20 @@ export function LinkableText({ children, style, linkColor = '#016167', numberOfL
   let lastIndex = 0;
   let match;
 
-  // Trouver toutes les URLs dans le texte
-  while ((match = urlRegex.exec(children)) !== null) {
-    // Ajouter le texte avant l'URL
+  while ((match = linkRegex.exec(children)) !== null) {
     if (match.index > lastIndex) {
       parts.push(children.substring(lastIndex, match.index));
     }
 
-    // Ajouter l'URL
-    let url = match[0];
-    // Ajouter https:// si l'URL n'a pas déjà un protocole
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      if (url.startsWith('www.')) {
-        url = 'https://' + url;
-      } else {
-        // Pour les domaines simples comme "facebook.com", ajouter https://
-        url = 'https://' + url;
-      }
-    }
-    parts.push({ text: match[0], url });
+    const isEmail = !!match[1];
+    const display = match[0];
+    const url = isEmail
+      ? `mailto:${display}`
+      : display.startsWith('http://') || display.startsWith('https://')
+        ? display
+        : 'https://' + display;
+
+    parts.push({ text: display, url });
 
     lastIndex = match.index + match[0].length;
   }
