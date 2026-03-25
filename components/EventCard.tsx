@@ -54,7 +54,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
         id: event.id,
         title: event.title,
         businessName: event.commerces?.name,
-        description: event.description,
+        description: event.description ?? undefined,
       });
       const shared = await openShareSheet({
         message: shareData.message,

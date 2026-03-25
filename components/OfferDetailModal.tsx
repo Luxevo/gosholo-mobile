@@ -3,6 +3,8 @@ import { useCommerces } from '@/hooks/useCommerces';
 import { useFollows } from '@/hooks/useFollows';
 import { useLikes } from '@/hooks/useLikes';
 import { OfferWithCommerce } from '@/hooks/useOffers';
+import { supabase } from '@/lib/supabase';
+import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -76,6 +78,28 @@ export default function OfferDetailModal({
           { text: t('login'), onPress: () => router.push('/(auth)/login') }
         ]
       );
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareData = getShareMessage({
+        type: 'offer',
+        id: offer.id,
+        title: offer.title,
+        businessName: offer.commerces?.name,
+        description: offer.description ?? undefined,
+      });
+      const shared = await openShareSheet({
+        message: shareData.message,
+        title: shareData.title,
+        url: shareData.url,
+      });
+      if (shared) {
+        await supabase.rpc('increment_offer_share', { offer_id: offer.id });
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -202,6 +226,9 @@ export default function OfferDetailModal({
                     size={22}
                     color={isFavorite ? COLORS.primary : COLORS.teal}
                   />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton} onPress={handleShare} activeOpacity={0.7}>
+                  <IconSymbol name="paperplane.fill" size={20} color={COLORS.teal} />
                 </TouchableOpacity>
               </View>
             </SafeAreaView>

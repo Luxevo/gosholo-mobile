@@ -54,7 +54,7 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         id: offer.id,
         title: offer.title,
         businessName: offer.commerces?.name,
-        description: offer.description,
+        description: offer.description ?? undefined,
       });
       const shared = await openShareSheet({
         message: shareData.message,

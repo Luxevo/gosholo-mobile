@@ -11,6 +11,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
 import { useMobileUser } from '@/hooks/useMobileUser';
 import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
+import { supabase } from '@/lib/supabase';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
@@ -92,11 +93,33 @@ export default function OffersScreen() {
           if (deepLinkData) {
             const { type, id } = JSON.parse(deepLinkData);
             if (type === 'offer' && id) {
-              // Clear the deep link data immediately
-              await AsyncStorage.removeItem('@gosholo_deep_link');
-              // Find the offer and open the modal
-              const offer = offers.find(o => o.id === id);
+              // Try local list first
+              let offer: OfferWithCommerce | undefined = offers.find(o => o.id === id);
+
+              // If not found locally, fetch from Supabase
+              if (!offer) {
+                const { data: offerData } = await supabase
+                  .from('offers')
+                  .select('*')
+                  .eq('id', id)
+                  .single();
+
+                if (offerData) {
+                  let commerceData = null;
+                  if (offerData.commerce_id) {
+                    const { data } = await supabase
+                      .from('commerces')
+                      .select('id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr)')
+                      .eq('id', offerData.commerce_id)
+                      .single();
+                    commerceData = data;
+                  }
+                  offer = { ...offerData, commerces: commerceData } as OfferWithCommerce;
+                }
+              }
+
               if (offer) {
+                await AsyncStorage.removeItem('@gosholo_deep_link');
                 setSelectedOffer(offer);
                 setShowModal(true);
               }
@@ -107,10 +130,7 @@ export default function OffersScreen() {
         }
       };
 
-      // Only check if offers are loaded
-      if (offers.length > 0) {
-        checkDeepLink();
-      }
+      checkDeepLink();
     }, [offers])
   );
 

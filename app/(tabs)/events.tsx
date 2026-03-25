@@ -8,24 +8,25 @@ import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useLocation } from '@/contexts/LocationContext';
 import { useCategories } from '@/hooks/useCategories';
-import { useEvents, EventWithCommerce } from '@/hooks/useEvents';
+import { EventWithCommerce, useEvents } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
 import { useMobileUser } from '@/hooks/useMobileUser';
+import { supabase } from '@/lib/supabase';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    Alert,
-    Modal,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -100,11 +101,33 @@ export default function EventsScreen() {
           if (deepLinkData) {
             const { type, id } = JSON.parse(deepLinkData);
             if (type === 'event' && id) {
-              // Clear the deep link data immediately
-              await AsyncStorage.removeItem('@gosholo_deep_link');
-              // Find the event and open the modal
-              const event = events.find(e => e.id === id);
+              // Try local list first
+              let event: EventWithCommerce | undefined = events.find(e => e.id === id);
+
+              // If not found locally, fetch from Supabase
+              if (!event) {
+                const { data: eventData } = await supabase
+                  .from('events')
+                  .select('*')
+                  .eq('id', id)
+                  .single();
+
+                if (eventData) {
+                  let commerceData = null;
+                  if (eventData.commerce_id) {
+                    const { data } = await supabase
+                      .from('commerces')
+                      .select('id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr)')
+                      .eq('id', eventData.commerce_id)
+                      .single();
+                    commerceData = data;
+                  }
+                  event = { ...eventData, commerces: commerceData } as EventWithCommerce;
+                }
+              }
+
               if (event) {
+                await AsyncStorage.removeItem('@gosholo_deep_link');
                 setSelectedEvent(event);
                 setShowModal(true);
               }
@@ -115,10 +138,7 @@ export default function EventsScreen() {
         }
       };
 
-      // Only check if events are loaded
-      if (events.length > 0) {
-        checkDeepLink();
-      }
+      checkDeepLink();
     }, [events])
   );
 

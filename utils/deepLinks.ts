@@ -1,6 +1,5 @@
 // Deep link URL generation utilities
-import { Platform } from 'react-native';
-import Share, { Social } from 'react-native-share';
+import Share from 'react-native-share';
 
 const WEB_DOMAIN = 'https://app.gosholo.com';
 const APP_SCHEME = 'gosholomobile';
@@ -46,7 +45,6 @@ export const getShareMessage = (params: {
       : description;
     message += `\n${truncated}`;
   }
-  message += `\n\n${url}`;
 
   return {
     message,
@@ -56,87 +54,19 @@ export const getShareMessage = (params: {
 };
 
 /**
- * Share to Instagram Stories with an image
- */
-export const shareToInstagramStories = async (imageUri: string, url?: string): Promise<boolean> => {
-  try {
-    const shareOptions = {
-      stickerImage: imageUri,
-      backgroundBottomColor: '#016167',
-      backgroundTopColor: '#FF6233',
-      attributionURL: url,
-      social: Social.InstagramStories,
-      appId: '', // Optional: Facebook App ID for attribution
-    };
-    await Share.shareSingle(shareOptions);
-    return true;
-  } catch (error) {
-    console.log('Instagram Stories share error:', error);
-    return false;
-  }
-};
-
-/**
- * Share to Facebook Stories with an image
- */
-export const shareToFacebookStories = async (imageUri: string, url?: string): Promise<boolean> => {
-  try {
-    const shareOptions = {
-      stickerImage: imageUri,
-      backgroundBottomColor: '#016167',
-      backgroundTopColor: '#FF6233',
-      attributionURL: url,
-      social: Social.FacebookStories,
-      appId: '', // Optional: Facebook App ID
-    };
-    await Share.shareSingle(shareOptions);
-    return true;
-  } catch (error) {
-    console.log('Facebook Stories share error:', error);
-    return false;
-  }
-};
-
-/**
- * Share to WhatsApp with message and URL
- */
-export const shareToWhatsApp = async (message: string, url?: string): Promise<boolean> => {
-  try {
-    const shareOptions: any = {
-      message: message + (url ? `\n\n${url}` : ''),
-      social: Social.Whatsapp,
-    };
-    await Share.shareSingle(shareOptions);
-    return true;
-  } catch (error) {
-    console.log('WhatsApp share error:', error);
-    return false;
-  }
-};
-
-/**
  * Open share sheet with all options
  */
 export const openShareSheet = async (params: {
   message: string;
   title: string;
   url?: string;
-  imageUri?: string;
 }): Promise<boolean> => {
   try {
-    const { message, title, url, imageUri } = params;
+    const { message, title, url } = params;
     const shareOptions: any = {
-      message,
+      message: url || message,
       title,
     };
-
-    if (url) {
-      shareOptions.url = url;
-    }
-
-    if (imageUri) {
-      shareOptions.urls = [imageUri];
-    }
 
     await Share.open(shareOptions);
     return true;
@@ -146,28 +76,3 @@ export const openShareSheet = async (params: {
   }
 };
 
-/**
- * Check if Instagram is installed
- */
-export const isInstagramAvailable = async (): Promise<boolean> => {
-  try {
-    if (Platform.OS === 'ios') return true;
-    const result = await Share.isPackageInstalled('com.instagram.android');
-    return result?.isInstalled ?? false;
-  } catch {
-    return false;
-  }
-};
-
-/**
- * Check if Facebook is installed
- */
-export const isFacebookAvailable = async (): Promise<boolean> => {
-  try {
-    if (Platform.OS === 'ios') return true;
-    const result = await Share.isPackageInstalled('com.facebook.katana');
-    return result?.isInstalled ?? false;
-  } catch {
-    return false;
-  }
-};

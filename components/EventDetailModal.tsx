@@ -3,6 +3,8 @@ import { useCommerces } from '@/hooks/useCommerces';
 import { EventWithCommerce } from '@/hooks/useEvents';
 import { useFollows } from '@/hooks/useFollows';
 import { useLikes } from '@/hooks/useLikes';
+import { supabase } from '@/lib/supabase';
+import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -77,6 +79,28 @@ export default function EventDetailModal({
           { text: t('login'), onPress: () => router.push('/(auth)/login') }
         ]
       );
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareData = getShareMessage({
+        type: 'event',
+        id: event.id,
+        title: event.title,
+        businessName: event.commerces?.name,
+        description: event.description ?? undefined,
+      });
+      const shared = await openShareSheet({
+        message: shareData.message,
+        title: shareData.title,
+        url: shareData.url,
+      });
+      if (shared) {
+        await supabase.rpc('increment_event_share', { event_id: event.id });
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -203,6 +227,9 @@ export default function EventDetailModal({
                     size={22}
                     color={isFavorite ? COLORS.primary : COLORS.teal}
                   />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton} onPress={handleShare} activeOpacity={0.7}>
+                  <IconSymbol name="paperplane.fill" size={20} color={COLORS.teal} />
                 </TouchableOpacity>
               </View>
             </SafeAreaView>

@@ -1,6 +1,16 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(grep -r 'const COLORS = {' /home/jostin/gosholo-mobile/components /home/jostin/gosholo-mobile/app --include=*.tsx --include=*.ts)",
+      "Bash(head:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(find /home/jostin/gosholo-partner/public -type f -name *.png -o -name *.jpg -o -name *.svg)",
+      "Bash(find /home/jostin/gosholo-partner/app/api -type f -name *.ts)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

@@ -2,10 +2,11 @@ import { useCommerceHours } from '@/hooks/useCommerceHours';
 import { Commerce } from '@/hooks/useCommerces';
 import { useEvents, EventWithCommerce } from '@/hooks/useEvents';
 import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
+import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EventDetailModal from './EventDetailModal';
 import { LinkableText } from './LinkableText';
@@ -125,10 +126,18 @@ export default function BusinessDetailModal({
 
   const handleShare = async () => {
     try {
-      await Share.share({
-        message: `${business.name}${business.address ? `\n${business.address}` : ''}${business.website ? `\n${business.website}` : ''}`,
+      const shareData = getShareMessage({
+        type: 'commerce',
+        id: business.id,
         title: business.name,
+        description: business.description ?? undefined,
       });
+      await openShareSheet({
+        message: shareData.message,
+        title: shareData.title,
+        url: shareData.url,
+      });
+      // TODO: track share count when increment_commerce_share RPC is added to Supabase
     } catch (error) {
       console.error(error);
     }
