@@ -99,6 +99,7 @@ export type UserProfile = {
   last_name?: string;
   phone?: string;
   avatar_url?: string;
+  postal_code?: string;
   is_subscribed?: boolean;
   preferred_locale?: 'fr' | 'en';
   created_at: string;

@@ -46,6 +46,7 @@ export default function RegisterScreen() {
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarId | null>(null);
@@ -65,6 +66,12 @@ export default function RegisterScreen() {
     return emailRegex.test(value);
   };
 
+  const validatePostalCode = (value: string): boolean => {
+    // Canadian postal code format: A1A 1A1 or A1A1A1
+    const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+    return postalCodeRegex.test(value.trim());
+  };
+
   const validatePassword = (value: string): boolean => {
     // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
     return value.length >= 8 &&
@@ -77,8 +84,13 @@ export default function RegisterScreen() {
     setError(null);
 
     // Validate all fields
-    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!username.trim() || !email.trim() || !postalCode.trim() || !password.trim() || !confirmPassword.trim()) {
       setError(t('fill_all_fields'));
+      return;
+    }
+
+    if (!validatePostalCode(postalCode)) {
+      setError(t('invalid_postal_code'));
       return;
     }
 
@@ -112,7 +124,8 @@ export default function RegisterScreen() {
         options: {
           data: {
             username: username.trim(),
-            avatar_id: selectedAvatar || 'cat', // Default to cat if none selected
+            avatar_id: selectedAvatar || 'cat',
+            postal_code: postalCode.trim().toUpperCase(),
           },
           emailRedirectTo: 'gosholomobile://auth/callback',
         },
@@ -256,6 +269,32 @@ export default function RegisterScreen() {
                   />
                 )}
               </View>
+            </View>
+
+            {/* Postal Code Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>{t('postal_code')}</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="location-outline" size={20} color={COLORS.lightGray} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder={t('enter_postal_code')}
+                  placeholderTextColor={COLORS.lightGray}
+                  value={postalCode}
+                  onChangeText={setPostalCode}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={7}
+                />
+                {postalCode.length > 0 && (
+                  <Ionicons
+                    name={validatePostalCode(postalCode) ? 'checkmark-circle' : 'close-circle'}
+                    size={20}
+                    color={validatePostalCode(postalCode) ? COLORS.success : COLORS.error}
+                  />
+                )}
+              </View>
+              <Text style={styles.hint}>{t('postal_code_hint')}</Text>
             </View>
 
             {/* Password Input */}
