@@ -5,18 +5,18 @@ import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import React, { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ImageBackground, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { LinkableText } from './LinkableText';
 
 const COLORS = {
   primary: '#FF6233',
   ink: '#111827',
-  inkDim: '#4B5563',
+  inkDim: '#6B7280',
   bg: '#FFFFFF',
-  bgMuted: '#F6F7F9',
-  line: 'rgba(0,0,0,0.08)',
+  bgMuted: '#F3F4F6',
+  line: 'rgba(0,0,0,0.06)',
   teal: 'rgb(1,111,115)',
   success: '#B2FD9D',
-  overlay: 'rgba(0,0,0,0.55)',
   white: '#FFFFFF',
 };
 
@@ -29,6 +29,7 @@ const SPACING = {
 };
 
 const RAD = {
+  sm: 8,
   md: 12,
   lg: 16,
   pill: 999,
@@ -61,7 +62,6 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
         title: shareData.title,
         url: shareData.url,
       });
-      // Track share count if user actually shared
       if (shared) {
         await supabase.rpc('increment_event_share', { event_id: event.id });
       }
@@ -70,7 +70,6 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
     }
   };
 
-  // ——— utils ———
   const formatDateRange = () => {
     if (!event.start_date) return t('date_tbd');
     const start = new Date(event.start_date);
@@ -110,84 +109,83 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
     [event.facebook_url, event.instagram_url, t]
   );
 
-  // ——— render ———
   return (
     <TouchableOpacity
       style={[
-        styles.card, 
+        styles.card,
         isEnded && styles.cardDisabled,
         event.boosted && styles.cardBoosted
       ]}
       onPress={onPress}
       disabled={isEnded}
-      activeOpacity={0.9}
+      activeOpacity={0.92}
       accessibilityRole="button"
       accessibilityLabel={`${event.title}, ${formatDateRange()}`}
     >
-      {/* Boost chip */}
-      {event.boosted && (
-        <View style={styles.boostChip}>
-          <IconSymbol name="star.fill" size={12} color="#FFD700" />
-          <Text style={styles.boostText}>
-            {event.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
-          </Text>
-        </View>
-      )}
-
       {/* Media */}
       <View style={styles.media}>
         {event.image_url ? (
-          <ImageBackground source={{ uri: event.image_url }} style={styles.mediaBg} imageStyle={styles.mediaImg}>
-            <View style={styles.mediaOverlay} />
-          </ImageBackground>
+          <ImageBackground source={{ uri: event.image_url }} style={styles.mediaBg} imageStyle={styles.mediaImg} />
         ) : (
           <View style={[styles.mediaBg, styles.mediaPlaceholder]}>
-            <IconSymbol name="calendar" size={32} color={COLORS.white} />
+            <IconSymbol name="calendar" size={28} color={COLORS.white} />
           </View>
         )}
 
-        {/* Date + Status bar */}
-        <View style={styles.bar}>
-          <View style={styles.barLeft}>
-            <IconSymbol name="calendar" size={12} color={COLORS.white} />
-            <Text style={styles.barText}>{formatDateRange()}</Text>
-          </View>
-          {!!status && (
-            <View style={[styles.statusPill, getStatusPillStyle(status)]}>
-              <Text style={[
-                styles.statusText,
-                (status.includes('COURS') || status.includes('NOW')) && { color: 'rgb(1,111,115)' }
-              ]}>{status}</Text>
+        {/* Gradient fade + date/status */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.55)']}
+          style={styles.mediaGradient}
+        >
+          <View style={styles.dateRow}>
+            <View style={styles.dateLabel}>
+              <IconSymbol name="calendar" size={11} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.dateText}>{formatDateRange()}</Text>
             </View>
-          )}
-        </View>
+            {!!status && (
+              <View style={[styles.statusPill, getStatusPillStyle(status)]}>
+                <Text style={[
+                  styles.statusText,
+                  (status.includes('COURS') || status.includes('NOW')) && { color: COLORS.teal }
+                ]}>{status}</Text>
+              </View>
+            )}
+          </View>
+        </LinearGradient>
 
+        {/* Boost badge */}
+        {event.boosted && (
+          <View style={styles.boostBadge}>
+            <IconSymbol name="star.fill" size={10} color="#FFD700" />
+            <Text style={styles.boostText}>
+              {event.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Content */}
       <View style={styles.body}>
-        <View style={styles.contentSection}>
-          <View style={styles.businessSection}>
-            <Text style={styles.businessName} numberOfLines={1}>
-              {event.commerces?.name || t('event')}
-            </Text>
-            {event.commerces?.category && (
-              <View style={styles.categoryChip}>
-                <Text style={styles.categoryText}>
-                  {i18n.language === 'fr' ? event.commerces.category.name_fr : event.commerces.category.name_en}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={styles.eventTitle} numberOfLines={2}>
-            {event.title}
+        <View style={styles.businessRow}>
+          <Text style={styles.businessName} numberOfLines={1}>
+            {event.commerces?.name || t('event')}
           </Text>
-
-          <LinkableText style={styles.description} linkColor={COLORS.teal} numberOfLines={2}>
-            {event.description}
-          </LinkableText>
+          {event.commerces?.category && (
+            <View style={styles.categoryChip}>
+              <Text style={styles.categoryText}>
+                {i18n.language === 'fr' ? event.commerces.category.name_fr : event.commerces.category.name_en}
+              </Text>
+            </View>
+          )}
         </View>
+
+        <Text style={styles.eventTitle} numberOfLines={2}>
+          {event.title}
+        </Text>
+
+        <LinkableText style={styles.description} linkColor={COLORS.teal} numberOfLines={2}>
+          {event.description}
+        </LinkableText>
 
         {/* Actions */}
         <View style={styles.actions}>
@@ -195,47 +193,26 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             onPress={onPress}
             disabled={isEnded}
             style={[styles.primaryBtn, isEnded && styles.primaryBtnDisabled]}
-            accessibilityRole="button"
           >
             <Text style={styles.primaryText}>{isEnded ? t('ended') : t('view_event')}</Text>
           </TouchableOpacity>
 
-          <View style={styles.actionButtons}>
+          <View style={styles.actionIcons}>
             {onLikePress && (
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={onLikePress}
-                accessibilityRole="button"
-                accessibilityLabel={isLiked ? t('unlike') : t('like')}
-              >
-                <View style={styles.likeContainer}>
-                  <IconSymbol
-                    name={isLiked ? "heart.fill" : "heart"}
-                    size={18}
-                    color={isLiked ? "#FF4D6A" : COLORS.teal}
-                  />
-                  {(likeCount !== undefined && likeCount > 0) && (
-                    <Text style={styles.likeCount}>{likeCount}</Text>
-                  )}
-                </View>
+              <TouchableOpacity style={styles.iconBtn} onPress={onLikePress} accessibilityLabel={isLiked ? t('unlike') : t('like')}>
+                <IconSymbol name={isLiked ? "heart.fill" : "heart"} size={17} color={isLiked ? "#FF4D6A" : COLORS.inkDim} />
+                {(likeCount !== undefined && likeCount > 0) && (
+                  <Text style={styles.likeCount}>{likeCount}</Text>
+                )}
               </TouchableOpacity>
             )}
             {onFavoritePress && (
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={onFavoritePress}
-                accessibilityRole="button"
-                accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
-              >
-                <IconSymbol
-                  name={isFavorite ? "bookmark.fill" : "bookmark"}
-                  size={18}
-                  color={isFavorite ? COLORS.primary : COLORS.teal}
-                />
+              <TouchableOpacity style={styles.iconBtn} onPress={onFavoritePress} accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}>
+                <IconSymbol name={isFavorite ? "bookmark.fill" : "bookmark"} size={17} color={isFavorite ? COLORS.primary : COLORS.inkDim} />
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.iconBtn} onPress={handleShare} accessibilityRole="button">
-              <IconSymbol name="paperplane.fill" size={16} color={COLORS.teal} />
+            <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
+              <IconSymbol name="paperplane.fill" size={15} color={COLORS.inkDim} />
             </TouchableOpacity>
           </View>
         </View>
@@ -248,7 +225,6 @@ export const EventCard = memo(EventCardComponent);
 EventCard.displayName = 'EventCard';
 
 function getStatusPillStyle(status: string) {
-  // Status values are now translated, so we check against common patterns
   if (status.includes('COURS') || status.includes('NOW')) {
     return { backgroundColor: 'rgba(178,253,157,0.95)' };
   }
@@ -268,48 +244,31 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.bg,
     borderRadius: RAD.md,
-    marginTop: SPACING.xs,
-    marginBottom: Platform.OS === 'android' ? 4 : SPACING.xs,
+    marginTop: SPACING.sm,
+    marginBottom: Platform.OS === 'android' ? 4 : SPACING.sm,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: COLORS.line,
+    borderColor: 'rgba(0,0,0,0.08)',
     width: Platform.OS === 'android' ? 320 : 336,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
     alignSelf: 'center',
   },
   cardDisabled: { opacity: 0.6 },
-
   cardBoosted: {
     borderWidth: 1.5,
     borderColor: '#FFD700',
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.18,
     shadowRadius: 10,
     elevation: 6,
   },
 
-  // boost
-  boostChip: {
-    position: 'absolute',
-    zIndex: 3,
-    top: SPACING.md,
-    left: SPACING.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: RAD.pill,
-    gap: 3,
-  },
-  boostText: { fontSize: 9, fontWeight: '700', color: '#FFD700' },
-
-  // media
+  // Media
   media: {
     position: 'relative',
     aspectRatio: 4 / 4.5,
@@ -319,65 +278,88 @@ const styles = StyleSheet.create({
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#8B5CF6' },
-  mediaOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
-  },
 
-  // bar
-  bar: {
+  mediaGradient: {
     position: 'absolute',
     bottom: 0,
-    left: 0, right: 0,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    left: 0,
+    right: 0,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 28,
+    paddingBottom: SPACING.sm,
+    justifyContent: 'flex-end',
+  },
+  dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  barLeft: { flexDirection: 'row', alignItems: 'center' },
-  barText: { marginLeft: 5, color: COLORS.white, fontSize: 11, fontWeight: '600' },
+  dateLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
+  },
   statusPill: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: RAD.pill,
   },
-  statusText: { color: COLORS.white, fontSize: 10, fontWeight: '700' },
+  statusText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '700',
+  },
 
-  // body
+  boostBadge: {
+    position: 'absolute',
+    top: SPACING.sm,
+    left: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: RAD.pill,
+    gap: 3,
+  },
+  boostText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#FFD700',
+  },
+
+  // Body
   body: {
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.sm,
-    justifyContent: 'space-between',
-  },
-
-  contentSection: {
     gap: SPACING.xs,
-    minHeight: 110,
   },
 
-  businessSection: {
+  businessRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 2,
     gap: 6,
   },
   businessName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: COLORS.ink,
+    color: COLORS.inkDim,
     flexShrink: 1,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   categoryChip: {
     backgroundColor: COLORS.bgMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: RAD.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: RAD.sm,
   },
   categoryText: {
     fontSize: 9,
@@ -389,55 +371,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.ink,
-    marginBottom: 2,
+    lineHeight: 20,
   },
   description: {
     fontSize: 12,
     color: COLORS.inkDim,
     lineHeight: 16,
-    marginBottom: 2,
   },
 
+  // Actions
   actions: {
     flexDirection: 'row',
-    gap: 6,
     alignItems: 'center',
     marginTop: SPACING.xs,
+    gap: SPACING.sm,
   },
   primaryBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: RAD.pill,
-    paddingHorizontal: SPACING.md,
-    height: 34,
-    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    height: 32,
     justifyContent: 'center',
-    flex: 1,
+    alignItems: 'center',
   },
   primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
-  primaryText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
-
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 6,
+  primaryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.white,
   },
 
+  actionIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 'auto',
+  },
   iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: RAD.pill,
-    backgroundColor: COLORS.bgMuted,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.line,
-  },
-  likeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: RAD.pill,
+    gap: 2,
   },
   likeCount: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.inkDim,
   },

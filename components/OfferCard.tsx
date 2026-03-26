@@ -5,19 +5,19 @@ import { getShareMessage, openShareSheet } from '@/utils/deepLinks';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ImageBackground, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { LinkableText } from './LinkableText';
 
 const COLORS = {
   primary: '#FF6233',
   ink: '#111827',
-  inkDim: '#4B5563',
+  inkDim: '#6B7280',
   bg: '#FFFFFF',
-  bgMuted: '#F6F7F9',
-  line: 'rgba(0,0,0,0.08)',
+  bgMuted: '#F3F4F6',
+  line: 'rgba(0,0,0,0.06)',
   teal: 'rgb(1,111,115)',
   success: '#B2FD9D',
   white: '#FFFFFF',
-  overlay: 'rgba(0,0,0,0.55)',
 };
 
 const SPACING = {
@@ -29,6 +29,7 @@ const SPACING = {
 };
 
 const RAD = {
+  sm: 8,
   md: 12,
   lg: 16,
   pill: 999,
@@ -61,7 +62,6 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         title: shareData.title,
         url: shareData.url,
       });
-      // Track share count if user actually shared
       if (shared) {
         await supabase.rpc('increment_offer_share', { offer_id: offer.id });
       }
@@ -79,110 +79,84 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         offer.boosted && styles.cardBoosted
       ]}
       onPress={onPress}
-      activeOpacity={0.9}
+      activeOpacity={0.92}
       accessibilityRole="button"
       accessibilityLabel={`${offer.title} at ${offer.commerces?.name || t('business')}`}
     >
       {/* Media */}
       <View style={styles.media}>
         {offer.image_url ? (
-          <ImageBackground source={{ uri: offer.image_url }} style={styles.mediaBg} imageStyle={styles.mediaImg}>
-            <View style={styles.mediaOverlay} />
-          </ImageBackground>
+          <ImageBackground source={{ uri: offer.image_url }} style={styles.mediaBg} imageStyle={styles.mediaImg} />
         ) : (
           <View style={[styles.mediaBg, styles.mediaPlaceholder]}>
-            <IconSymbol name="fork.knife" size={32} color={COLORS.white} />
+            <IconSymbol name="fork.knife" size={28} color={COLORS.white} />
           </View>
         )}
 
-        {/* Top overlay */}
+        {/* Gradient fade + location */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.5)']}
+          style={styles.mediaGradient}
+        >
+          <Text style={styles.locationText} numberOfLines={1}>{locationText}</Text>
+        </LinearGradient>
+
+        {/* Boost badge */}
         {offer.boosted && (
-          <View style={styles.mediaTop}>
-            <View style={styles.boostBadge}>
-              <IconSymbol name="star.fill" size={12} color="#FFD700" />
-              <Text style={styles.boostText}>
-                {offer.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
-              </Text>
-            </View>
+          <View style={styles.boostBadge}>
+            <IconSymbol name="star.fill" size={10} color="#FFD700" />
+            <Text style={styles.boostText}>
+              {offer.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
+            </Text>
           </View>
         )}
-
-        {/* Bottom bar */}
-        <View style={styles.bar}>
-          <Text style={styles.barText} numberOfLines={1}>{locationText}</Text>
-        </View>
       </View>
 
       {/* Content */}
       <View style={styles.body}>
-        <View style={styles.contentSection}>
-          <View style={styles.businessSection}>
-            <Text style={styles.businessName} numberOfLines={1}>
-              {offer.commerces?.name || t('business')}
-            </Text>
-            {offer.commerces?.category && (
-              <View style={styles.categoryChip}>
-                <Text style={styles.categoryText}>
-                  {i18n.language === 'fr' ? offer.commerces.category.name_fr : offer.commerces.category.name_en}
-                </Text>
-              </View>
-            )}
-          </View>
-
-
-          <Text style={styles.offerTitle} numberOfLines={2}>
-            {offer.title}
+        <View style={styles.businessRow}>
+          <Text style={styles.businessName} numberOfLines={1}>
+            {offer.commerces?.name || t('business')}
           </Text>
-
-          <LinkableText style={styles.description} linkColor={COLORS.teal} numberOfLines={2}>
-            {offer.description}
-          </LinkableText>
+          {offer.commerces?.category && (
+            <View style={styles.categoryChip}>
+              <Text style={styles.categoryText}>
+                {i18n.language === 'fr' ? offer.commerces.category.name_fr : offer.commerces.category.name_en}
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* CTA */}
+        <Text style={styles.offerTitle} numberOfLines={2}>
+          {offer.title}
+        </Text>
+
+        <LinkableText style={styles.description} linkColor={COLORS.teal} numberOfLines={2}>
+          {offer.description}
+        </LinkableText>
+
+        {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity style={styles.primaryBtn} onPress={onPress}>
-            <Text style={styles.primaryText}>
-              {t('view_offer')}
-            </Text>
+            <Text style={styles.primaryText}>{t('view_offer')}</Text>
           </TouchableOpacity>
 
-          <View style={styles.actionButtons}>
+          <View style={styles.actionIcons}>
             {onLikePress && (
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={onLikePress}
-                accessibilityRole="button"
-                accessibilityLabel={isLiked ? t('unlike') : t('like')}
-              >
-                <View style={styles.likeContainer}>
-                  <IconSymbol
-                    name={isLiked ? "heart.fill" : "heart"}
-                    size={18}
-                    color={isLiked ? "#FF4D6A" : COLORS.teal}
-                  />
-                  {(likeCount !== undefined && likeCount > 0) && (
-                    <Text style={styles.likeCount}>{likeCount}</Text>
-                  )}
-                </View>
+              <TouchableOpacity style={styles.iconBtn} onPress={onLikePress} accessibilityLabel={isLiked ? t('unlike') : t('like')}>
+                <IconSymbol name={isLiked ? "heart.fill" : "heart"} size={17} color={isLiked ? "#FF4D6A" : COLORS.inkDim} />
+                {(likeCount !== undefined && likeCount > 0) && (
+                  <Text style={styles.likeCount}>{likeCount}</Text>
+                )}
               </TouchableOpacity>
             )}
             {onFavoritePress && (
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={onFavoritePress}
-                accessibilityRole="button"
-                accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}
-              >
-                <IconSymbol
-                  name={isFavorite ? "bookmark.fill" : "bookmark"}
-                  size={18}
-                  color={isFavorite ? COLORS.primary : COLORS.teal}
-                />
+              <TouchableOpacity style={styles.iconBtn} onPress={onFavoritePress} accessibilityLabel={isFavorite ? t('remove_from_favorites') : t('save_to_favorites')}>
+                <IconSymbol name={isFavorite ? "bookmark.fill" : "bookmark"} size={17} color={isFavorite ? COLORS.primary : COLORS.inkDim} />
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.iconBtn} onPress={handleShare} accessibilityRole="button">
-              <IconSymbol name="paperplane.fill" size={16} color={COLORS.teal} />
+            <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
+              <IconSymbol name="paperplane.fill" size={15} color={COLORS.inkDim} />
             </TouchableOpacity>
           </View>
         </View>
@@ -198,17 +172,17 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.bg,
     borderRadius: RAD.md,
-    marginTop: SPACING.xs,
-    marginBottom: Platform.OS === 'android' ? 4 : SPACING.xs,
+    marginTop: SPACING.sm,
+    marginBottom: Platform.OS === 'android' ? 4 : SPACING.sm,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: COLORS.line,
+    borderColor: 'rgba(0,0,0,0.08)',
     width: Platform.OS === 'android' ? 320 : 336,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 4,
     alignSelf: 'center',
   },
   cardBoosted: {
@@ -216,11 +190,12 @@ const styles = StyleSheet.create({
     borderColor: '#FFD700',
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.18,
     shadowRadius: 10,
     elevation: 6,
   },
 
+  // Media
   media: {
     position: 'relative',
     aspectRatio: 4 / 4.5,
@@ -230,20 +205,30 @@ const styles = StyleSheet.create({
   mediaBg: { flex: 1 },
   mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.teal },
-  mediaOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent' },
 
-  mediaTop: {
+  mediaGradient: {
     position: 'absolute',
-    top: SPACING.md, left: SPACING.sm, right: SPACING.sm,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: SPACING.md,
+    paddingTop: 28,
+    paddingBottom: SPACING.sm,
+    justifyContent: 'flex-end',
+  },
+  locationText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.9)',
   },
 
   boostBadge: {
+    position: 'absolute',
+    top: SPACING.sm,
+    left: SPACING.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: RAD.pill,
@@ -252,67 +237,36 @@ const styles = StyleSheet.create({
   boostText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#FFD700'
+    color: '#FFD700',
   },
 
-  favBtn: {
-    width: 28, height: 28,
-    borderRadius: RAD.pill,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-
-  bar: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  barText: { fontSize: 11, fontWeight: '500', color: COLORS.white },
-
+  // Body
   body: {
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     paddingTop: SPACING.md,
     paddingBottom: SPACING.sm,
-    backgroundColor: COLORS.white,
-    justifyContent: 'space-between',
-  },
-
-  contentSection: {
     gap: SPACING.xs,
-    minHeight: 110,
   },
 
-  businessSection: {
+  businessRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 2,
     gap: 6,
   },
   businessName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: COLORS.ink,
+    color: COLORS.inkDim,
     flexShrink: 1,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   categoryChip: {
     backgroundColor: COLORS.bgMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: RAD.md,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    borderRadius: RAD.sm,
   },
   categoryText: {
     fontSize: 9,
@@ -324,55 +278,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.ink,
-    marginBottom: 2,
+    lineHeight: 20,
   },
   description: {
     fontSize: 12,
     color: COLORS.inkDim,
     lineHeight: 16,
-    marginBottom: 2,
   },
 
+  // Actions
   actions: {
     flexDirection: 'row',
-    gap: 6,
     alignItems: 'center',
     marginTop: SPACING.xs,
+    gap: SPACING.sm,
   },
-
   primaryBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: RAD.pill,
-    paddingHorizontal: SPACING.md,
-    height: 34,
+    paddingHorizontal: SPACING.lg,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
   },
-  primaryText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
+  primaryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
 
-  actionButtons: {
+  actionIcons: {
     flexDirection: 'row',
-    gap: 6,
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 'auto',
   },
-
   iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: RAD.pill,
-    backgroundColor: COLORS.bgMuted,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.line,
-  },
-  likeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: RAD.pill,
+    gap: 2,
   },
   likeCount: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: COLORS.inkDim,
   },
