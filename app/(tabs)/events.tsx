@@ -11,11 +11,9 @@ import { EventWithCommerce, useEvents } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
 import { useMobileUser } from '@/hooks/useMobileUser';
-import { supabase } from '@/lib/supabase';
 import { matchesSearch } from '@/utils/searchUtils';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { router } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -93,55 +91,6 @@ export default function EventsScreen() {
     }
   }, [events, setLikeCount]);
 
-  // Check for deep link data when screen focuses
-  useFocusEffect(
-    useCallback(() => {
-      const checkDeepLink = async () => {
-        try {
-          const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
-          if (deepLinkData) {
-            const { type, id } = JSON.parse(deepLinkData);
-            if (type === 'event' && id) {
-              // Try local list first
-              let event: EventWithCommerce | undefined = events.find(e => e.id === id);
-
-              // If not found locally, fetch from Supabase
-              if (!event) {
-                const { data: eventData } = await supabase
-                  .from('events')
-                  .select('*')
-                  .eq('id', id)
-                  .single();
-
-                if (eventData) {
-                  let commerceData = null;
-                  if (eventData.commerce_id) {
-                    const { data } = await supabase
-                      .from('commerces')
-                      .select('id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr)')
-                      .eq('id', eventData.commerce_id)
-                      .single();
-                    commerceData = data;
-                  }
-                  event = { ...eventData, commerces: commerceData } as EventWithCommerce;
-                }
-              }
-
-              if (event) {
-                await AsyncStorage.removeItem('@gosholo_deep_link');
-                setSelectedEvent(event);
-                setShowModal(true);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error checking deep link:', error);
-        }
-      };
-
-      checkDeepLink();
-    }, [events])
-  );
 
   // Treats date-only (YYYY-MM-DD) as active through end of that day (UTC)
   const isEventActive = (end_date?: string | null, now: Date = new Date()) => {

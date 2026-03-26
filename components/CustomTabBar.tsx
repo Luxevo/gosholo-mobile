@@ -57,15 +57,15 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
 
   return (
     <View style={[
-      styles.tabBar, 
-      { 
+      styles.tabBar,
+      {
         backgroundColor: colors.background,
         paddingBottom: getTabBarPadding(),
       }
     ]}>
-      {state.routes.map((route: any, index: number) => {
+      {state.routes.filter((r: any) => r.name !== 'ai').map((route: any) => {
         const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
+        const isFocused = state.index === state.routes.indexOf(route);
         const isCompass = route.name === 'compass';
 
         const onPress = () => {

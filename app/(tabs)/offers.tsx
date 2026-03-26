@@ -10,11 +10,9 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
 import { useMobileUser } from '@/hooks/useMobileUser';
 import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
-import { supabase } from '@/lib/supabase';
 import { matchesSearch } from '@/utils/searchUtils';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { router } from 'expo-router';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     Alert,
@@ -85,55 +83,6 @@ export default function OffersScreen() {
     }
   }, [offers, setLikeCount]);
 
-  // Check for deep link data when screen focuses
-  useFocusEffect(
-    useCallback(() => {
-      const checkDeepLink = async () => {
-        try {
-          const deepLinkData = await AsyncStorage.getItem('@gosholo_deep_link');
-          if (deepLinkData) {
-            const { type, id } = JSON.parse(deepLinkData);
-            if (type === 'offer' && id) {
-              // Try local list first
-              let offer: OfferWithCommerce | undefined = offers.find(o => o.id === id);
-
-              // If not found locally, fetch from Supabase
-              if (!offer) {
-                const { data: offerData } = await supabase
-                  .from('offers')
-                  .select('*')
-                  .eq('id', id)
-                  .single();
-
-                if (offerData) {
-                  let commerceData = null;
-                  if (offerData.commerce_id) {
-                    const { data } = await supabase
-                      .from('commerces')
-                      .select('id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr)')
-                      .eq('id', offerData.commerce_id)
-                      .single();
-                    commerceData = data;
-                  }
-                  offer = { ...offerData, commerces: commerceData } as OfferWithCommerce;
-                }
-              }
-
-              if (offer) {
-                await AsyncStorage.removeItem('@gosholo_deep_link');
-                setSelectedOffer(offer);
-                setShowModal(true);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error checking deep link:', error);
-        }
-      };
-
-      checkDeepLink();
-    }, [offers])
-  );
 
   const isOfferActive = (end_date?: string | null, now: Date = new Date()) => {
     if (!end_date) return true;

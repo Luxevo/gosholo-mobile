@@ -43,7 +43,7 @@ export default function Index() {
             if (type === 'event') { router.replace('/(tabs)/events'); return; }
             if (type === 'commerce') { router.replace('/(tabs)/compass'); return; }
           }
-          router.replace('/(tabs)/compass');
+          router.replace('/(tabs)/ai');
         } else {
           router.replace('/(auth)/login');
         }
