@@ -20,6 +20,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  FlatList,
   Modal,
   RefreshControl,
   ScrollView,
@@ -435,7 +436,20 @@ export default function EventsScreen() {
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView
+      <FlatList
+        data={filteredEvents}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item: event }) => (
+          <EventCard
+            event={event}
+            onPress={() => handleEventPress(event)}
+            onFavoritePress={() => handleFavoritePress(event.id)}
+            isFavorite={isFavorite('event', event.id)}
+            onLikePress={() => handleLikePress(event.id)}
+            isLiked={isLiked('event', event.id)}
+            likeCount={getLikeCount('event', event.id) || event.like_count}
+          />
+        )}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -448,21 +462,7 @@ export default function EventsScreen() {
             tintColor={COLORS.primary}
           />
         }
-      >
-        {/* Event List */}
-        {filteredEvents.map((event) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            onPress={() => handleEventPress(event)}
-            onFavoritePress={() => handleFavoritePress(event.id)}
-            isFavorite={isFavorite('event', event.id)}
-            onLikePress={() => handleLikePress(event.id)}
-            isLiked={isLiked('event', event.id)}
-            likeCount={getLikeCount('event', event.id) || event.like_count}
-          />
-        ))}
-      </ScrollView>
+      />
 
       <EventDetailModal
         visible={showModal}

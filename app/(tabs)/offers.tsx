@@ -19,6 +19,7 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
     Alert,
+    FlatList,
     Modal,
     RefreshControl,
     ScrollView,
@@ -364,45 +365,53 @@ export default function OffersScreen() {
       </View>
 
       {/* Scrollable Content */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />
-        }
-      >
-        {/* Offers */}
-        {hasNoOffers && (
-          <View style={styles.emptyContainer}>
-            <IconSymbol name="tag" size={48} color={COLORS.darkGray} />
-            <Text style={styles.emptyTitle}>{t('no_offers_title')}</Text>
-            <Text style={styles.emptyText}>{t('no_offers_sub')}</Text>
-          </View>
-        )}
-
-        {hasNoFilteredOffers && (
-          <View style={styles.emptyContainer}>
-            <IconSymbol name="magnifyingglass" size={48} color={COLORS.darkGray} />
-            <Text style={styles.emptyTitle}>{t('no_results')}</Text>
-            <Text style={styles.emptyText}>{t('try_different_filter')}</Text>
-          </View>
-        )}
-
-        {!hasNoOffers && !hasNoFilteredOffers && filteredOffers.map((offer) => (
-          <OfferCard
-            key={offer.id}
-            offer={offer}
-            onPress={() => handleOfferPress(offer)}
-            onFavoritePress={() => handleFavoritePress(offer.id)}
-            isFavorite={isFavorite('offer', offer.id)}
-            onLikePress={() => handleLikePress(offer.id)}
-            isLiked={isLiked('offer', offer.id)}
-            likeCount={getLikeCount('offer', offer.id) || offer.like_count}
-          />
-        ))}
-      </ScrollView>
+      {(hasNoOffers || hasNoFilteredOffers) ? (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+          }
+        >
+          {hasNoOffers && (
+            <View style={styles.emptyContainer}>
+              <IconSymbol name="tag" size={48} color={COLORS.darkGray} />
+              <Text style={styles.emptyTitle}>{t('no_offers_title')}</Text>
+              <Text style={styles.emptyText}>{t('no_offers_sub')}</Text>
+            </View>
+          )}
+          {hasNoFilteredOffers && (
+            <View style={styles.emptyContainer}>
+              <IconSymbol name="magnifyingglass" size={48} color={COLORS.darkGray} />
+              <Text style={styles.emptyTitle}>{t('no_results')}</Text>
+              <Text style={styles.emptyText}>{t('try_different_filter')}</Text>
+            </View>
+          )}
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={filteredOffers}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: offer }) => (
+            <OfferCard
+              offer={offer}
+              onPress={() => handleOfferPress(offer)}
+              onFavoritePress={() => handleFavoritePress(offer.id)}
+              isFavorite={isFavorite('offer', offer.id)}
+              onLikePress={() => handleLikePress(offer.id)}
+              isLiked={isLiked('offer', offer.id)}
+              likeCount={getLikeCount('offer', offer.id) || offer.like_count}
+            />
+          )}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refetch} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+          }
+        />
+      )}
 
       <OfferDetailModal
         visible={showModal}
