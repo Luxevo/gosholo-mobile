@@ -2,8 +2,6 @@ import BusinessDetailModal from '@/components/BusinessDetailModal';
 import EventDetailModal from '@/components/EventDetailModal';
 import { LocationPicker } from '@/components/LocationPicker';
 import { LOGO_BASE64 } from '@/components/LogoBase64';
-import { NavigationBanner } from '@/components/navigation/NavigationBanner';
-import { SimpleNavigationBar } from '@/components/navigation/SimpleNavigationBar';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import { POIModal } from '@/components/POIModal';
 import { SearchOverlay } from '@/components/SearchOverlay';
@@ -23,23 +21,18 @@ import {
   groupCommercesByLocation,
   type MarkerCluster,
 } from '@/utils/markerClustering';
-import {
-  calculateETA,
-  getCurrentStepIndex,
-  getDistanceFromLine,
-} from '@/utils/navigationHelpers';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
   FlatList,
   Image,
+  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -61,8 +54,6 @@ let Mapbox: any,
   RasterDemSource: any,
   Terrain: any,
   SkyLayer: any,
-  ShapeSource: any,
-  LineLayer: any,
   SymbolLayer: any;
 
 try {
@@ -77,8 +68,6 @@ try {
   RasterDemSource = MapboxMaps.RasterDemSource;
   Terrain = MapboxMaps.Terrain;
   SkyLayer = MapboxMaps.SkyLayer;
-  ShapeSource = MapboxMaps.ShapeSource;
-  LineLayer = MapboxMaps.LineLayer;
   SymbolLayer = MapboxMaps.SymbolLayer;
 } catch (error) {
   // Mapbox not available in Expo Go (use a dev build)
@@ -251,21 +240,6 @@ const ClusteredMarker = React.memo(({
   }
 });
 
-const DestinationMarker = React.memo(({ coordinate }: { coordinate: LngLat }) => (
-  <MarkerView
-    id="destination-marker"
-    coordinate={coordinate}
-    allowOverlap={true}
-    anchor={{ x: 0.5, y: 1 }}
-  >
-    <View style={styles.destinationMarkerContainer}>
-      <View style={styles.destinationMarkerPin}>
-        <IconSymbol name="mappin.circle.fill" size={40} color={COLORS.primary} />
-      </View>
-    </View>
-  </MarkerView>
-));
-
 // Offer Marker Component
 const OfferMarker = React.memo(({ offer, onPress }: { offer: OfferWithCommerce; onPress: (offer: OfferWithCommerce) => void }) => {
   const isBoosted = offer.boosted;
@@ -394,8 +368,6 @@ export default function CompassScreen() {
   const [mapState, setMapState] = useState({
     is3D: false,
     followUserLocation: true,
-    isNavigating: false,
-    showRouteOverview: false,
   });
   
   // Consolidated modal state
@@ -403,26 +375,11 @@ export default function CompassScreen() {
     selectedBusiness: null as Commerce | null,
     showBusinessModal: false,
     showBusinessList: false,
-    showNavigationInstructions: false,
-    showProfileSwitcher: false,
     showSearchResults: false,
     selectedPOI: null as any,
     showPOIModal: false,
     selectedCluster: null as MarkerCluster | null,
     showClusterModal: false,
-  });
-  
-  // Consolidated navigation state
-  const [navigationState, setNavigationState] = useState({
-    routeCoordinates: null as LngLat[] | null,
-    routeDistance: null as number | null,
-    routeDuration: null as number | null,
-    navigationSteps: [] as any[],
-    alternativeRoutes: [] as any[],
-    selectedRouteIndex: 0,
-    currentStepIndex: 0,
-    trafficData: null as any,
-    destinationMarker: null as LngLat | null,
   });
   
   // Consolidated search state
@@ -433,13 +390,6 @@ export default function CompassScreen() {
     showFullScreenSearch: false,
   });
   
-  // Consolidated voice state
-  const [voiceState, setVoiceState] = useState({
-    voiceNavigationEnabled: false,
-    isSpeaking: false,
-  });
-  
-  const [routingProfile, setRoutingProfile] = useState<'driving-traffic' | 'driving' | 'walking' | 'cycling'>('driving-traffic');
   const [activeTab, setActiveTab] = useState<MapTab>('businesses');
   const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [showOfferModal, setShowOfferModal] = useState(false);
@@ -451,11 +401,9 @@ export default function CompassScreen() {
   const headingSubscription = useRef<Location.LocationSubscription | null>(null);
 
   // Extract individual states for easier access
-  const { is3D, followUserLocation, isNavigating, showRouteOverview } = mapState;
-  const { selectedBusiness, showBusinessModal, showBusinessList, showNavigationInstructions, showProfileSwitcher, showSearchResults, selectedPOI, showPOIModal, selectedCluster, showClusterModal } = modalState;
-  const { routeCoordinates, routeDistance, routeDuration, navigationSteps, alternativeRoutes, currentStepIndex, trafficData, destinationMarker } = navigationState;
+  const { is3D, followUserLocation } = mapState;
+  const { selectedBusiness, showBusinessModal, showBusinessList, showSearchResults, selectedPOI, showPOIModal, selectedCluster, showClusterModal } = modalState;
   const { query: searchQuery, results: searchResults, showFullScreenSearch } = searchState;
-  const { voiceNavigationEnabled } = voiceState;
 
   const cameraRef = useRef<any>(null);
   const { t, i18n } = useTranslation();
@@ -585,16 +533,15 @@ export default function CompassScreen() {
 
   // Handle navigation from offers/events
   useEffect(() => {
-    if (params.destination && userLocation) {
+    if (params.destination) {
       const destination = params.destination as string;
       const type = params.type as string;
-      
+
       if (type === 'coordinates') {
         // Parse coordinates: "longitude,latitude"
         const [lng, lat] = destination.split(',').map(Number);
         if (!isNaN(lng) && !isNaN(lat)) {
-          fetchDirections([lng, lat]);
-          // Nettoyer les paramètres après utilisation pour éviter les re-déclenchements
+          openNativeMaps([lng, lat]);
           router.setParams({ destination: undefined, type: undefined });
         }
       } else if (type === 'address') {
@@ -602,7 +549,7 @@ export default function CompassScreen() {
         router.setParams({ destination: undefined, type: undefined });
       }
     }
-  }, [params.destination, params.type, userLocation]);
+  }, [params.destination, params.type]);
 
   // Move camera when custom location is selected from LocationPicker
   useEffect(() => {
@@ -714,104 +661,14 @@ export default function CompassScreen() {
     }
   }, []);
 
-  const fetchDirections = useCallback(async (destination: LngLat, profile?: 'driving' | 'driving-traffic' | 'walking' | 'cycling') => {
-    if (!userLocation) {
-      return;
-    }
-
-    const selectedProfile = profile || routingProfile;
-
-    try {
-      const accessToken = process.env.EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN;
-      const start = `${userLocation[0]},${userLocation[1]}`;
-      const end = `${destination[0]},${destination[1]}`;
-      
-      const params = new URLSearchParams({
-        geometries: 'geojson',
-        steps: 'true',
-        banner_instructions: 'true',
-        voice_instructions: 'true',
-        alternatives: 'true',
-        language: 'fr',
-        overview: 'full',
-        annotations: 'distance,duration,speed,congestion',
-        continue_straight: 'true',
-        access_token: accessToken || '',
-      });
-
-      const url = `https://api.mapbox.com/directions/v5/mapbox/${selectedProfile}/${start};${end}?${params.toString()}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        const coordinates = route.geometry.coordinates;
-        const distance = route.distance;
-        const duration = route.duration;
-
-        // Update navigation state in one go
-        setNavigationState({
-          routeCoordinates: coordinates,
-          routeDistance: distance,
-          routeDuration: duration,
-          navigationSteps: route.legs?.[0]?.steps || [],
-          alternativeRoutes: data.routes.slice(1) || [],
-          selectedRouteIndex: 0,
-          currentStepIndex: 0,
-          trafficData: route.legs?.[0]?.annotation || null,
-          destinationMarker: destination,
-        });
-        
-        setMapState(prev => ({ ...prev, isNavigating: true, followUserLocation: true }));
-
-        // Enable voice navigation by default
-        setVoiceState({ voiceNavigationEnabled: true, isSpeaking: false });
-
-        // Zoom to user position first for navigation view
-        if (cameraRef.current && userLocation) {
-          cameraRef.current.setCamera({
-            centerCoordinate: userLocation,
-            zoomLevel: 18,
-            pitch: 60,
-            heading: userHeading,
-            animationDuration: 1000,
-            animationMode: 'flyTo',
-          });
-        }
-
-        // Speak first instruction
-        if (route.legs?.[0]?.steps?.[0]?.maneuver?.instruction) {
-          speakInstruction(route.legs[0].steps[0].maneuver.instruction);
-        }
-      } else if (data.code === 'NoRoute') {
-        // No route found
-      }
-    } catch (error) {
-      // Error fetching directions
-    }
-  }, [userLocation, routingProfile]);
-
-  const clearRoute = useCallback(() => {
-    setNavigationState({
-      routeCoordinates: null,
-      routeDistance: null,
-      routeDuration: null,
-      navigationSteps: [],
-      alternativeRoutes: [],
-      selectedRouteIndex: 0,
-      currentStepIndex: 0,
-      trafficData: null,
-      destinationMarker: null,
+  const openNativeMaps = useCallback((destination: [number, number], label?: string) => {
+    const [lng, lat] = destination;
+    const name = encodeURIComponent(label || 'Destination');
+    const url = Platform.select({
+      ios: `maps://maps.apple.com/?daddr=${lat},${lng}&q=${name}`,
+      default: `geo:${lat},${lng}?q=${name}`,
     });
-
-    setModalState(prev => ({ ...prev, showNavigationInstructions: false, showSearchResults: false }));
-    setVoiceState({ voiceNavigationEnabled: false, isSpeaking: false });
-    setMapState(prev => ({ ...prev, isNavigating: false }));
-    setSearchState({ query: '', results: [], isSearchingAddress: false, showFullScreenSearch: false });
-
-    stopSpeaking();
-    router.setParams({ destination: undefined, type: undefined });
+    if (url) Linking.openURL(url);
   }, []);
 
   const toggleMapStyle = useCallback(() => {
@@ -820,14 +677,14 @@ export default function CompassScreen() {
 
   const recenterOnUser = useCallback(async () => {
     if (!userLocation || !cameraRef.current) return;
-    
+
     setMapState(prev => ({ ...prev, followUserLocation: true }));
     cameraRef.current.setCamera({
       centerCoordinate: userLocation,
-      zoomLevel: isNavigating ? 17 : 15,
+      zoomLevel: 15,
       animationDuration: 500,
     });
-  }, [userLocation, isNavigating]);
+  }, [userLocation]);
 
   const toggleFollowMode = useCallback(() => {
     const newFollowState = !followUserLocation;
@@ -915,8 +772,8 @@ export default function CompassScreen() {
           });
         }
 
-        // Start navigation to this location
-        fetchDirections([lng, lat]);
+        // Open native maps for directions
+        openNativeMaps([lng, lat], result.name);
       }
     } catch (error) {
       console.error('Error retrieving place:', error);
@@ -934,10 +791,10 @@ export default function CompassScreen() {
           });
         }
 
-        fetchDirections([lng, lat]);
+        openNativeMaps([lng, lat], feature.place_name || feature.text);
       }
     }
-  }, [fetchDirections]);
+  }, [openNativeMaps]);
 
   const handleCommerceSelect = useCallback((commerce: Commerce) => {
     if (!commerce.latitude || !commerce.longitude) return;
@@ -1058,151 +915,6 @@ export default function CompassScreen() {
     setModalState(prev => ({ ...prev, showBusinessList: !prev.showBusinessList }));
   }, []);
 
-  // Get color based on traffic congestion level
-  const getTrafficColor = (congestion?: string) => {
-    if (!congestion) return COLORS.blue; // Default blue
-    switch (congestion) {
-      case 'low':
-        return '#4CAF50'; // Green
-      case 'moderate':
-        return '#FFC107'; // Yellow/Orange
-      case 'heavy':
-        return '#FF5722'; // Red
-      case 'severe':
-        return '#B71C1C'; // Dark Red
-      default:
-        return COLORS.blue;
-    }
-  };
-
-  // Simple route line - no traffic segments for maximum performance
-
-  // Optimized voice navigation functions
-  const speakInstruction = useCallback(async (instruction: string) => {
-    if (!voiceNavigationEnabled) return;
-    
-    try {
-      setVoiceState(prev => ({ ...prev, isSpeaking: true }));
-      await Speech.speak(instruction, {
-        language: 'fr-FR',
-        pitch: 1.0,
-        rate: 0.9,
-        onDone: () => setVoiceState(prev => ({ ...prev, isSpeaking: false })),
-        onError: () => setVoiceState(prev => ({ ...prev, isSpeaking: false })),
-      });
-    } catch (error) {
-      setVoiceState(prev => ({ ...prev, isSpeaking: false }));
-    }
-  }, [voiceNavigationEnabled]);
-
-  const stopSpeaking = useCallback(() => {
-    Speech.stop();
-    setVoiceState(prev => ({ ...prev, isSpeaking: false }));
-  }, []);
-
-  const toggleVoiceNavigation = useCallback(() => {
-    const newState = !voiceNavigationEnabled;
-    setVoiceState(prev => ({ ...prev, voiceNavigationEnabled: newState }));
-    
-    if (newState && navigationSteps.length > 0 && currentStepIndex < navigationSteps.length) {
-      const currentStep = navigationSteps[currentStepIndex];
-      speakInstruction(currentStep.maneuver?.instruction || 'Continuer tout droit');
-    } else if (!newState) {
-      stopSpeaking();
-    }
-  }, [voiceNavigationEnabled, navigationSteps, currentStepIndex, speakInstruction, stopSpeaking]);
-
-  // Optimized auto-speak when step changes
-  useEffect(() => {
-    if (voiceNavigationEnabled && navigationSteps.length > 0 && currentStepIndex < navigationSteps.length) {
-      const currentStep = navigationSteps[currentStepIndex];
-      speakInstruction(currentStep.maneuver?.instruction || 'Continuer tout droit');
-    }
-  }, [currentStepIndex, voiceNavigationEnabled, navigationSteps, speakInstruction]);
-
-  // Throttled location following to reduce camera updates
-  const throttledCameraUpdate = useMemo(
-    () => {
-      let lastUpdate = 0;
-      const throttleDelay = 2000; // Update camera max every 2 seconds
-
-      return (location: LngLat) => {
-        const now = Date.now();
-        if (now - lastUpdate < throttleDelay) return;
-
-        lastUpdate = now;
-        if (cameraRef.current && followUserLocation) {
-          // Google Maps-style camera follow during navigation
-          cameraRef.current.setCamera({
-            centerCoordinate: location,
-            zoomLevel: isNavigating ? 18 : 10,
-            pitch: isNavigating ? 60 : 0,  // Tilt view during navigation
-            heading: isNavigating ? userHeading : 0,  // Rotate map to movement direction
-            animationDuration: 1000,
-            animationMode: 'flyTo',
-          });
-        }
-      };
-    },
-    [followUserLocation, isNavigating, userHeading]
-  );
-
-  // Optimized location following effect
-  useEffect(() => {
-    if (!followUserLocation || !userLocation) return;
-    throttledCameraUpdate(userLocation);
-  }, [userLocation, throttledCameraUpdate]);
-
-  // Update navigation state when route is set - optimized
-  useEffect(() => {
-    const hasRoute = !!routeCoordinates;
-    if (hasRoute !== isNavigating) {
-      setMapState(prev => ({ ...prev, isNavigating: hasRoute }));
-    }
-  }, [routeCoordinates, isNavigating]);
-
-  // Auto-update current step based on user location
-  useEffect(() => {
-    if (!isNavigating || !userLocation || !navigationSteps.length || !routeCoordinates) return;
-
-    const newStepIndex = getCurrentStepIndex(userLocation, navigationSteps, routeCoordinates);
-
-    if (newStepIndex !== currentStepIndex) {
-      setNavigationState(prev => ({
-        ...prev,
-        currentStepIndex: newStepIndex,
-      }));
-    }
-  }, [userLocation, isNavigating, navigationSteps, routeCoordinates, currentStepIndex]);
-
-  // Rerouting when off-track
-  useEffect(() => {
-    if (!isNavigating || !userLocation || !routeCoordinates || !destinationMarker) return;
-
-    const checkReroute = setInterval(() => {
-      const distanceFromRoute = getDistanceFromLine(userLocation, routeCoordinates);
-
-      // If more than 50 meters off route, recalculate
-      if (distanceFromRoute > 50) {
-        Alert.alert(
-          t('nav_rerouting'),
-          t('nav_off_route'),
-          [
-            {
-              text: t('yes'),
-              onPress: () => fetchDirections(destinationMarker, routingProfile),
-            },
-            {
-              text: t('cancel'),
-              style: 'cancel',
-            },
-          ]
-        );
-      }
-    }, 10000); // Check every 10 seconds
-
-    return () => clearInterval(checkReroute);
-  }, [isNavigating, userLocation, routeCoordinates, destinationMarker, routingProfile, t]);
 
   // Memoized category icons - moved outside component for better performance
   const categoryIcons = useMemo(
@@ -1318,31 +1030,6 @@ export default function CompassScreen() {
               />
             )}
 
-            {/* Simple Blue Route Line - Fast & Clean */}
-            {ShapeSource && LineLayer && routeCoordinates && (
-              <ShapeSource
-                id="routeSource"
-                shape={{
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: routeCoordinates,
-                  },
-                }}
-              >
-                <LineLayer
-                  id="routeLine"
-                  style={{
-                    lineColor: '#4285F4', // Google Maps blue
-                    lineWidth: 6,
-                    lineCap: 'round',
-                    lineJoin: 'round',
-                  }}
-                />
-              </ShapeSource>
-            )}
-
             {/* Business Markers - Show when businesses tab is active */}
             {(MarkerView || PointAnnotation) && activeTab === 'businesses' &&
               markerClusters
@@ -1391,11 +1078,6 @@ export default function CompassScreen() {
                     onPress={handleEventPress}
                   />
                 ))}
-            
-            {/* Optimized Destination Marker */}
-            {MarkerView && destinationMarker && (
-              <DestinationMarker coordinate={destinationMarker} />
-            )}
           </MapView>
         ) : (
           <View style={styles.mapFallback}>
@@ -1405,78 +1087,75 @@ export default function CompassScreen() {
 
       </View>
 
-      {/* Floating Chip Tabs - Hide when navigating */}
-      {!isNavigating && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipTabsContainer}
-          contentContainerStyle={styles.chipTabsContent}
+      {/* Floating Chip Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipTabsContainer}
+        contentContainerStyle={styles.chipTabsContent}
+      >
+        <TouchableOpacity
+          style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'businesses' && styles.chipTabActive]}
+          onPress={() => setActiveTab('businesses')}
+          activeOpacity={0.8}
         >
-          <TouchableOpacity
-            style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'businesses' && styles.chipTabActive]}
-            onPress={() => setActiveTab('businesses')}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="storefront.fill" size={16} color={activeTab === 'businesses' ? COLORS.white : COLORS.teal} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'offers' && styles.chipTabActiveOffer]}
-            onPress={() => setActiveTab('offers')}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="tag.fill" size={16} color={activeTab === 'offers' ? COLORS.white : COLORS.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'events' && styles.chipTabActiveEvent]}
-            onPress={() => setActiveTab('events')}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="calendar" size={16} color={activeTab === 'events' ? COLORS.white : COLORS.blue} />
-          </TouchableOpacity>
+          <IconSymbol name="storefront.fill" size={16} color={activeTab === 'businesses' ? COLORS.white : COLORS.teal} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'offers' && styles.chipTabActiveOffer]}
+          onPress={() => setActiveTab('offers')}
+          activeOpacity={0.8}
+        >
+          <IconSymbol name="tag.fill" size={16} color={activeTab === 'offers' ? COLORS.white : COLORS.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.chipTab, styles.chipTabIconOnly, activeTab === 'events' && styles.chipTabActiveEvent]}
+          onPress={() => setActiveTab('events')}
+          activeOpacity={0.8}
+        >
+          <IconSymbol name="calendar" size={16} color={activeTab === 'events' ? COLORS.white : COLORS.blue} />
+        </TouchableOpacity>
 
-          {/* Categories button with count */}
-          <TouchableOpacity
-            style={[
-              styles.chipTab,
-              styles.categoryChip,
-              selectedCategories.length > 0 && styles.categoryChipActive
-            ]}
-            onPress={() => setShowCategoryModal(true)}
-            activeOpacity={0.8}
-          >
-            <IconSymbol
-              name="plus"
-              size={12}
-              color={selectedCategories.length > 0 ? COLORS.white : COLORS.teal}
-            />
-            <Text style={[
-              styles.chipTabText,
-              selectedCategories.length > 0 && styles.chipTabTextActive
-            ]}>
-              {selectedCategories.length > 0
-                ? t('categories_with_count', { count: selectedCategories.length })
-                : t('categories')
-              }
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
+        {/* Categories button with count */}
+        <TouchableOpacity
+          style={[
+            styles.chipTab,
+            styles.categoryChip,
+            selectedCategories.length > 0 && styles.categoryChipActive
+          ]}
+          onPress={() => setShowCategoryModal(true)}
+          activeOpacity={0.8}
+        >
+          <IconSymbol
+            name="plus"
+            size={12}
+            color={selectedCategories.length > 0 ? COLORS.white : COLORS.teal}
+          />
+          <Text style={[
+            styles.chipTabText,
+            selectedCategories.length > 0 && styles.chipTabTextActive
+          ]}>
+            {selectedCategories.length > 0
+              ? t('categories_with_count', { count: selectedCategories.length })
+              : t('categories')
+            }
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
 
-      {/* Search Pill - Hide when navigating */}
-      {!isNavigating && (
-        <View style={styles.searchPillContainer}>
-          <TouchableOpacity
-            style={styles.searchPill}
-            onPress={() => setSearchState(prev => ({ ...prev, showFullScreenSearch: true }))}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="magnifyingglass" size={16} color={COLORS.darkGray} />
-            <Text style={styles.searchPlaceholder} numberOfLines={1}>
-              {searchQuery || t('search_placeholder_businesses')}
-            </Text>
-          </TouchableOpacity>
-        
+      {/* Search Pill */}
+      <View style={styles.searchPillContainer}>
+        <TouchableOpacity
+          style={styles.searchPill}
+          onPress={() => setSearchState(prev => ({ ...prev, showFullScreenSearch: true }))}
+          activeOpacity={0.8}
+        >
+          <IconSymbol name="magnifyingglass" size={16} color={COLORS.darkGray} />
+          <Text style={styles.searchPlaceholder} numberOfLines={1}>
+            {searchQuery || t('search_placeholder_businesses')}
+          </Text>
+        </TouchableOpacity>
+
         {/* Search Results Dropdown - GoSholo businesses only */}
         {showSearchResults && filteredCommerces.length > 0 && (
           <View style={styles.searchResultsContainer}>
@@ -1525,153 +1204,18 @@ export default function CompassScreen() {
             />
           </View>
         )}
-        </View>
-      )}
+      </View>
 
-      {/* Google Maps-Style Navigation Banner */}
-      {isNavigating && navigationSteps.length > 0 && currentStepIndex < navigationSteps.length && (
-        <NavigationBanner
-          currentStep={navigationSteps[currentStepIndex]}
-          estimatedArrival={routeDuration ? calculateETA(routeDuration) : undefined}
-        />
-      )}
-
-      {/* Google Maps-Style Simple Bottom Bar */}
-      {isNavigating && routeDistance && routeDuration && !showNavigationInstructions && !showBusinessList && (
-        <SimpleNavigationBar
-          distance={routeDistance}
-          duration={routeDuration}
-          arrivalTime={calculateETA(routeDuration)}
-          hasAlternatives={alternativeRoutes.length > 0}
-          onShowAlternatives={() => setModalState(prev => ({ ...prev, showNavigationInstructions: true }))}
-          onClose={clearRoute}
-        />
-      )}
-
-      {/* Old Route Info Pill (KEEP FOR PROFILE SWITCHER) */}
-      {routeDistance && routeDuration && showProfileSwitcher && (
-        <View style={styles.routeInfoContainer}>
-          <View style={styles.routeInfoPill}>
-              <TouchableOpacity onPress={() => setModalState(prev => ({ ...prev, showProfileSwitcher: !prev.showProfileSwitcher }))} style={styles.profileIconButton}>
-              <IconSymbol 
-                name={routingProfile === 'driving-traffic' || routingProfile === 'driving' ? 'car.fill' : routingProfile === 'walking' ? 'figure.walk' : 'bicycle'} 
-                size={18} 
-                color={COLORS.blue} 
-              />
-            </TouchableOpacity>
-            <Text style={styles.routeInfoText}>
-              {(routeDistance / 1000).toFixed(1)} km • {Math.round(routeDuration / 60)} min
-            </Text>
-            
-            {/* Voice Navigation Button */}
-            {navigationSteps.length > 0 && (
-              <TouchableOpacity onPress={toggleVoiceNavigation} style={styles.voiceButton}>
-                <IconSymbol 
-                  name={voiceNavigationEnabled ? 'speaker.wave.3.fill' : 'speaker.slash.fill'} 
-                  size={18} 
-                  color={voiceNavigationEnabled ? COLORS.teal : COLORS.darkGray} 
-                />
-              </TouchableOpacity>
-            )}
-            
-            {alternativeRoutes.length > 0 && (
-              <TouchableOpacity onPress={() => setModalState(prev => ({ ...prev, showNavigationInstructions: true }))} style={styles.alternativesButton}>
-                <Text style={styles.alternativesText}>+{alternativeRoutes.length}</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={clearRoute} style={styles.closeRouteButton}>
-              <IconSymbol name="xmark.circle.fill" size={24} color={COLORS.darkGray} />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Profile Switcher Dropdown */}
-          {showProfileSwitcher && (
-            <View style={styles.profileSwitcher}>
-              <TouchableOpacity 
-                style={[styles.profileOption, routingProfile === 'driving-traffic' && styles.profileOptionActive]}
-                onPress={() => {
-                  setRoutingProfile('driving-traffic');
-                  setModalState(prev => ({ ...prev, showProfileSwitcher: false }));
-                  if (routeCoordinates) {
-                    // Re-fetch with new profile
-                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
-                    fetchDirections(lastCoord, 'driving-traffic');
-                  }
-                }}
-              >
-                <IconSymbol name="car.fill" size={20} color={routingProfile === 'driving-traffic' ? COLORS.teal : COLORS.darkGray} />
-                <Text style={[styles.profileOptionText, routingProfile === 'driving-traffic' && styles.profileOptionTextActive]}>
-                  {t('nav_driving_traffic')}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.profileOption, routingProfile === 'driving' && styles.profileOptionActive]}
-                onPress={() => {
-                  setRoutingProfile('driving');
-                  setModalState(prev => ({ ...prev, showProfileSwitcher: false }));
-                  if (routeCoordinates) {
-                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
-                    fetchDirections(lastCoord, 'driving');
-                  }
-                }}
-              >
-                <IconSymbol name="car" size={20} color={routingProfile === 'driving' ? COLORS.teal : COLORS.darkGray} />
-                <Text style={[styles.profileOptionText, routingProfile === 'driving' && styles.profileOptionTextActive]}>
-                  {t('nav_driving_fast')}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.profileOption, routingProfile === 'walking' && styles.profileOptionActive]}
-                onPress={() => {
-                  setRoutingProfile('walking');
-                  setModalState(prev => ({ ...prev, showProfileSwitcher: false }));
-                  if (routeCoordinates) {
-                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
-                    fetchDirections(lastCoord, 'walking');
-                  }
-                }}
-              >
-                <IconSymbol name="figure.walk" size={20} color={routingProfile === 'walking' ? COLORS.teal : COLORS.darkGray} />
-                <Text style={[styles.profileOptionText, routingProfile === 'walking' && styles.profileOptionTextActive]}>
-                  {t('nav_walking')}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.profileOption, routingProfile === 'cycling' && styles.profileOptionActive]}
-                onPress={() => {
-                  setRoutingProfile('cycling');
-                  setModalState(prev => ({ ...prev, showProfileSwitcher: false }));
-                  if (routeCoordinates) {
-                    const lastCoord = routeCoordinates[routeCoordinates.length - 1];
-                    fetchDirections(lastCoord, 'cycling');
-                  }
-                }}
-              >
-                <IconSymbol name="bicycle" size={20} color={routingProfile === 'cycling' ? COLORS.teal : COLORS.darkGray} />
-                <Text style={[styles.profileOptionText, routingProfile === 'cycling' && styles.profileOptionTextActive]}>
-                  {t('nav_cycling')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* 2D/3D Toggle Pill - Hide when navigating */}
-      {!isNavigating && (
-        <View style={styles.topLeftControls}>
-          <TouchableOpacity style={styles.togglePill} onPress={toggleMapStyle}>
-            <IconSymbol name={is3D ? 'cube' : 'map'} size={18} color={COLORS.primary} />
-            <Text style={styles.togglePillText}>{is3D ? '3D' : '2D'}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* 2D/3D Toggle Pill */}
+      <View style={styles.topLeftControls}>
+        <TouchableOpacity style={styles.togglePill} onPress={toggleMapStyle}>
+          <IconSymbol name={is3D ? 'cube' : 'map'} size={18} color={COLORS.primary} />
+          <Text style={styles.togglePillText}>{is3D ? '3D' : '2D'}</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Google Maps-Style Right Side Buttons */}
-      <View style={[styles.rightSideButtons, isNavigating ? { bottom: 140 } : { bottom: 30 }]}>
+      <View style={[styles.rightSideButtons, { bottom: 30 }]}>
         {/* Change Location Button */}
         <TouchableOpacity
           style={styles.sideButton}
@@ -1695,37 +1239,6 @@ export default function CompassScreen() {
             color={COLORS.teal}
           />
         </TouchableOpacity>
-
-        {/* Search Button - Only show during navigation */}
-        {isNavigating && (
-          <TouchableOpacity
-            style={styles.sideButton}
-            onPress={() => {
-              // Open full-screen search
-              setSearchState(prev => ({ ...prev, showFullScreenSearch: true }));
-            }}
-          >
-            <IconSymbol
-              name="magnifyingglass"
-              size={24}
-              color={Platform.OS === 'android' ? COLORS.teal : COLORS.white}
-            />
-          </TouchableOpacity>
-        )}
-
-        {/* Voice/Mute Button - Only show during navigation */}
-        {isNavigating && (
-          <TouchableOpacity
-            style={styles.sideButton}
-            onPress={toggleVoiceNavigation}
-          >
-            <IconSymbol
-              name={voiceNavigationEnabled ? "speaker.wave.3.fill" : "speaker.slash.fill"}
-              size={24}
-              color={voiceNavigationEnabled ? COLORS.teal : (Platform.OS === 'android' ? COLORS.teal : COLORS.white)}
-            />
-          </TouchableOpacity>
-        )}
       </View>
 
 
@@ -1794,87 +1307,22 @@ export default function CompassScreen() {
         </View>
       )}
 
-      {/* Navigation Instructions Panel */}
-      {showNavigationInstructions && navigationSteps.length > 0 && (
-        <View style={styles.navigationPanel}>
-          <View style={styles.navigationHeader}>
-            <Text style={styles.navigationTitle}>Instructions</Text>
-            <TouchableOpacity onPress={() => setModalState(prev => ({ ...prev, showNavigationInstructions: false }))}>
-              <IconSymbol name="xmark.circle.fill" size={24} color={COLORS.darkGray} />
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={navigationSteps}
-            keyExtractor={(item, index) => `step-${index}`}
-            renderItem={({ item, index }) => (
-              <View style={[styles.navigationStep, index === currentStepIndex && styles.navigationStepActive]}>
-                <View style={styles.navigationStepIcon}>
-                  <Text style={styles.navigationStepNumber}>{index + 1}</Text>
-                </View>
-                <View style={styles.navigationStepContent}>
-                  <Text style={styles.navigationStepText}>{item.maneuver?.instruction || 'Continuer'}</Text>
-                  <Text style={styles.navigationStepDistance}>
-                    {item.distance < 1000 
-                      ? `${Math.round(item.distance)} m` 
-                      : `${(item.distance / 1000).toFixed(1)} km`}
-                  </Text>
-                </View>
-              </View>
-            )}
-          />
-          
-          {/* Alternative Routes */}
-          {alternativeRoutes.length > 0 && (
-            <View style={styles.alternativeRoutesSection}>
-              <Text style={styles.alternativeRoutesTitle}>Routes alternatives</Text>
-              {alternativeRoutes.map((route, index) => (
-                <TouchableOpacity
-                  key={`alt-${index}`}
-                  style={styles.alternativeRoute}
-                  onPress={() => {
-                    // Switch to alternative route
-                    setNavigationState(prev => ({
-                      ...prev,
-                      routeCoordinates: route.geometry.coordinates,
-                      routeDistance: route.distance,
-                      routeDuration: route.duration,
-                      navigationSteps: route.legs?.[0]?.steps || [],
-                    }));
-                    setModalState(prev => ({ ...prev, showNavigationInstructions: false }));
-                  }}
-                >
-                  <Text style={styles.alternativeRouteText}>
-                    Route {index + 2}: {(route.distance / 1000).toFixed(1)} km • {Math.round(route.duration / 60)} min
-                  </Text>
-                  {route.duration < routeDuration! && (
-                    <Text style={styles.alternativeRouteFaster}>Plus rapide!</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-      )}
-
       <BusinessDetailModal
         visible={showBusinessModal}
         business={selectedBusiness}
         onClose={handleCloseBusinessModal}
         onGetDirections={(business) => {
           if (business.latitude && business.longitude) {
-            handleCloseBusinessModal(); // Fermer le modal d'abord
-            fetchDirections([business.longitude, business.latitude]);
+            handleCloseBusinessModal();
+            openNativeMaps([business.longitude, business.latitude], business.name);
           }
         }}
         onNavigateToMap={(address, coordinates) => {
-          handleCloseBusinessModal(); // Fermer le modal d'abord
+          handleCloseBusinessModal();
 
           setTimeout(() => {
             if (coordinates) {
-              fetchDirections(coordinates);
-            } else {
-              // Geocoding needed for address
+              openNativeMaps(coordinates);
             }
           }, 100);
         }}
@@ -1897,7 +1345,7 @@ export default function CompassScreen() {
           setSelectedOffer(null);
           setTimeout(() => {
             if (coordinates) {
-              fetchDirections(coordinates);
+              openNativeMaps(coordinates);
             }
           }, 100);
         }}
@@ -1918,7 +1366,7 @@ export default function CompassScreen() {
           setSelectedEvent(null);
           setTimeout(() => {
             if (coordinates) {
-              fetchDirections(coordinates);
+              openNativeMaps(coordinates);
             }
           }, 100);
         }}
@@ -2022,7 +1470,7 @@ export default function CompassScreen() {
         poi={selectedPOI}
         onClose={() => setModalState(prev => ({ ...prev, showPOIModal: false, selectedPOI: null }))}
         onGetDirections={(coordinates) => {
-          fetchDirections(coordinates);
+          openNativeMaps(coordinates);
         }}
       />
 
