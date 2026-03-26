@@ -149,7 +149,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
         {/* Date + Status bar */}
         <View style={styles.bar}>
           <View style={styles.barLeft}>
-            <IconSymbol name="calendar" size={14} color={COLORS.white} />
+            <IconSymbol name="calendar" size={12} color={COLORS.white} />
             <Text style={styles.barText}>{formatDateRange()}</Text>
           </View>
           {!!status && (
@@ -211,7 +211,7 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
                 <View style={styles.likeContainer}>
                   <IconSymbol
                     name={isLiked ? "heart.fill" : "heart"}
-                    size={20}
+                    size={18}
                     color={isLiked ? "#FF4D6A" : COLORS.teal}
                   />
                   {(likeCount !== undefined && likeCount > 0) && (
@@ -229,13 +229,13 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
               >
                 <IconSymbol
                   name={isFavorite ? "bookmark.fill" : "bookmark"}
-                  size={20}
+                  size={18}
                   color={isFavorite ? COLORS.primary : COLORS.teal}
                 />
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.iconBtn} onPress={handleShare} accessibilityRole="button">
-              <IconSymbol name="paperplane.fill" size={18} color={COLORS.teal} />
+              <IconSymbol name="paperplane.fill" size={16} color={COLORS.teal} />
             </TouchableOpacity>
           </View>
         </View>
@@ -267,60 +267,57 @@ function getStatusPillStyle(status: string) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.bg,
-    borderRadius: RAD.lg,
-    marginTop: SPACING.sm,
-    marginBottom: Platform.OS === 'android' ? 4 : SPACING.sm,
+    borderRadius: RAD.md,
+    marginTop: SPACING.xs,
+    marginBottom: Platform.OS === 'android' ? 4 : SPACING.xs,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.15)',
-    width: Platform.OS === 'android' ? 340 : 356,
-    // Modern subtle shadow
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    width: Platform.OS === 'android' ? 320 : 336,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
     alignSelf: 'center',
   },
   cardDisabled: { opacity: 0.6 },
-  
+
   cardBoosted: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#FFD700',
     shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 6,
   },
 
   // boost
   boostChip: {
     position: 'absolute',
     zIndex: 3,
-    top: SPACING.lg,
+    top: SPACING.md,
     left: SPACING.sm,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: RAD.pill,
-    gap: 4,
+    gap: 3,
   },
-  boostText: { fontSize: 10, fontWeight: '700', color: '#FFD700' },
+  boostText: { fontSize: 9, fontWeight: '700', color: '#FFD700' },
 
   // media
   media: {
     position: 'relative',
-    aspectRatio: 4 / 5,
+    aspectRatio: 4 / 4.5,
     backgroundColor: COLORS.bgMuted,
-    borderTopLeftRadius: RAD.lg - 2,
-    borderTopRightRadius: RAD.lg - 2,
     overflow: 'hidden',
   },
   mediaBg: { flex: 1 },
-  mediaImg: { width: '100%', height: '100%', borderTopLeftRadius: RAD.lg - 2, borderTopRightRadius: RAD.lg - 2 },
+  mediaImg: { width: '100%', height: '100%' },
   mediaPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#8B5CF6' },
   mediaOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -332,98 +329,101 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0, right: 0,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.overlay,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   barLeft: { flexDirection: 'row', alignItems: 'center' },
-  barText: { marginLeft: 6, color: COLORS.white, fontSize: 12, fontWeight: '600' },
+  barText: { marginLeft: 5, color: COLORS.white, fontSize: 11, fontWeight: '600' },
   statusPill: {
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: RAD.pill,
   },
-  statusText: { color: COLORS.white, fontSize: 11, fontWeight: '700' },
-
+  statusText: { color: COLORS.white, fontSize: 10, fontWeight: '700' },
 
   // body
   body: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.sm,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
     justifyContent: 'space-between',
   },
 
   contentSection: {
-    gap: SPACING.sm,
-    minHeight: 140,
+    gap: SPACING.xs,
+    minHeight: 110,
   },
 
   businessSection: {
-    marginBottom: SPACING.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+    gap: 6,
   },
   businessName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.ink,
+    flexShrink: 1,
   },
   categoryChip: {
     backgroundColor: COLORS.bgMuted,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: RAD.md,
     borderWidth: 1,
     borderColor: COLORS.line,
-    alignSelf: 'flex-start',
-    marginTop: SPACING.xs,
   },
   categoryText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
-    color: COLORS.ink,
+    color: COLORS.inkDim,
   },
 
   eventTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.ink,
-    marginBottom: SPACING.xs,
+    marginBottom: 2,
   },
   description: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.inkDim,
-    lineHeight: 18,
-    marginBottom: SPACING.xs,
+    lineHeight: 16,
+    marginBottom: 2,
   },
 
   actions: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    gap: 6,
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginTop: SPACING.xs,
   },
   primaryBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: RAD.pill,
-    paddingHorizontal: SPACING.lg,
-    height: 40,
+    paddingHorizontal: SPACING.md,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
   },
   primaryBtnDisabled: { backgroundColor: COLORS.bgMuted },
-  primaryText: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
+  primaryText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
 
   actionButtons: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    gap: 6,
   },
 
   iconBtn: {
-    width: 40,
-    height: 40,
+    width: 34,
+    height: 34,
     borderRadius: RAD.pill,
     backgroundColor: COLORS.bgMuted,
     justifyContent: 'center',
@@ -434,10 +434,10 @@ const styles = StyleSheet.create({
   likeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   likeCount: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.inkDim,
   },

@@ -249,6 +249,10 @@ interface LocationPillProps {
 export const LocationPill: React.FC<LocationPillProps> = ({ onPress, compact = false }) => {
   const { locationName, isCustomLocation, loading } = useLocation();
 
+  const abbreviation = loading
+    ? '...'
+    : (locationName || '').split(/[\s,]+/).filter(Boolean).slice(0, 1).join('').slice(0, 3).toUpperCase();
+
   return (
     <TouchableOpacity
       style={[
@@ -261,20 +265,33 @@ export const LocationPill: React.FC<LocationPillProps> = ({ onPress, compact = f
     >
       <IconSymbol
         name={isCustomLocation ? "mappin.circle.fill" : "location.fill"}
-        size={compact ? 16 : 14}
+        size={compact ? 14 : 14}
         color={isCustomLocation ? COLORS.primary : COLORS.teal}
       />
-      <Text
-        style={[
-          styles.locationPillText,
-          isCustomLocation && styles.locationPillTextCustom,
-          compact && styles.locationPillTextCompact
-        ]}
-        numberOfLines={1}
-      >
-        {loading ? '...' : locationName}
-      </Text>
-      <IconSymbol name="chevron.down" size={12} color={COLORS.darkGray} />
+      {compact ? (
+        <Text
+          style={[
+            styles.locationPillAbbr,
+            isCustomLocation && styles.locationPillTextCustom,
+          ]}
+          numberOfLines={1}
+        >
+          {abbreviation}
+        </Text>
+      ) : (
+        <>
+          <Text
+            style={[
+              styles.locationPillText,
+              isCustomLocation && styles.locationPillTextCustom,
+            ]}
+            numberOfLines={1}
+          >
+            {loading ? '...' : locationName}
+          </Text>
+          <IconSymbol name="chevron.down" size={12} color={COLORS.darkGray} />
+        </>
+      )}
     </TouchableOpacity>
   );
 };
@@ -435,9 +452,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 98, 51, 0.05)',
   },
   locationPillCompact: {
-    paddingHorizontal: SPACING.md,
-    maxWidth: 140,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 6,
+    maxWidth: undefined,
     alignSelf: undefined,
+    gap: 3,
   },
   locationPillText: {
     fontSize: 13,
@@ -445,11 +464,12 @@ const styles = StyleSheet.create({
     color: COLORS.ink,
     flexShrink: 1,
   },
+  locationPillAbbr: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.ink,
+  },
   locationPillTextCustom: {
     color: COLORS.primary,
-  },
-  locationPillTextCompact: {
-    fontSize: 12,
-    maxWidth: 80,
   },
 });

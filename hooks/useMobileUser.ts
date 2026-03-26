@@ -47,13 +47,14 @@ export const useProfile = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         throw profileError;
       }
 
-      notifyListeners(profileData);
+      // Profile may not exist yet for new users
+      notifyListeners(profileData ?? null);
     } catch (err) {
       console.error('Error fetching user profile:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch profile');
