@@ -27,15 +27,16 @@ YOU CAN ONLY RECOMMEND ITEMS LISTED BELOW IN "DATABASE CONTEXT". You MUST NOT in
 
 Rules:
 - Be concise (1-3 sentences) and friendly.
-- When recommending, copy the EXACT id, title, and business name from the context. Do not paraphrase titles.
 - Do NOT mention distance or proximity unless the user asks about "near me" or "nearby".${proximityInstruction}
 - If the context has relevant items, recommend them. The user is here to discover things.
 - If the context is empty or nothing matches, say so — do NOT make up items.
 
-Respond with JSON only:
-{"message": "your response", "recommendations": [{"type": "offer or event", "id": "exact-uuid-from-context", "title": "exact-title-from-context", "businessName": "exact-business-from-context", "description": "brief description from context"}]}
+Items in the context are numbered like #O1 (offer 1), #E3 (event 3). When recommending, reference items by their number.
 
-Use "recommendations": [] when nothing is relevant.
+Respond with JSON only:
+{"message": "your response", "recommendations": [{"ref": "#O1"}, {"ref": "#E3"}]}
+
+Use "recommendations": [] when nothing is relevant. ONLY use ref values that exist in the context (like #O1, #O2, #E1, etc).
 
 --- DATABASE CONTEXT (these are the ONLY items that exist) ---
 ${contextString || 'EMPTY — no offers or events available.'}`;
@@ -82,20 +83,20 @@ serve(async (req) => {
       );
     }
 
-    // Build context string from DB data
+    // Build context string with numbered indices (LLMs handle numbers better than UUIDs)
     const contextParts: string[] = [];
 
     if (context?.offers?.length > 0) {
       contextParts.push('AVAILABLE OFFERS:');
-      context.offers.forEach((o: any) => {
-        contextParts.push(`- [ID: ${o.id}] "${o.title}" at ${o.business || 'Unknown'} (${o.category || 'N/A'}) — ${o.description || 'No description'}. Address: ${o.address || 'N/A'}. Valid: ${o.start_date || '?'} to ${o.end_date || '?'}. Image: ${o.image_url || 'none'}`);
+      context.offers.forEach((o: any, i: number) => {
+        contextParts.push(`#O${i + 1} "${o.title}" at ${o.business || 'Unknown'} (${o.category || 'N/A'}) — ${o.description || 'No description'}. Valid: ${o.start_date || '?'} to ${o.end_date || '?'}`);
       });
     }
 
     if (context?.events?.length > 0) {
       contextParts.push('\nAVAILABLE EVENTS:');
-      context.events.forEach((e: any) => {
-        contextParts.push(`- [ID: ${e.id}] "${e.title}" at ${e.business || 'Unknown'} (${e.category || 'N/A'}) — ${e.description || 'No description'}. Address: ${e.address || 'N/A'}. Dates: ${e.start_date || '?'} to ${e.end_date || '?'}. Image: ${e.image_url || 'none'}`);
+      context.events.forEach((e: any, i: number) => {
+        contextParts.push(`#E${i + 1} "${e.title}" at ${e.business || 'Unknown'} (${e.category || 'N/A'}) — ${e.description || 'No description'}. Dates: ${e.start_date || '?'} to ${e.end_date || '?'}`);
       });
     }
 

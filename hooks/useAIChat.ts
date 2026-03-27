@@ -163,35 +163,48 @@ export function useAIChat(language: string = 'fr') {
 
       if (error) throw error;
 
-      // Only keep recommendations that match real items from our database
-      const allItems = [
-        ...context.offers.map((o: any) => ({ ...o, type: 'offer' })),
-        ...context.events.map((e: any) => ({ ...e, type: 'event' })),
-      ];
-
-      const usedIds = new Set<string>();
-      const enrichedRecs = (data.recommendations || [])
+      // Resolve #O1, #E2 style references to real items
+      const rawRecs = data.recommendations || [];
+      console.log('[AI Chat] Raw AI response:', JSON.stringify(data));
+      const usedRefs = new Set<string>();
+      const enrichedRecs = rawRecs
         .map((rec: any) => {
-          // Try exact ID match first
-          let match = allItems.find((item: any) => item.id === rec.id);
-          // Fallback: match by title (case-insensitive)
-          if (!match && rec.title) {
-            const recTitle = rec.title.toLowerCase().trim();
-            match = allItems.find((item: any) =>
-              item.title?.toLowerCase().trim() === recTitle
-            );
+          const ref = rec.ref as string;
+          if (!ref || usedRefs.has(ref)) return null;
+
+          // Parse reference: #O1 = offer index 1, #E3 = event index 3
+          const offerMatch = ref.match(/^#O(\d+)$/i);
+          const eventMatch = ref.match(/^#E(\d+)$/i);
+
+          let item: any = null;
+          let type: 'offer' | 'event' = 'offer';
+
+          if (offerMatch) {
+            const idx = parseInt(offerMatch[1], 10) - 1;
+            if (idx >= 0 && idx < context.offers.length) {
+              item = context.offers[idx];
+              type = 'offer';
+            }
+          } else if (eventMatch) {
+            const idx = parseInt(eventMatch[1], 10) - 1;
+            if (idx >= 0 && idx < context.events.length) {
+              item = context.events[idx];
+              type = 'event';
+            }
           }
-          if (!match || usedIds.has(match.id)) return null;
-          usedIds.add(match.id);
+
+          if (!item) return null;
+          usedRefs.add(ref);
+
           return {
-            type: match.type as 'offer' | 'event',
-            id: match.id,
-            title: match.title,
-            description: match.description,
-            imageUrl: match.image_url,
-            businessName: match.business,
-            latitude: match.latitude,
-            longitude: match.longitude,
+            type,
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            imageUrl: item.image_url,
+            businessName: item.business,
+            latitude: item.latitude,
+            longitude: item.longitude,
           };
         })
         .filter(Boolean) as Recommendation[];

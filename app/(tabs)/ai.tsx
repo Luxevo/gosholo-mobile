@@ -2,11 +2,14 @@ import EventDetailModal from '@/components/EventDetailModal';
 import OfferDetailModal from '@/components/OfferDetailModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAIChat, type ChatMessage, type Recommendation } from '@/hooks/useAIChat';
+import { supabase } from '@/lib/supabase';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
+  Animated,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -23,12 +26,19 @@ const COLORS = {
   primary: '#FF6233',
   teal: 'rgb(1,111,115)',
   tealLight: 'rgba(1,111,115,0.08)',
+  tealGradientStart: '#016167',
+  tealGradientEnd: '#028a92',
   ink: '#111827',
   inkDim: '#6B7280',
-  bg: '#FFFFFF',
+  bg: '#FAFCFC',
   bgMuted: '#F3F4F6',
   white: '#FFFFFF',
   border: 'rgba(0,0,0,0.06)',
+  orangeLight: 'rgba(255,98,51,0.1)',
+  greenAccent: '#B2FD9D',
+  blueAccent: '#5BC4DB',
+  cardShadow: 'rgba(0,0,0,0.08)',
+  dangerLight: 'rgba(239,68,68,0.15)',
 };
 
 const SUGGESTIONS_EN = [
@@ -45,27 +55,49 @@ const SUGGESTIONS_FR = [
   "Des événements aujourd'hui ?",
 ];
 
+const CHIP_CONFIGS = [
+  { icon: 'calendar' as const, bg: COLORS.teal, textColor: COLORS.white },
+  { icon: 'tag.fill' as const, bg: COLORS.primary, textColor: COLORS.white },
+  { icon: 'fork.knife' as const, bg: COLORS.blueAccent, textColor: COLORS.white },
+  { icon: 'flame' as const, bg: '#016167', textColor: COLORS.white },
+];
+
 function RecommendationCard({ item, onPress }: { item: Recommendation; onPress: () => void }) {
+  const isOffer = item.type === 'offer';
+  const accentColor = isOffer ? COLORS.teal : COLORS.primary;
+
   return (
     <TouchableOpacity style={styles.recCard} activeOpacity={0.8} onPress={onPress}>
+      <View style={[styles.recAccentBar, { backgroundColor: accentColor }]} />
       {item.imageUrl ? (
         <Image source={{ uri: item.imageUrl }} style={styles.recImage} />
       ) : (
-        <View style={[styles.recImage, styles.recImagePlaceholder]}>
+        <LinearGradient
+          colors={isOffer
+            ? [COLORS.tealGradientStart, COLORS.tealGradientEnd]
+            : [COLORS.primary, '#E8552A']
+          }
+          style={[styles.recImage, styles.recImagePlaceholder]}
+        >
           <IconSymbol
-            name={item.type === 'offer' ? 'tag.fill' : 'calendar'}
+            name={isOffer ? 'tag.fill' : 'calendar'}
             size={16}
             color={COLORS.white}
           />
-        </View>
+        </LinearGradient>
       )}
       <View style={styles.recContent}>
-        <Text style={styles.recType}>
-          {item.type === 'offer' ? 'OFFER' : 'EVENT'}
-        </Text>
+        <View style={[styles.recTypeBadge, { backgroundColor: isOffer ? COLORS.tealLight : COLORS.orangeLight }]}>
+          <Text style={[styles.recType, { color: accentColor }]}>
+            {isOffer ? 'OFFER' : 'EVENT'}
+          </Text>
+        </View>
         <Text style={styles.recTitle} numberOfLines={1}>{item.title}</Text>
         {item.businessName && (
-          <Text style={styles.recBusiness} numberOfLines={1}>{item.businessName}</Text>
+          <View style={styles.recBusinessRow}>
+            <IconSymbol name="mappin" size={10} color={COLORS.inkDim} />
+            <Text style={styles.recBusiness} numberOfLines={1}>{item.businessName}</Text>
+          </View>
         )}
       </View>
       <IconSymbol name="chevron.right" size={14} color={COLORS.inkDim} />
@@ -79,9 +111,12 @@ function MessageBubble({ message, onRecPress }: { message: ChatMessage; onRecPre
   return (
     <View style={[styles.messageRow, isUser && styles.messageRowUser]}>
       {!isUser && (
-        <View style={styles.avatarBubble}>
-          <IconSymbol name="sparkles" size={14} color={COLORS.teal} />
-        </View>
+        <LinearGradient
+          colors={[COLORS.tealGradientStart, COLORS.tealGradientEnd]}
+          style={styles.avatarBubble}
+        >
+          <IconSymbol name="sparkles" size={14} color={COLORS.white} />
+        </LinearGradient>
       )}
       <View style={styles.messageContent}>
         <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAI]}>
@@ -106,13 +141,42 @@ function MessageBubble({ message, onRecPress }: { message: ChatMessage; onRecPre
 }
 
 function TypingIndicator() {
+  const dot1 = useRef(new Animated.Value(0.3)).current;
+  const dot2 = useRef(new Animated.Value(0.3)).current;
+  const dot3 = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animate = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+        ])
+      );
+
+    const a1 = animate(dot1, 0);
+    const a2 = animate(dot2, 150);
+    const a3 = animate(dot3, 300);
+    a1.start(); a2.start(); a3.start();
+
+    return () => { a1.stop(); a2.stop(); a3.stop(); };
+  }, []);
+
   return (
-    <View style={[styles.messageRow]}>
-      <View style={styles.avatarBubble}>
-        <IconSymbol name="sparkles" size={14} color={COLORS.teal} />
-      </View>
+    <View style={styles.messageRow}>
+      <LinearGradient
+        colors={[COLORS.tealGradientStart, COLORS.tealGradientEnd]}
+        style={styles.avatarBubble}
+      >
+        <IconSymbol name="sparkles" size={14} color={COLORS.white} />
+      </LinearGradient>
       <View style={[styles.bubble, styles.bubbleAI, styles.typingBubble]}>
-        <ActivityIndicator size="small" color={COLORS.teal} />
+        <View style={styles.typingDots}>
+          <Animated.View style={[styles.typingDot, { opacity: dot1 }]} />
+          <Animated.View style={[styles.typingDot, { opacity: dot2 }]} />
+          <Animated.View style={[styles.typingDot, { opacity: dot3 }]} />
+        </View>
       </View>
     </View>
   );
@@ -129,26 +193,39 @@ export default function AIScreen() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showEventModal, setShowEventModal] = useState(false);
 
-  const handleRecPress = (rec: Recommendation) => {
-    // Build a minimal object from the recommendation data — no Supabase query needed
-    const item = {
-      id: rec.id,
-      title: rec.title,
-      description: rec.description || '',
-      image_url: rec.imageUrl,
-      latitude: rec.latitude,
-      longitude: rec.longitude,
-      commerces: {
-        name: rec.businessName || '',
-      },
-    };
+  const handleRecPress = async (rec: Recommendation) => {
+    try {
+      const table = rec.type === 'offer' ? 'offers' : 'events';
 
-    if (rec.type === 'offer') {
-      setSelectedOffer(item);
-      setShowOfferModal(true);
-    } else {
-      setSelectedEvent(item);
-      setShowEventModal(true);
+      const { data: itemData } = await supabase
+        .from(table)
+        .select('*')
+        .eq('id', rec.id)
+        .single();
+
+      if (!itemData) return;
+
+      let commerceData = null;
+      if (itemData.commerce_id) {
+        const { data } = await supabase
+          .from('commerces')
+          .select('id, name, address, latitude, longitude, phone, email, website, image_url, facebook_url, instagram_url, category_id, category:category_id(name_en, name_fr)')
+          .eq('id', itemData.commerce_id)
+          .single();
+        commerceData = data;
+      }
+
+      const fullItem = { ...itemData, commerces: commerceData };
+
+      if (rec.type === 'offer') {
+        setSelectedOffer(fullItem);
+        setShowOfferModal(true);
+      } else {
+        setSelectedEvent(fullItem);
+        setShowEventModal(true);
+      }
+    } catch (err) {
+      console.error('Error opening recommendation:', err);
     }
   };
 
@@ -168,25 +245,62 @@ export default function AIScreen() {
 
   const isEmpty = messages.length === 0;
 
+  const inputContent = (
+    <View style={styles.inputContainer}>
+      <TextInput
+        style={styles.input}
+        value={input}
+        onChangeText={setInput}
+        placeholder={i18n.language === 'fr' ? 'Demandez-moi quelque chose...' : 'Ask me anything...'}
+        placeholderTextColor={COLORS.inkDim}
+        multiline
+        maxLength={500}
+        onSubmitEditing={handleSend}
+        returnKeyType="send"
+      />
+      <TouchableOpacity
+        style={[
+          styles.sendBtn,
+          (!input.trim() || loading) && styles.sendBtnDisabled,
+          (input.trim() && !loading) && styles.sendBtnActive,
+        ]}
+        onPress={handleSend}
+        disabled={!input.trim() || loading}
+      >
+        <IconSymbol name="arrow.up" size={16} color={COLORS.white} />
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={[COLORS.tealGradientStart, COLORS.tealGradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
         <View style={styles.headerLeft}>
           <View style={styles.headerIcon}>
-            <IconSymbol name="sparkles" size={18} color={COLORS.teal} />
+            <IconSymbol name="sparkles" size={18} color={COLORS.white} />
           </View>
           <View>
-            <Text style={styles.headerTitle}>GoSholo AI</Text>
-            <Text style={styles.headerSubtitle}>{t('ai_coming_soon_subtitle').slice(0, 40)}...</Text>
+            <View style={styles.headerTitleRow}>
+              <Text style={styles.headerTitle}>gosholo AI</Text>
+              <View style={styles.onlineDot} />
+            </View>
+            <Text style={styles.headerSubtitle}>
+              {i18n.language === 'fr' ? 'Votre assistant local' : 'Your local discovery assistant'}
+            </Text>
           </View>
         </View>
         {messages.length > 0 && (
           <TouchableOpacity onPress={clearChat} style={styles.clearBtn}>
-            <IconSymbol name="arrow.counterclockwise" size={16} color={COLORS.inkDim} />
+            <IconSymbol name="arrow.counterclockwise" size={16} color={COLORS.white} />
           </TouchableOpacity>
         )}
-      </View>
+      </LinearGradient>
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -194,10 +308,16 @@ export default function AIScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {isEmpty ? (
-          /* Welcome state */
-          <View style={styles.welcome}>
-            <View style={styles.welcomeIcon}>
-              <IconSymbol name="sparkles" size={36} color={COLORS.teal} />
+          <LinearGradient
+            colors={['rgba(1,111,115,0.06)', 'rgba(1,111,115,0.02)', COLORS.white]}
+            style={styles.welcome}
+          >
+            <View style={styles.welcomeIconArea}>
+              <View style={styles.welcomeIconRing3} />
+              <View style={styles.welcomeIconRing2} />
+              <View style={styles.welcomeIconRing1}>
+                <IconSymbol name="sparkles" size={36} color={COLORS.white} />
+              </View>
             </View>
             <Text style={styles.welcomeTitle}>{t('ai_coming_soon_title')}</Text>
             <Text style={styles.welcomeText}>
@@ -206,15 +326,19 @@ export default function AIScreen() {
                 : 'Ask me about offers, events, and businesses near you.'}
             </Text>
             <View style={styles.suggestions}>
-              {suggestions.map((s, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.suggestionChip}
-                  onPress={() => handleSuggestion(s)}
-                >
-                  <Text style={styles.suggestionText}>{s}</Text>
-                </TouchableOpacity>
-              ))}
+              {suggestions.map((s, i) => {
+                const config = CHIP_CONFIGS[i];
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.suggestionChip, { backgroundColor: config.bg }]}
+                    onPress={() => handleSuggestion(s)}
+                  >
+                    <IconSymbol name={config.icon} size={13} color={config.textColor} />
+                    <Text style={[styles.suggestionText, { color: config.textColor }]}>{s}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <TouchableOpacity
@@ -226,9 +350,8 @@ export default function AIScreen() {
                 {i18n.language === 'fr' ? 'Explorer par moi-même' : 'Explore on my own'}
               </Text>
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
         ) : (
-          /* Messages */
           <FlatList
             ref={listRef}
             data={messages}
@@ -243,29 +366,19 @@ export default function AIScreen() {
         )}
 
         {/* Input */}
-        <View style={styles.inputBar}>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder={i18n.language === 'fr' ? 'Demandez-moi quelque chose...' : 'Ask me anything...'}
-              placeholderTextColor={COLORS.inkDim}
-              multiline
-              maxLength={500}
-              onSubmitEditing={handleSend}
-              returnKeyType="send"
-            />
-            <TouchableOpacity
-              style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
-              onPress={handleSend}
-              disabled={!input.trim() || loading}
-            >
-              <IconSymbol name="arrow.up" size={16} color={COLORS.white} />
-            </TouchableOpacity>
-          </View>
+        <View style={styles.inputBarOuter}>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={80} tint="light" style={styles.inputBar}>
+              {inputContent}
+            </BlurView>
+          ) : (
+            <View style={[styles.inputBar, styles.inputBarAndroid]}>
+              {inputContent}
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
+
       <OfferDetailModal
         visible={showOfferModal}
         offer={selectedOffer}
@@ -316,9 +429,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    paddingVertical: 14,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -329,25 +440,38 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.tealLight,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.ink,
+    color: COLORS.white,
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.greenAccent,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   headerSubtitle: {
     fontSize: 11,
-    color: COLORS.inkDim,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 1,
   },
   clearBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.bgMuted,
+    backgroundColor: COLORS.dangerLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -359,14 +483,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  welcomeIcon: {
+  welcomeIconArea: {
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  welcomeIconRing3: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(1,111,115,0.06)',
+  },
+  welcomeIconRing2: {
+    position: 'absolute',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(1,111,115,0.12)',
+  },
+  welcomeIconRing1: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: COLORS.tealLight,
+    backgroundColor: COLORS.teal,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    shadowColor: COLORS.teal,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   welcomeTitle: {
     fontSize: 22,
@@ -388,16 +537,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   suggestionChip: {
-    borderWidth: 1,
-    borderColor: COLORS.teal,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   suggestionText: {
     fontSize: 13,
     fontWeight: '500',
-    color: COLORS.teal,
   },
   exploreBtn: {
     flexDirection: 'row',
@@ -409,6 +563,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 20,
     gap: 8,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   exploreBtnText: {
     fontSize: 14,
@@ -424,21 +583,20 @@ const styles = StyleSheet.create({
   messageRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 20,
+    gap: 10,
   },
   messageRowUser: {
     justifyContent: 'flex-end',
   },
   messageContent: {
-    maxWidth: '80%',
-    gap: 8,
+    maxWidth: '78%',
+    gap: 10,
   },
   avatarBubble: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.tealLight,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -449,24 +607,42 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   bubbleUser: {
-    backgroundColor: COLORS.teal,
+    backgroundColor: COLORS.primary,
     borderBottomRightRadius: 4,
   },
   bubbleAI: {
-    backgroundColor: COLORS.bgMuted,
+    backgroundColor: COLORS.white,
     borderBottomLeftRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.teal,
+    shadowColor: COLORS.cardShadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 1,
   },
   messageText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
     color: COLORS.ink,
   },
   messageTextUser: {
     color: COLORS.white,
   },
   typingBubble: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  typingDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.teal,
   },
 
   // Recommendations
@@ -479,58 +655,84 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 10,
+    paddingLeft: 0,
     gap: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recAccentBar: {
+    width: 4,
+    alignSelf: 'stretch',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
   recImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
   },
   recImagePlaceholder: {
-    backgroundColor: COLORS.teal,
     alignItems: 'center',
     justifyContent: 'center',
   },
   recContent: {
     flex: 1,
   },
+  recTypeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
   recType: {
     fontSize: 9,
     fontWeight: '700',
-    color: COLORS.primary,
     letterSpacing: 0.5,
   },
   recTitle: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.ink,
+    marginTop: 2,
+  },
+  recBusinessRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     marginTop: 1,
   },
   recBusiness: {
     fontSize: 11,
     color: COLORS.inkDim,
-    marginTop: 1,
   },
 
   // Input
+  inputBarOuter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.04)',
+  },
   inputBar: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.bg,
+  },
+  inputBarAndroid: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: COLORS.bgMuted,
+    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 22,
     paddingLeft: 16,
     paddingRight: 4,
     paddingVertical: 4,
     gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
   },
   input: {
     flex: 1,
@@ -540,15 +742,22 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 8 : 4,
   },
   sendBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: COLORS.teal,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  sendBtnActive: {
+    shadowColor: COLORS.teal,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
+  },
   sendBtnDisabled: {
-    backgroundColor: COLORS.inkDim,
-    opacity: 0.4,
+    backgroundColor: '#D1D5DB',
+    opacity: 1,
   },
 });
