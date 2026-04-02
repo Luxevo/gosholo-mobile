@@ -331,7 +331,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={Platform.OS === 'android' ? ['top'] : ['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
       {loading && commerces.length === 0 ? (
