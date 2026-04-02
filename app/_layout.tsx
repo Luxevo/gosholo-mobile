@@ -6,6 +6,7 @@ import { FollowsProvider } from '@/contexts/FollowsContext';
 import { LikesProvider } from '@/contexts/LikesContext';
 import { LocationProvider } from '@/contexts/LocationContext';
 import { useForceUpdate } from '@/hooks/useForceUpdate';
+import { useOneSignal } from '@/hooks/useOneSignal';
 import i18n, { loadSavedLanguage } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,6 +23,9 @@ function RootLayoutContent() {
   const { i18n: i18nInstance } = useTranslation();
   const { needsUpdate, isChecking, message, storeUrl } = useForceUpdate(i18nInstance.language);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  // Initialize OneSignal push notifications
+  useOneSignal();
 
   // Handle deep links for auth callbacks and content sharing
   const handledUrlRef = useRef<string | null>(null);
