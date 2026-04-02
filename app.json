@@ -100,7 +100,8 @@
       [
         "onesignal-expo-plugin",
         {
-          "mode": "production"
+          "mode": "production",
+          "appGroupName": "group.com.jostinjarry1.gosholomobile"
         }
       ]
     ],
