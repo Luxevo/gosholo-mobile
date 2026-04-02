@@ -364,7 +364,7 @@ export default function HomeScreen() {
             renderItem={renderRow}
             renderSectionHeader={renderSectionHeader}
             keyExtractor={(item, index) => item.map(c => c.id).join('-') + index}
-            stickySectionHeadersEnabled={Platform.OS === 'ios'}
+            stickySectionHeadersEnabled={false}
             removeClippedSubviews={Platform.OS === 'android'}
             windowSize={Platform.OS === 'android' ? 5 : 21}
             initialNumToRender={Platform.OS === 'android' ? 6 : 10}
