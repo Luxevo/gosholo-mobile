@@ -115,8 +115,10 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
+    justifyContent: 'center',
     minHeight: 80,
     paddingTop: 8,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E5',
     elevation: 8,
@@ -135,7 +137,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 4,
   },
 });
