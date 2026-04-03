@@ -20,8 +20,8 @@
     "build:ios": "eas build --platform ios --profile production",
     "build:preview:android": "eas build --platform android --profile preview",
     "build:preview:ios": "eas build --platform ios --profile preview",
-      "build:dev:android": "eas build --platform android --profile preview",
-    "build:dev:ios": "eas build --platform ios --profile preview"
+      "build:dev:android": "eas build --platform android --profile development",
+    "build:dev:ios": "eas build --platform ios --profile development"
   },
   "dependencies": {
     "@api/fsq-developers": "file:.api/apis/fsq-developers",

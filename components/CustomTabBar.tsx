@@ -1,4 +1,3 @@
-import { ButtonSvg } from '@/components/ButtonSvg';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -8,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const ACTIVE_TAB_COLOR = 'rgb(1,111,115)';
+const VISIBLE_TABS = ['index', 'offers', 'compass', 'events', 'ai'];
 
 interface TabBarProps {
   state: any;
@@ -21,18 +21,18 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   const { getTabBarPadding } = useSafeAreaPadding();
   const { t } = useTranslation();
 
-  const getIconName = (routeName: string, focused: boolean) => {
+  const getIconName = (routeName: string) => {
     switch (routeName) {
       case 'index':
         return 'storefront.fill';
       case 'offers':
         return 'tag.fill';
       case 'compass':
-        return 'location';
+        return 'map.fill';
       case 'events':
         return 'calendar';
-      case 'profile':
-        return 'person.fill';
+      case 'ai':
+        return 'sparkles';
       default:
         return 'questionmark';
     }
@@ -45,11 +45,11 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
       case 'offers':
         return t('tab_offers');
       case 'compass':
-        return '';
+        return t('tab_map', 'Map');
       case 'events':
         return t('tab_events');
-      case 'profile':
-        return t('tab_profile');
+      case 'ai':
+        return 'AI';
       default:
         return routeName;
     }
@@ -63,10 +63,9 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
         paddingBottom: getTabBarPadding(),
       }
     ]}>
-      {state.routes.filter((r: any) => r.name !== 'ai').map((route: any) => {
+      {state.routes.filter((r: any) => VISIBLE_TABS.includes(r.name)).map((route: any) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === state.routes.indexOf(route);
-        const isCompass = route.name === 'compass';
 
         const onPress = () => {
           const event = navigation.emit({
@@ -88,33 +87,24 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
             accessibilityLabel={options.tabBarAccessibilityLabel}
             testID={options.tabBarTestID}
             onPress={onPress}
-            style={[
-              styles.tabItem,
-              isCompass && styles.compassTab,
-            ]}
+            style={styles.tabItem}
           >
-            {isCompass ? (
-              <ButtonSvg width={82} height={82} />
-            ) : (
-              <>
-                <IconSymbol
-                  name={getIconName(route.name, isFocused)}
-                  size={isFocused ? 26 : 22}
-                  color={isFocused ? ACTIVE_TAB_COLOR : colors.tabIconDefault}
-                />
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    {
-                      color: isFocused ? ACTIVE_TAB_COLOR : colors.tabIconDefault,
-                      fontWeight: isFocused ? '600' : '400',
-                    },
-                  ]}
-                >
-                  {getTabTitle(route.name)}
-                </Text>
-              </>
-            )}
+            <IconSymbol
+              name={getIconName(route.name)}
+              size={isFocused ? 26 : 22}
+              color={isFocused ? ACTIVE_TAB_COLOR : colors.tabIconDefault}
+            />
+            <Text
+              style={[
+                styles.tabLabel,
+                {
+                  color: isFocused ? ACTIVE_TAB_COLOR : colors.tabIconDefault,
+                  fontWeight: isFocused ? '600' : '400',
+                },
+              ]}
+            >
+              {getTabTitle(route.name)}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -143,11 +133,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 8,
-  },
-  compassTab: {
-    justifyContent: 'flex-start',
-    paddingTop: 0,
-    marginTop: -20,
   },
   tabLabel: {
     fontSize: 12,

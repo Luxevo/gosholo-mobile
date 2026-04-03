@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-import { AIBubble } from '@/components/AIBubble';
 import { CustomTabBar } from '@/components/CustomTabBar';
 
 export default function TabLayout() {
@@ -50,7 +49,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      <AIBubble />
     </View>
   );
 }

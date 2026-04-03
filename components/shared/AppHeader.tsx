@@ -1,4 +1,6 @@
 import { AvatarDisplay } from '@/components/AvatarPicker';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { router } from 'expo-router';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -24,6 +26,14 @@ export function AppHeader({
   avatarId,
   onProfilePress,
 }: AppHeaderProps) {
+  const handleProfilePress = () => {
+    if (onProfilePress) {
+      onProfilePress();
+    } else {
+      router.push('/(tabs)/profile');
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Left side: Logo */}
@@ -35,20 +45,28 @@ export function AppHeader({
         />
       </View>
 
-      {/* Right side: User avatar and name */}
-      {userName && (
-        <View style={styles.rightSection}>
+      {/* Right side: Settings gear + optional user chip */}
+      <View style={styles.rightSection}>
+        {userName && (
           <TouchableOpacity
             style={styles.userChip}
-            onPress={onProfilePress}
+            onPress={handleProfilePress}
             accessibilityRole="button"
             accessibilityLabel={`User: ${userName}`}
           >
             <AvatarDisplay avatarId={avatarId} size={24} />
             <Text style={styles.userText}>{userName}</Text>
           </TouchableOpacity>
-        </View>
-      )}
+        )}
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={handleProfilePress}
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+        >
+          <IconSymbol name="gearshape.fill" size={24} color={COLORS.teal} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -91,13 +109,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  notificationButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileButton: {
+  settingsButton: {
     width: 32,
     height: 32,
     alignItems: 'center',

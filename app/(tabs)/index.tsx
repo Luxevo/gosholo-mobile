@@ -350,7 +350,7 @@ export default function HomeScreen() {
       ) : (
         <View style={styles.listWrapper}>
           {/* Header */}
-          <AppHeader />
+          <AppHeader onProfilePress={() => router.push('/(tabs)/profile')} />
 
           {/* Search Bar */}
           <SearchBar
