@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 
@@ -13,27 +14,25 @@ interface FollowsContextValue {
 const FollowsContext = createContext<FollowsContextValue | null>(null);
 
 export const FollowsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+
   const [follows, setFollows] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+
+  const userId = user?.id ?? null;
 
   const fetchFollows = useCallback(async () => {
+    if (!userId) {
+      setFollows(new Set());
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setUserId(null);
-        setFollows(new Set());
-        setLoading(false);
-        return;
-      }
-
-      setUserId(user.id);
-
       const { data, error } = await supabase
         .from('user_follows_commerces')
         .select('commerce_id')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
 
       if (error) throw error;
 
@@ -43,7 +42,7 @@ export const FollowsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   const isFollowing = useCallback((commerceId: string): boolean => {
     return follows.has(commerceId);
@@ -109,18 +108,9 @@ export const FollowsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [userId, isFollowing]);
 
+  // Re-fetch when user changes (sign in / sign out)
   useEffect(() => {
     fetchFollows();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          fetchFollows();
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
   }, [fetchFollows]);
 
   const value = useMemo(() => ({

@@ -1,4 +1,5 @@
 import { AvatarDisplay } from '@/components/AvatarPicker';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useMobileUser } from '@/hooks/useMobileUser';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -82,13 +83,12 @@ const ProfileHeader = ({ onSettingsPress }: { onSettingsPress: () => void }) => 
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const { profile, refetch: refetchProfile } = useMobileUser();
   const { favorites, toggleFavorite, refetch: refetchFavorites } = useFavorites();
   const { follows, toggleFollow, refetch: refetchFollows } = useFollows();
   const { likes, refetch: refetchLikes } = useLikes();
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('saved');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -106,25 +106,6 @@ export default function ProfileScreen() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [showCommerceModal, setShowCommerceModal] = useState(false);
 
-  useEffect(() => {
-    checkAuthState();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setIsAuthenticated(!!session);
-        setAuthLoading(false);
-        if (event === 'SIGNED_IN') {
-          refetchProfile();
-          refetchFavorites();
-          refetchFollows();
-          refetchLikes();
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   // Refetch profile when screen gains focus (e.g., returning from settings)
   useFocusEffect(
     useCallback(() => {
@@ -133,12 +114,6 @@ export default function ProfileScreen() {
       }
     }, [isAuthenticated, refetchProfile])
   );
-
-  const checkAuthState = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    setIsAuthenticated(!!session);
-    setAuthLoading(false);
-  };
 
   // Fetch actual data for saved (favorites), liked, and following
   const fetchGridData = useCallback(async () => {

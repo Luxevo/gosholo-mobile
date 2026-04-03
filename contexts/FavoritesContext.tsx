@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 
@@ -21,31 +22,29 @@ interface FavoritesContextValue {
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+
   const [favorites, setFavorites] = useState<FavoriteIds>({
     offers: new Set(),
     events: new Set(),
     commerces: new Set(),
   });
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+
+  const userId = user?.id ?? null;
 
   const fetchFavorites = useCallback(async () => {
+    if (!userId) {
+      setFavorites({ offers: new Set(), events: new Set(), commerces: new Set() });
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setUserId(null);
-        setFavorites({ offers: new Set(), events: new Set(), commerces: new Set() });
-        setLoading(false);
-        return;
-      }
-
-      setUserId(user.id);
-
       const [offersRes, eventsRes, commercesRes] = await Promise.all([
-        supabase.from('user_favorite_offers').select('offer_id').eq('user_id', user.id),
-        supabase.from('user_favorite_events').select('event_id').eq('user_id', user.id),
-        supabase.from('user_favorite_commerces').select('commerce_id').eq('user_id', user.id),
+        supabase.from('user_favorite_offers').select('offer_id').eq('user_id', userId),
+        supabase.from('user_favorite_events').select('event_id').eq('user_id', userId),
+        supabase.from('user_favorite_commerces').select('commerce_id').eq('user_id', userId),
       ]);
 
       setFavorites({
@@ -58,7 +57,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   const isFavorite = useCallback((type: FavoriteType, id: string): boolean => {
     switch (type) {
@@ -129,18 +128,9 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [userId, isFavorite]);
 
+  // Re-fetch when user changes (sign in / sign out)
   useEffect(() => {
     fetchFavorites();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          fetchFavorites();
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
   }, [fetchFavorites]);
 
   const value = useMemo(() => ({

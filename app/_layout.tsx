@@ -1,6 +1,7 @@
 // app/_layout.tsx - Root layout
 import ForceUpdateModal from '@/components/ForceUpdateModal';
 import WelcomeModal from '@/components/WelcomeModal';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { FavoritesProvider } from '@/contexts/FavoritesContext';
 import { FollowsProvider } from '@/contexts/FollowsContext';
 import { LikesProvider } from '@/contexts/LikesContext';
@@ -8,6 +9,7 @@ import { LocationProvider } from '@/contexts/LocationContext';
 import { useForceUpdate } from '@/hooks/useForceUpdate';
 import { useOneSignal } from '@/hooks/useOneSignal';
 import i18n, { loadSavedLanguage } from '@/i18n';
+import { setProfileCache } from '@/hooks/useMobileUser';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
@@ -64,6 +66,25 @@ function RootLayoutContent() {
                   router.replace('/(auth)/reset-password');
                   return;
                 }
+
+                // Pre-warm the profile cache BEFORE navigating so
+                // AppHeader has the username on first render
+                try {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (user) {
+                    const { data: profileData } = await supabase
+                      .from('profiles')
+                      .select('*')
+                      .eq('id', user.id)
+                      .maybeSingle();
+                    if (profileData) {
+                      setProfileCache(profileData);
+                    }
+                  }
+                } catch (e) {
+                  // Non-blocking — profile will load via hook eventually
+                }
+
                 // Successfully authenticated, navigate to main app
                 router.replace('/(tabs)');
                 return;
@@ -189,30 +210,32 @@ function RootLayoutContent() {
   };
 
   return (
-    <LocationProvider>
-      <FavoritesProvider>
-        <LikesProvider>
-          <FollowsProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'fade',
-                animationDuration: 400,
-              }}
-            />
-            <WelcomeModal
-              visible={showWelcomeModal && !needsUpdate && !isChecking}
-              onClose={handleCloseWelcomeModal}
-            />
-            <ForceUpdateModal
-              visible={needsUpdate}
-              message={message}
-              storeUrl={storeUrl}
-            />
-          </FollowsProvider>
-        </LikesProvider>
-      </FavoritesProvider>
-    </LocationProvider>
+    <AuthProvider>
+      <LocationProvider>
+        <FavoritesProvider>
+          <LikesProvider>
+            <FollowsProvider>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'fade',
+                  animationDuration: 400,
+                }}
+              />
+              <WelcomeModal
+                visible={showWelcomeModal && !needsUpdate && !isChecking}
+                onClose={handleCloseWelcomeModal}
+              />
+              <ForceUpdateModal
+                visible={needsUpdate}
+                message={message}
+                storeUrl={storeUrl}
+              />
+            </FollowsProvider>
+          </LikesProvider>
+        </FavoritesProvider>
+      </LocationProvider>
+    </AuthProvider>
   );
 }
 

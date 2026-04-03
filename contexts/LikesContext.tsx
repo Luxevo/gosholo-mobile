@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 
@@ -30,6 +31,8 @@ interface LikesContextValue {
 const LikesContext = createContext<LikesContextValue | null>(null);
 
 export const LikesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+
   const [likes, setLikes] = useState<LikeIds>({
     offers: new Set(),
     events: new Set(),
@@ -41,25 +44,21 @@ export const LikesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     commerces: new Map(),
   });
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+
+  const userId = user?.id ?? null;
 
   const fetchLikes = useCallback(async () => {
+    if (!userId) {
+      setLikes({ offers: new Set(), events: new Set(), commerces: new Set() });
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setUserId(null);
-        setLikes({ offers: new Set(), events: new Set(), commerces: new Set() });
-        setLoading(false);
-        return;
-      }
-
-      setUserId(user.id);
-
       const [offersRes, eventsRes, commercesRes] = await Promise.all([
-        supabase.from('user_likes_offers').select('offer_id').eq('user_id', user.id),
-        supabase.from('user_likes_events').select('event_id').eq('user_id', user.id),
-        supabase.from('user_likes_commerces').select('commerce_id').eq('user_id', user.id),
+        supabase.from('user_likes_offers').select('offer_id').eq('user_id', userId),
+        supabase.from('user_likes_events').select('event_id').eq('user_id', userId),
+        supabase.from('user_likes_commerces').select('commerce_id').eq('user_id', userId),
       ]);
 
       setLikes({
@@ -72,7 +71,7 @@ export const LikesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   const isLiked = useCallback((type: LikeType, id: string): boolean => {
     switch (type) {
@@ -191,18 +190,9 @@ export const LikesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [userId, isLiked]);
 
+  // Re-fetch when user changes (sign in / sign out)
   useEffect(() => {
     fetchLikes();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          fetchLikes();
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
   }, [fetchLikes]);
 
   const value = useMemo(() => ({

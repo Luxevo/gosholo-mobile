@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { prefetchAppData } from '@/utils/prefetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, Image } from 'react-native';
@@ -29,8 +30,13 @@ export default function Index() {
       }),
     ]).start();
 
-    // Check auth state and deep links
+    let navigated = false;
+
+    // Check auth state and navigate
     const checkAuthAndNavigate = async () => {
+      if (navigated) return;
+      navigated = true;
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
 
@@ -53,12 +59,27 @@ export default function Index() {
       }
     };
 
-    // Navigate after animation
-    const timer = setTimeout(() => {
-      checkAuthAndNavigate();
-    }, 1500);
+    // Check if app was opened via a deep link (cold start).
+    // If so, _layout.tsx's deep link handler will navigate — we skip.
+    Linking.getInitialURL().then((url) => {
+      if (url && (url.includes('auth/callback') || url.includes('access_token'))) {
+        // Auth deep link — _layout.tsx handles navigation
+        navigated = true;
+        return;
+      }
 
-    return () => clearTimeout(timer);
+      // No auth deep link — navigate after animation completes
+      setTimeout(checkAuthAndNavigate, 1500);
+    });
+
+    // Also listen for deep links arriving while splash is visible (warm start)
+    const linkSub = Linking.addEventListener('url', (event) => {
+      if (event.url.includes('auth/callback') || event.url.includes('access_token')) {
+        navigated = true;
+      }
+    });
+
+    return () => linkSub.remove();
   }, []);
 
   return (

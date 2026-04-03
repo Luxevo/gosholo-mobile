@@ -1,37 +1,20 @@
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Link, Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function NotFoundScreen() {
-  const [showContent, setShowContent] = useState(false);
-
-  // On deep links, _layout.tsx handles navigation. Show a spinner
-  // briefly to give it time, then show not-found content as fallback.
   useEffect(() => {
-    const timer = setTimeout(() => setShowContent(true), 3000);
+    // Short delay to let deep link handlers in _layout.tsx run first
+    const timer = setTimeout(() => {
+      router.replace('/(tabs)');
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  if (!showContent) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6233" />
-      </View>
-    );
-  }
-
   return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">This screen does not exist.</ThemedText>
-        <Link href="/" style={styles.link}>
-          <ThemedText type="link">Go to home screen!</ThemedText>
-        </Link>
-      </ThemedView>
-    </>
+    <View style={styles.container}>
+      <ActivityIndicator size="large" color="#FF6233" />
+    </View>
   );
 }
 

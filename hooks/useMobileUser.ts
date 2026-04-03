@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase, type UserProfile } from '@/lib/supabase';
 import { useEffect, useState, useCallback } from 'react';
 
@@ -10,7 +11,14 @@ const notifyListeners = (profile: UserProfile | null) => {
   cacheListeners.forEach(listener => listener(profile));
 };
 
+/** Pre-populate the profile cache from outside the hook (e.g. during auth callback) */
+export const setProfileCache = (profile: UserProfile) => {
+  notifyListeners(profile);
+};
+
 export const useProfile = () => {
+  const { user } = useAuth();
+
   // Initialize with cached data if available
   const [profile, setProfile] = useState<UserProfile | null>(profileCache);
   const [loading, setLoading] = useState(profileCache === null);
@@ -29,19 +37,18 @@ export const useProfile = () => {
   }, []);
 
   const fetchProfile = useCallback(async () => {
+    if (!user) {
+      notifyListeners(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       // Only show loading if we don't have cached data
       if (!profileCache) {
         setLoading(true);
       }
       setError(null);
-
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        notifyListeners(null);
-        return;
-      }
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -61,17 +68,14 @@ export const useProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const updateProfile = async (updates: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>) => {
+    if (!user) {
+      throw new Error('No authenticated user');
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error('No authenticated user');
-      }
-
-      // Add updated_at timestamp
       const updatesWithTimestamp = {
         ...updates,
         updated_at: new Date().toISOString(),
@@ -98,21 +102,9 @@ export const useProfile = () => {
     }
   };
 
+  // Re-fetch when user changes (sign in / sign out)
   useEffect(() => {
     fetchProfile();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_IN') {
-          fetchProfile();
-        } else if (event === 'SIGNED_OUT') {
-          notifyListeners(null);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
   const refetch = () => {
