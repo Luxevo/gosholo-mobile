@@ -3,6 +3,7 @@ import { AppHeader } from '@/components/shared/AppHeader';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { Commerce, useCommerces } from '@/hooks/useCommerces';
 import { useFollows } from '@/hooks/useFollows';
+import { useProfile } from '@/hooks/useMobileUser';
 import { matchesSearch } from '@/utils/searchUtils';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -58,6 +59,8 @@ export default function HomeScreen() {
   const { t, i18n } = useTranslation();
   const { commerces, loading, error, refetch } = useCommerces();
   const { isFollowing, toggleFollow } = useFollows();
+  const { profile } = useProfile();
+  const userName = profile?.first_name || profile?.username;
   const [selectedBusiness, setSelectedBusiness] = useState<Commerce | null>(null);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -350,7 +353,11 @@ export default function HomeScreen() {
       ) : (
         <View style={styles.listWrapper}>
           {/* Header */}
-          <AppHeader onProfilePress={() => router.push('/(tabs)/profile')} />
+          <AppHeader
+            userName={userName}
+            avatarId={profile?.avatar_url}
+            onProfilePress={() => router.push('/(tabs)/profile')}
+          />
 
           {/* Search Bar */}
           <SearchBar

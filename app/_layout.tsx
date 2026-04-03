@@ -40,6 +40,8 @@ function RootLayoutContent() {
 
       // Check if this is an auth callback
       if (url.includes('auth/callback') || url.includes('access_token') || url.includes('refresh_token')) {
+        // Immediately navigate to callback screen to avoid "screen doesn't exist" flash
+        router.replace('/(auth)/callback');
         try {
           // Extract tokens from URL (Supabase sends them as hash fragments)
           const hashParams = url.split('#')[1];
@@ -59,7 +61,6 @@ function RootLayoutContent() {
               if (!error) {
                 // Check if this is a password recovery flow
                 if (type === 'recovery') {
-                  // Navigate to reset password screen
                   router.replace('/(auth)/reset-password');
                   return;
                 }
