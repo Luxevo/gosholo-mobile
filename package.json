@@ -15,7 +15,13 @@
     "ota:android": "npx eas update --channel production --platform android",
     "ota:preview": "eas update --channel preview --platform ios && eas update --channel preview --platform android",
     "ota:preview:ios": "npx eas update --channel preview --platform ios",
-    "ota:preview:android": "npx eas update --channel preview --platform android"
+    "ota:preview:android": "npx eas update --channel preview --platform android",
+    "build:android": "eas build --platform android --profile production",
+    "build:ios": "eas build --platform ios --profile production",
+    "build:preview:android": "eas build --platform android --profile preview",
+    "build:preview:ios": "eas build --platform ios --profile preview",
+      "build:dev:android": "eas build --platform android --profile preview",
+    "build:dev:ios": "eas build --platform ios --profile preview"
   },
   "dependencies": {
     "@api/fsq-developers": "file:.api/apis/fsq-developers",
