@@ -651,7 +651,7 @@ export default function CompassScreen() {
       if (cameraRef.current && animateCamera) {
         cameraRef.current.setCamera({
           centerCoordinate: coord,
-          zoomLevel: 5,
+          zoomLevel: 8,
           animationDuration: 800,
         });
       }
@@ -978,7 +978,7 @@ export default function CompassScreen() {
             <Camera
               ref={cameraRef}
               centerCoordinate={defaultCenter}
-              zoomLevel={5}
+              zoomLevel={8}
               pitch={is3D ? 70 : 0}
               heading={is3D ? 45 : 0}
               animationDuration={2000}
