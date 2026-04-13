@@ -78,6 +78,12 @@ const MAPPING = {
   'speaker.slash.fill': 'volume-off',
   'cube': 'view-in-ar',
   'map': 'map',
+  'map.fill': 'map',
+  'sparkles': 'auto-awesome',
+  'arrow.up': 'arrow-upward',
+  'arrow.counterclockwise': 'replay',
+  'safari': 'explore',
+  'questionmark': 'help',
 } as IconMapping;
 
 /**

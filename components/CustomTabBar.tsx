@@ -49,7 +49,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
       case 'events':
         return t('tab_events');
       case 'ai':
-        return 'AI';
+        return t('tab_ai');
       default:
         return routeName;
     }

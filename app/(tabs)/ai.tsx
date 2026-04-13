@@ -283,7 +283,7 @@ export default function AIScreen() {
           </View>
           <View>
             <View style={styles.headerTitleRow}>
-              <Text style={styles.headerTitle}>gosholo AI</Text>
+              <Text style={styles.headerTitle}>{t('ai_header_title')}</Text>
               <View style={styles.onlineDot} />
             </View>
             <Text style={styles.headerSubtitle}>

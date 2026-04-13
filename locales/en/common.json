@@ -51,6 +51,8 @@
   "tab_events": "Events",
   "tab_map": "Map",
   "tab_profile": "Profile",
+  "tab_ai": "AI",
+  "ai_header_title": "gosholo AI",
   "boosted": "Boosted",
   "change_password": "Change Password",
   "current_password": "Current Password",
