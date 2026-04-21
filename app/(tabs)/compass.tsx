@@ -19,7 +19,9 @@ import { supabase } from '@/lib/supabase';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
 import {
   groupCommercesByLocation,
+  groupEventsByLocation,
   groupOffersByLocation,
+  type EventCluster,
   type MarkerCluster,
   type OfferCluster,
 } from '@/utils/markerClustering';
@@ -360,6 +362,66 @@ const EventMarker = React.memo(({ event, onPress }: { event: EventWithCommerce; 
   }
 });
 
+// Clustered Event Marker - Shows count badge when multiple events at same location
+const ClusteredEventMarker = React.memo(({
+  cluster,
+  onPress,
+}: {
+  cluster: EventCluster;
+  onPress: (cluster: EventCluster) => void;
+}) => {
+  const isBoosted = cluster.isBoosted;
+  const count = cluster.events.length;
+  const isAndroid = Platform.OS === 'android';
+
+  if (isAndroid) {
+    return (
+      <PointAnnotation
+        id={cluster.id}
+        coordinate={[cluster.longitude, cluster.latitude]}
+        anchor={{ x: 0.5, y: 0.5 }}
+        draggable={false}
+        onSelected={() => onPress(cluster)}
+      >
+        <View
+          style={[styles.eventMarkerPin, isBoosted && styles.eventMarkerPinBoosted]}
+          collapsable={false}
+        >
+          {count > 1 ? (
+            <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
+          ) : (
+            <IconSymbol name="calendar" size={16} color={COLORS.white} />
+          )}
+        </View>
+      </PointAnnotation>
+    );
+  } else {
+    return (
+      <MarkerView
+        id={cluster.id}
+        coordinate={[cluster.longitude, cluster.latitude]}
+        allowOverlap={true}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <TouchableOpacity
+          onPress={() => onPress(cluster)}
+          activeOpacity={0.7}
+          style={styles.markerContainer}
+        >
+          {isBoosted && <View style={styles.eventBoostGlow} pointerEvents="none" />}
+          <View style={[styles.eventMarkerPin, isBoosted && styles.eventMarkerPinBoosted]}>
+            {count > 1 ? (
+              <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
+            ) : (
+              <IconSymbol name="calendar" size={16} color={COLORS.white} />
+            )}
+          </View>
+        </TouchableOpacity>
+      </MarkerView>
+    );
+  }
+});
+
 type MapTab = 'businesses' | 'offers' | 'events';
 
 export default function CompassScreen() {
@@ -399,6 +461,8 @@ export default function CompassScreen() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [selectedOfferCluster, setSelectedOfferCluster] = useState<OfferCluster | null>(null);
   const [showOfferClusterModal, setShowOfferClusterModal] = useState(false);
+  const [selectedEventCluster, setSelectedEventCluster] = useState<EventCluster | null>(null);
+  const [showEventClusterModal, setShowEventClusterModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -504,6 +568,11 @@ export default function CompassScreen() {
   const offerClusters = useMemo(() => {
     return groupOffersByLocation(filteredOffers, 20);
   }, [filteredOffers]);
+
+  // Group events by location to avoid stacked invisible markers
+  const eventClusters = useMemo(() => {
+    return groupEventsByLocation(filteredEvents, 20);
+  }, [filteredEvents]);
 
   // Handlers for offer/event press
   const handleOfferPress = useCallback((offer: OfferWithCommerce) => {
@@ -924,6 +993,16 @@ export default function CompassScreen() {
     }
   }, []);
 
+  const handleEventClusterPress = useCallback((cluster: EventCluster) => {
+    if (cluster.events.length === 1) {
+      setSelectedEvent(cluster.events[0]);
+      setShowEventModal(true);
+    } else {
+      setSelectedEventCluster(cluster);
+      setShowEventClusterModal(true);
+    }
+  }, []);
+
   const handleCloseClusterModal = useCallback(() => {
     setModalState(prev => ({
       ...prev,
@@ -1088,15 +1167,13 @@ export default function CompassScreen() {
 
             {/* Event Markers - Show when events tab is active */}
             {(MarkerView || PointAnnotation) && activeTab === 'events' &&
-              filteredEvents
-                .slice(0, 5000)
-                .map((event) => (
-                  <EventMarker
-                    key={event.id}
-                    event={event}
-                    onPress={handleEventPress}
-                  />
-                ))}
+              eventClusters.map((cluster) => (
+                <ClusteredEventMarker
+                  key={cluster.id}
+                  cluster={cluster}
+                  onPress={handleEventClusterPress}
+                />
+              ))}
           </MapView>
         ) : (
           <View style={styles.mapFallback}>
@@ -1536,6 +1613,69 @@ export default function CompassScreen() {
                     </Text>
                     <Text style={styles.clusterCommerceCategory} numberOfLines={1}>
                       {offer.commerces?.name || ''}
+                    </Text>
+                  </View>
+                  <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Event Cluster Modal - Show list of events at same location */}
+      <Modal visible={showEventClusterModal} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={() => setShowEventClusterModal(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.clusterModalContainer}>
+            <View style={styles.clusterModalHeader}>
+              <Text style={styles.clusterModalTitle}>
+                {t('multiple_events_here')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowEventClusterModal(false)}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.clusterModalSubtitle}>
+              {t('events_at_this_location', { count: selectedEventCluster?.events.length || 0 })}
+            </Text>
+            <ScrollView style={styles.clusterModalScroll}>
+              {selectedEventCluster?.events.map((event) => (
+                <TouchableOpacity
+                  key={event.id}
+                  style={[
+                    styles.clusterCommerceItem,
+                    event.boosted && styles.clusterCommerceItemBoosted,
+                  ]}
+                  onPress={() => {
+                    setShowEventClusterModal(false);
+                    setTimeout(() => {
+                      setSelectedEvent(event);
+                      setShowEventModal(true);
+                    }, 100);
+                  }}
+                >
+                  {event.image_url ? (
+                    <Image source={{ uri: event.image_url }} style={styles.clusterCommerceLogo} />
+                  ) : (
+                    <View style={styles.clusterCommerceLogo}>
+                      <IconSymbol
+                        name="calendar"
+                        size={20}
+                        color={event.boosted ? COLORS.primary : COLORS.teal}
+                      />
+                    </View>
+                  )}
+                  <View style={styles.clusterCommerceInfo}>
+                    <Text style={styles.clusterCommerceName} numberOfLines={1}>
+                      {event.title}
+                    </Text>
+                    <Text style={styles.clusterCommerceCategory} numberOfLines={1}>
+                      {event.commerces?.name || ''}
                     </Text>
                   </View>
                   <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />

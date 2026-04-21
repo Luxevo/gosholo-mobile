@@ -285,7 +285,9 @@
   "multiple_businesses_here": "Multiple Businesses Here",
   "businesses_at_this_location": "{{count}} businesses at this location",
   "multiple_offers_here": "Multiple Offers Here",
-  "offers_at_this_location": "{{count}} offers at this location"
+  "offers_at_this_location": "{{count}} offers at this location",
+  "multiple_events_here": "Multiple Events Here",
+  "events_at_this_location": "{{count}} events at this location"
 }
 
 

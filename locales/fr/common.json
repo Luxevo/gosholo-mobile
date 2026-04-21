@@ -177,6 +177,8 @@
   "businesses_at_this_location": "{{count}} commerces à cet endroit",
   "multiple_offers_here": "Plusieurs Offres Ici",
   "offers_at_this_location": "{{count}} offres à cet endroit",
+  "multiple_events_here": "Plusieurs Événements Ici",
+  "events_at_this_location": "{{count}} événements à cet endroit",
   "no_results": "Aucun Résultat Trouvé",
   "try_different_filter": "Essayez d'ajuster vos filtres ou votre recherche",
   "recent": "Récent",

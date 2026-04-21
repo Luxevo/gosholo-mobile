@@ -4,6 +4,7 @@
  */
 
 import type { Commerce } from '@/hooks/useCommerces';
+import type { EventWithCommerce } from '@/hooks/useEvents';
 import type { OfferWithCommerce } from '@/hooks/useOffers';
 
 export interface MarkerCluster {
@@ -19,6 +20,14 @@ export interface OfferCluster {
   latitude: number;
   longitude: number;
   offers: OfferWithCommerce[];
+  isBoosted: boolean;
+}
+
+export interface EventCluster {
+  id: string;
+  latitude: number;
+  longitude: number;
+  events: EventWithCommerce[];
   isBoosted: boolean;
 }
 
@@ -152,6 +161,53 @@ export function groupOffersByLocation(
       longitude: lng,
       offers: clusterOffers,
       isBoosted: clusterOffers.some(o => !!o.boosted),
+    });
+  });
+
+  return clusters;
+}
+
+/**
+ * Groups events that are within the clustering threshold distance.
+ */
+export function groupEventsByLocation(
+  events: EventWithCommerce[],
+  thresholdMeters: number = 20
+): EventCluster[] {
+  const validEvents = events.filter(e => {
+    const lat = e.latitude || e.commerces?.latitude;
+    const lng = e.longitude || e.commerces?.longitude;
+    return lat != null && lng != null;
+  });
+
+  if (validEvents.length === 0) return [];
+
+  const clusters: EventCluster[] = [];
+  const processed = new Set<string>();
+
+  validEvents.forEach((event) => {
+    if (processed.has(event.id)) return;
+
+    const lat = (event.latitude || event.commerces?.latitude) as number;
+    const lng = (event.longitude || event.commerces?.longitude) as number;
+
+    const nearby = validEvents.filter((other) => {
+      if (processed.has(other.id) || other.id === event.id) return false;
+      const oLat = (other.latitude || other.commerces?.latitude) as number;
+      const oLng = (other.longitude || other.commerces?.longitude) as number;
+      return calculateDistance(lat, lng, oLat, oLng) <= thresholdMeters;
+    });
+
+    processed.add(event.id);
+    nearby.forEach(e => processed.add(e.id));
+
+    const clusterEvents = [event, ...nearby];
+    clusters.push({
+      id: `event-cluster-${event.id}`,
+      latitude: lat,
+      longitude: lng,
+      events: clusterEvents,
+      isBoosted: clusterEvents.some(e => !!e.boosted),
     });
   });
 
