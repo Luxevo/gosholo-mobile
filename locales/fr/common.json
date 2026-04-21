@@ -175,6 +175,8 @@
   "loading": "Chargement",
   "multiple_businesses_here": "Plusieurs Commerces Ici",
   "businesses_at_this_location": "{{count}} commerces à cet endroit",
+  "multiple_offers_here": "Plusieurs Offres Ici",
+  "offers_at_this_location": "{{count}} offres à cet endroit",
   "no_results": "Aucun Résultat Trouvé",
   "try_different_filter": "Essayez d'ajuster vos filtres ou votre recherche",
   "recent": "Récent",

@@ -19,7 +19,9 @@ import { supabase } from '@/lib/supabase';
 import { getMapboxSearchService, type SearchSuggestion } from '@/utils/mapboxSearch';
 import {
   groupCommercesByLocation,
+  groupOffersByLocation,
   type MarkerCluster,
+  type OfferCluster,
 } from '@/utils/markerClustering';
 import { matchesSearch } from '@/utils/searchUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -240,57 +242,59 @@ const ClusteredMarker = React.memo(({
   }
 });
 
-// Offer Marker Component
-const OfferMarker = React.memo(({ offer, onPress }: { offer: OfferWithCommerce; onPress: (offer: OfferWithCommerce) => void }) => {
-  const isBoosted = offer.boosted;
+// Clustered Offer Marker - Shows count badge when multiple offers at same location
+const ClusteredOfferMarker = React.memo(({
+  cluster,
+  onPress,
+}: {
+  cluster: OfferCluster;
+  onPress: (cluster: OfferCluster) => void;
+}) => {
+  const isBoosted = cluster.isBoosted;
+  const count = cluster.offers.length;
   const isAndroid = Platform.OS === 'android';
-
-  const lat = offer.latitude || offer.commerces?.latitude;
-  const lng = offer.longitude || offer.commerces?.longitude;
-
-  if (!lat || !lng) return null;
 
   if (isAndroid) {
     return (
       <PointAnnotation
-        id={`offer-${offer.id}`}
-        coordinate={[lng, lat]}
+        id={cluster.id}
+        coordinate={[cluster.longitude, cluster.latitude]}
         anchor={{ x: 0.5, y: 0.5 }}
         draggable={false}
-        onSelected={() => onPress(offer)}
+        onSelected={() => onPress(cluster)}
       >
         <View
-          style={[
-            styles.offerMarkerPin,
-            isBoosted && styles.offerMarkerPinBoosted
-          ]}
+          style={[styles.offerMarkerPin, isBoosted && styles.offerMarkerPinBoosted]}
           collapsable={false}
         >
-          <IconSymbol name="tag.fill" size={16} color={COLORS.white} />
+          {count > 1 ? (
+            <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
+          ) : (
+            <IconSymbol name="tag.fill" size={16} color={COLORS.white} />
+          )}
         </View>
       </PointAnnotation>
     );
   } else {
     return (
       <MarkerView
-        id={`offer-${offer.id}`}
-        coordinate={[lng, lat]}
+        id={cluster.id}
+        coordinate={[cluster.longitude, cluster.latitude]}
         allowOverlap={true}
         anchor={{ x: 0.5, y: 0.5 }}
       >
         <TouchableOpacity
-          onPress={() => onPress(offer)}
+          onPress={() => onPress(cluster)}
           activeOpacity={0.7}
           style={styles.markerContainer}
         >
           {isBoosted && <View style={styles.offerBoostGlow} pointerEvents="none" />}
-          <View
-            style={[
-              styles.offerMarkerPin,
-              isBoosted && styles.offerMarkerPinBoosted
-            ]}
-          >
-            <IconSymbol name="tag.fill" size={16} color={COLORS.white} />
+          <View style={[styles.offerMarkerPin, isBoosted && styles.offerMarkerPinBoosted]}>
+            {count > 1 ? (
+              <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
+            ) : (
+              <IconSymbol name="tag.fill" size={16} color={COLORS.white} />
+            )}
           </View>
         </TouchableOpacity>
       </MarkerView>
@@ -393,6 +397,8 @@ export default function CompassScreen() {
   const [activeTab, setActiveTab] = useState<MapTab>('businesses');
   const [selectedOffer, setSelectedOffer] = useState<OfferWithCommerce | null>(null);
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [selectedOfferCluster, setSelectedOfferCluster] = useState<OfferCluster | null>(null);
+  const [showOfferClusterModal, setShowOfferClusterModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventWithCommerce | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -493,6 +499,11 @@ export default function CompassScreen() {
              matchesSearch(event.commerces?.category?.name_en, query);
     });
   }, [events, searchQuery, selectedCategories]);
+
+  // Group offers by location to avoid stacked invisible markers
+  const offerClusters = useMemo(() => {
+    return groupOffersByLocation(filteredOffers, 20);
+  }, [filteredOffers]);
 
   // Handlers for offer/event press
   const handleOfferPress = useCallback((offer: OfferWithCommerce) => {
@@ -651,7 +662,7 @@ export default function CompassScreen() {
       if (cameraRef.current && animateCamera) {
         cameraRef.current.setCamera({
           centerCoordinate: coord,
-          zoomLevel: 8,
+          zoomLevel: 10,
           animationDuration: 800,
         });
       }
@@ -903,6 +914,16 @@ export default function CompassScreen() {
     }
   }, [handleBusinessPress]);
 
+  const handleOfferClusterPress = useCallback((cluster: OfferCluster) => {
+    if (cluster.offers.length === 1) {
+      setSelectedOffer(cluster.offers[0]);
+      setShowOfferModal(true);
+    } else {
+      setSelectedOfferCluster(cluster);
+      setShowOfferClusterModal(true);
+    }
+  }, []);
+
   const handleCloseClusterModal = useCallback(() => {
     setModalState(prev => ({
       ...prev,
@@ -978,7 +999,7 @@ export default function CompassScreen() {
             <Camera
               ref={cameraRef}
               centerCoordinate={defaultCenter}
-              zoomLevel={8}
+              zoomLevel={10}
               pitch={is3D ? 70 : 0}
               heading={is3D ? 45 : 0}
               animationDuration={2000}
@@ -1057,15 +1078,13 @@ export default function CompassScreen() {
 
             {/* Offer Markers - Show when offers tab is active */}
             {(MarkerView || PointAnnotation) && activeTab === 'offers' &&
-              filteredOffers
-                .slice(0, 5000)
-                .map((offer) => (
-                  <OfferMarker
-                    key={offer.id}
-                    offer={offer}
-                    onPress={handleOfferPress}
-                  />
-                ))}
+              offerClusters.map((cluster) => (
+                <ClusteredOfferMarker
+                  key={cluster.id}
+                  cluster={cluster}
+                  onPress={handleOfferClusterPress}
+                />
+              ))}
 
             {/* Event Markers - Show when events tab is active */}
             {(MarkerView || PointAnnotation) && activeTab === 'events' &&
@@ -1456,6 +1475,69 @@ export default function CompassScreen() {
                   </View>
 
                   {/* Arrow */}
+                  <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Offer Cluster Modal - Show list of offers at same location */}
+      <Modal visible={showOfferClusterModal} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={() => setShowOfferClusterModal(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.clusterModalContainer}>
+            <View style={styles.clusterModalHeader}>
+              <Text style={styles.clusterModalTitle}>
+                {t('multiple_offers_here')}
+              </Text>
+              <TouchableOpacity onPress={() => setShowOfferClusterModal(false)}>
+                <IconSymbol name="xmark" size={20} color={COLORS.darkGray} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.clusterModalSubtitle}>
+              {t('offers_at_this_location', { count: selectedOfferCluster?.offers.length || 0 })}
+            </Text>
+            <ScrollView style={styles.clusterModalScroll}>
+              {selectedOfferCluster?.offers.map((offer) => (
+                <TouchableOpacity
+                  key={offer.id}
+                  style={[
+                    styles.clusterCommerceItem,
+                    offer.boosted && styles.clusterCommerceItemBoosted,
+                  ]}
+                  onPress={() => {
+                    setShowOfferClusterModal(false);
+                    setTimeout(() => {
+                      setSelectedOffer(offer);
+                      setShowOfferModal(true);
+                    }, 100);
+                  }}
+                >
+                  {offer.image_url ? (
+                    <Image source={{ uri: offer.image_url }} style={styles.clusterCommerceLogo} />
+                  ) : (
+                    <View style={styles.clusterCommerceLogo}>
+                      <IconSymbol
+                        name="tag.fill"
+                        size={20}
+                        color={offer.boosted ? COLORS.primary : COLORS.teal}
+                      />
+                    </View>
+                  )}
+                  <View style={styles.clusterCommerceInfo}>
+                    <Text style={styles.clusterCommerceName} numberOfLines={1}>
+                      {offer.title}
+                    </Text>
+                    <Text style={styles.clusterCommerceCategory} numberOfLines={1}>
+                      {offer.commerces?.name || ''}
+                    </Text>
+                  </View>
                   <IconSymbol name="chevron.right" size={16} color={COLORS.darkGray} />
                 </TouchableOpacity>
               ))}
@@ -2149,6 +2231,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '900',
     color: COLORS.teal,
+    textAlign: 'center',
+  },
+  offerClusterCountText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.white,
     textAlign: 'center',
   },
   clusterCountTextBoosted: {

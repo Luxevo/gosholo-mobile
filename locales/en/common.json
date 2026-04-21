@@ -281,7 +281,11 @@
   "postal_code": "Postal Code",
   "enter_postal_code": "Enter your postal code",
   "postal_code_hint": "Ex: H2X 1Y4",
-  "invalid_postal_code": "Please enter a valid postal code"
+  "invalid_postal_code": "Please enter a valid postal code",
+  "multiple_businesses_here": "Multiple Businesses Here",
+  "businesses_at_this_location": "{{count}} businesses at this location",
+  "multiple_offers_here": "Multiple Offers Here",
+  "offers_at_this_location": "{{count}} offers at this location"
 }
 
 

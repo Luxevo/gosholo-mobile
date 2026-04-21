@@ -1,16 +1,25 @@
 /**
  * Marker Clustering Utilities
- * Groups commerces that are at the same or very close locations
+ * Groups commerces/offers/events that are at the same or very close locations
  */
 
 import type { Commerce } from '@/hooks/useCommerces';
+import type { OfferWithCommerce } from '@/hooks/useOffers';
 
 export interface MarkerCluster {
   id: string;
   latitude: number;
   longitude: number;
   commerces: Commerce[];
-  isBoosted: boolean; // True if any commerce in cluster is boosted
+  isBoosted: boolean;
+}
+
+export interface OfferCluster {
+  id: string;
+  latitude: number;
+  longitude: number;
+  offers: OfferWithCommerce[];
+  isBoosted: boolean;
 }
 
 /**
@@ -95,6 +104,54 @@ export function groupCommercesByLocation(
       longitude: commerce.longitude!,
       commerces: clusterCommerces,
       isBoosted,
+    });
+  });
+
+  return clusters;
+}
+
+/**
+ * Groups offers that are within the clustering threshold distance.
+ * Uses the offer's own coordinates first, falls back to the commerce's coordinates.
+ */
+export function groupOffersByLocation(
+  offers: OfferWithCommerce[],
+  thresholdMeters: number = 20
+): OfferCluster[] {
+  const validOffers = offers.filter(o => {
+    const lat = o.latitude || o.commerces?.latitude;
+    const lng = o.longitude || o.commerces?.longitude;
+    return lat != null && lng != null;
+  });
+
+  if (validOffers.length === 0) return [];
+
+  const clusters: OfferCluster[] = [];
+  const processed = new Set<string>();
+
+  validOffers.forEach((offer) => {
+    if (processed.has(offer.id)) return;
+
+    const lat = (offer.latitude || offer.commerces?.latitude) as number;
+    const lng = (offer.longitude || offer.commerces?.longitude) as number;
+
+    const nearby = validOffers.filter((other) => {
+      if (processed.has(other.id) || other.id === offer.id) return false;
+      const oLat = (other.latitude || other.commerces?.latitude) as number;
+      const oLng = (other.longitude || other.commerces?.longitude) as number;
+      return calculateDistance(lat, lng, oLat, oLng) <= thresholdMeters;
+    });
+
+    processed.add(offer.id);
+    nearby.forEach(o => processed.add(o.id));
+
+    const clusterOffers = [offer, ...nearby];
+    clusters.push({
+      id: `offer-cluster-${offer.id}`,
+      latitude: lat,
+      longitude: lng,
+      offers: clusterOffers,
+      isBoosted: clusterOffers.some(o => !!o.boosted),
     });
   });
 
