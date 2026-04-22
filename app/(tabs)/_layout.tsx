@@ -8,6 +8,7 @@ export default function TabLayout() {
   return (
     <View style={styles.container}>
       <Tabs
+        initialRouteName="ai"
         tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
