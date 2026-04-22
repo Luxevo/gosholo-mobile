@@ -74,10 +74,7 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
 
   return (
     <TouchableOpacity
-      style={[
-        styles.card,
-        offer.boosted && styles.cardBoosted
-      ]}
+      style={styles.card}
       onPress={onPress}
       activeOpacity={0.92}
       accessibilityRole="button"
@@ -100,16 +97,6 @@ const OfferCardComponent: React.FC<OfferCardProps> = ({ offer, onPress, onFavori
         >
           <Text style={styles.locationText} numberOfLines={1}>{locationText}</Text>
         </LinearGradient>
-
-        {/* Boost badge */}
-        {offer.boosted && (
-          <View style={styles.boostBadge}>
-            <IconSymbol name="star.fill" size={10} color="#FFD700" />
-            <Text style={styles.boostText}>
-              {offer.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* Content */}
@@ -185,15 +172,6 @@ const styles = StyleSheet.create({
     elevation: 4,
     alignSelf: 'center',
   },
-  cardBoosted: {
-    borderWidth: 1.5,
-    borderColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 6,
-  },
 
   // Media
   media: {
@@ -220,24 +198,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: 'rgba(255,255,255,0.9)',
-  },
-
-  boostBadge: {
-    position: 'absolute',
-    top: SPACING.sm,
-    left: SPACING.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: RAD.pill,
-    gap: 3,
-  },
-  boostText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#FFD700',
   },
 
   // Body

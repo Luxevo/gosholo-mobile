@@ -13,7 +13,7 @@ In `compass.tsx`, there are 4 marker components (`CommerceMarker`, `ClusteredMar
 if (isAndroid) {
   return <PointAnnotation ...>  // Android
 } else {
-  return <MarkerView ...>       // iOS with TouchableOpacity + boost glow
+  return <MarkerView ...>       // iOS with TouchableOpacity
 }
 ```
 
@@ -28,7 +28,7 @@ Each marker has ~50-60 lines, with the platform logic accounting for most of the
 Create a generic `PlatformMarker` component that handles the iOS/Android branching once:
 
 ```tsx
-function PlatformMarker({ id, coordinate, isBoosted, onPress, children }) {
+function PlatformMarker({ id, coordinate, onPress, children }) {
   if (Platform.OS === 'android') {
     return <PointAnnotation ...>{children}</PointAnnotation>;
   }

@@ -49,9 +49,6 @@ export type Offer = {
   start_date?: string;
   end_date?: string;
   is_active?: boolean;
-  boosted: boolean;
-  boosted_at?: string;
-  boost_type?: 'en_vedette' | 'visibilite';
   image_url?: string;
   latitude?: number;
   longitude?: number;
@@ -74,9 +71,6 @@ export type Event = {
   start_date?: string;
   end_date?: string;
   is_active?: boolean;
-  boosted: boolean;
-  boosted_at?: string;
-  boost_type?: 'en_vedette' | 'visibilite';
   image_url?: string;
   latitude?: number;
   longitude?: number;

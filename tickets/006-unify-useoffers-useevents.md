@@ -12,7 +12,7 @@
 - Fetch from Supabase with active/expiry filters
 - Join with commerces table
 - Calculate distance using Haversine
-- Sort by boosted first, then by distance
+- Sort by distance
 - Same loading/error/refetch state
 
 The only differences are table name, a few filter options (date filters for events), and sort order.

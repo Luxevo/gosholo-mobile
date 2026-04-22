@@ -114,7 +114,6 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
       style={[
         styles.card,
         isEnded && styles.cardDisabled,
-        event.boosted && styles.cardBoosted
       ]}
       onPress={onPress}
       disabled={isEnded}
@@ -152,16 +151,6 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onPress, onFavori
             )}
           </View>
         </LinearGradient>
-
-        {/* Boost badge */}
-        {event.boosted && (
-          <View style={styles.boostBadge}>
-            <IconSymbol name="star.fill" size={10} color="#FFD700" />
-            <Text style={styles.boostText}>
-              {event.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* Content */}
@@ -258,15 +247,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   cardDisabled: { opacity: 0.6 },
-  cardBoosted: {
-    borderWidth: 1.5,
-    borderColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 6,
-  },
 
   // Media
   media: {
@@ -313,24 +293,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 10,
     fontWeight: '700',
-  },
-
-  boostBadge: {
-    position: 'absolute',
-    top: SPACING.sm,
-    left: SPACING.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: RAD.pill,
-    gap: 3,
-  },
-  boostText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#FFD700',
   },
 
   // Body

@@ -50,7 +50,6 @@ const SPACING = {
 interface Section {
   title: string;
   data: Commerce[][];
-  isFeatured?: boolean;
 }
 
 type SectionData = Section;
@@ -101,41 +100,19 @@ export default function HomeScreen() {
     );
   }, [commerces, searchQuery]);
 
-  // Group businesses into sections: Featured first, then by letter
+  // Group businesses into sections by letter
   const sections = useMemo(() => {
     const result: Section[] = [];
 
-    // Separate boosted and regular businesses
-    const boosted = filteredCommerces.filter(c => c.boosted);
-    const regular = filteredCommerces.filter(c => !c.boosted);
-
-    // Sort regular businesses alphabetically
-    const sortedRegular = [...regular].sort((a, b) =>
+    // Sort businesses alphabetically
+    const sorted = [...filteredCommerces].sort((a, b) =>
       (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
     );
 
-    // Add featured section if there are boosted businesses
-    if (boosted.length > 0) {
-      // Sort boosted alphabetically too
-      const sortedBoosted = [...boosted].sort((a, b) =>
-        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
-      );
-      // Group into pairs for 2-column layout
-      const pairs: Commerce[][] = [];
-      for (let i = 0; i < sortedBoosted.length; i += 2) {
-        pairs.push(sortedBoosted.slice(i, i + 2));
-      }
-      result.push({
-        title: '⭐',
-        data: pairs,
-        isFeatured: true,
-      });
-    }
-
-    // Group regular businesses by first letter
+    // Group businesses by first letter
     const letterGroups: { [key: string]: Commerce[] } = {};
 
-    sortedRegular.forEach(commerce => {
+    sorted.forEach(commerce => {
       const firstChar = (commerce.name || '').charAt(0).toUpperCase();
       // Handle numbers and special characters
       const letter = /[A-Z]/.test(firstChar) ? firstChar : '#';
@@ -279,11 +256,6 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-        {item.boosted && (
-          <View style={styles.boostedBadge}>
-            <Ionicons name="star" size={10} color={COLORS.white} />
-          </View>
-        )}
       </TouchableOpacity>
     );
   }, [i18n.language, isFollowing, handleBusinessPress, handleQuickFollow]);
@@ -301,15 +273,8 @@ export default function HomeScreen() {
   ), [renderBusinessCard]);
 
   const renderSectionHeader = ({ section }: { section: SectionData }) => (
-    <View style={[styles.sectionHeader, section.isFeatured && styles.featuredHeader]}>
-      {section.isFeatured ? (
-        <View style={styles.featuredTitleRow}>
-          <Ionicons name="star" size={16} color={COLORS.primary} />
-          <Text style={styles.featuredTitle}>{t('featured', 'En vedette')}</Text>
-        </View>
-      ) : (
-        <Text style={styles.sectionTitle}>{section.title}</Text>
-      )}
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
     </View>
   );
 
@@ -440,24 +405,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray,
   },
-  featuredHeader: {
-    backgroundColor: 'rgba(255, 98, 51, 0.05)',
-    borderBottomColor: COLORS.primary,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.teal,
-  },
-  featuredTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  featuredTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primary,
   },
   row: {
     flexDirection: 'row',
@@ -539,17 +490,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.darkGray,
     flex: 1,
-  },
-  boostedBadge: {
-    position: 'absolute',
-    top: SPACING.sm,
-    right: SPACING.sm,
-    backgroundColor: COLORS.primary,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   followButton: {
     backgroundColor: COLORS.white,

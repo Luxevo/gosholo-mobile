@@ -18,8 +18,7 @@ export const fetchMapCommercesData = async (): Promise<Commerce[]> => {
     .eq('status', 'active')
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)
-    .order('boosted', { ascending: false })
-    .order('boosted_at', { ascending: false, nullsFirst: false });
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
 

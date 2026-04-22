@@ -99,7 +99,6 @@ type LngLat = [number, number];
 // Android: PointAnnotation with text (reliable clicks)
 // iOS: MarkerView with logo (better rendering)
 const CommerceMarker = React.memo(({ commerce, onPress }: { commerce: Commerce; onPress: (commerce: Commerce) => void }) => {
-  const isBoosted = commerce.boosted;
   const isAndroid = Platform.OS === 'android';
 
   if (isAndroid) {
@@ -113,16 +112,11 @@ const CommerceMarker = React.memo(({ commerce, onPress }: { commerce: Commerce; 
         onSelected={() => onPress(commerce)}
       >
         <View
-          style={[
-            styles.markerPin,
-            styles.markerPinButton,
-            isBoosted && styles.markerPinBoosted,
-            isBoosted && styles.markerPinButtonBoosted
-          ]}
+          style={[styles.markerPin, styles.markerPinButton]}
           collapsable={false}
         >
           <Text
-            style={[styles.markerText, isBoosted && styles.markerTextBoosted]}
+            style={styles.markerText}
             numberOfLines={1}
             adjustsFontSizeToFit={false}
           >
@@ -145,13 +139,7 @@ const CommerceMarker = React.memo(({ commerce, onPress }: { commerce: Commerce; 
           activeOpacity={0.7}
           style={styles.markerContainer}
         >
-          {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
-          <View
-            style={[
-              styles.markerPin,
-              isBoosted && styles.markerPinBoosted
-            ]}
-          >
+          <View style={styles.markerPin}>
             <Image
               source={{ uri: LOGO_BASE64 }}
               style={styles.markerLogo}
@@ -172,7 +160,6 @@ const ClusteredMarker = React.memo(({
   cluster: MarkerCluster;
   onPress: (cluster: MarkerCluster) => void
 }) => {
-  const isBoosted = cluster.isBoosted;
   const count = cluster.commerces.length;
   const isAndroid = Platform.OS === 'android';
 
@@ -187,21 +174,10 @@ const ClusteredMarker = React.memo(({
         onSelected={() => onPress(cluster)}
       >
         <View
-          style={[
-            styles.markerPin,
-            styles.markerPinButton,
-            isBoosted && styles.markerPinBoosted,
-            isBoosted && styles.markerPinButtonBoosted
-          ]}
+          style={[styles.markerPin, styles.markerPinButton]}
           collapsable={false}
         >
-          <Text
-            style={[
-              styles.clusterCountText,
-              isBoosted && styles.clusterCountTextBoosted
-            ]}
-            numberOfLines={1}
-          >
+          <Text style={styles.clusterCountText} numberOfLines={1}>
             {count}
           </Text>
         </View>
@@ -221,20 +197,8 @@ const ClusteredMarker = React.memo(({
           activeOpacity={0.7}
           style={styles.markerContainer}
         >
-          {isBoosted && <View style={styles.boostGlow} pointerEvents="none" />}
-          <View
-            style={[
-              styles.markerPin,
-              isBoosted && styles.markerPinBoosted
-            ]}
-          >
-            <Text
-              style={[
-                styles.clusterCountText,
-                isBoosted && styles.clusterCountTextBoosted
-              ]}
-              numberOfLines={1}
-            >
+          <View style={styles.markerPin}>
+            <Text style={styles.clusterCountText} numberOfLines={1}>
               {count}
             </Text>
           </View>
@@ -252,7 +216,6 @@ const ClusteredOfferMarker = React.memo(({
   cluster: OfferCluster;
   onPress: (cluster: OfferCluster) => void;
 }) => {
-  const isBoosted = cluster.isBoosted;
   const count = cluster.offers.length;
   const isAndroid = Platform.OS === 'android';
 
@@ -265,10 +228,7 @@ const ClusteredOfferMarker = React.memo(({
         draggable={false}
         onSelected={() => onPress(cluster)}
       >
-        <View
-          style={[styles.offerMarkerPin, isBoosted && styles.offerMarkerPinBoosted]}
-          collapsable={false}
-        >
+        <View style={styles.offerMarkerPin} collapsable={false}>
           {count > 1 ? (
             <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
           ) : (
@@ -290,8 +250,7 @@ const ClusteredOfferMarker = React.memo(({
           activeOpacity={0.7}
           style={styles.markerContainer}
         >
-          {isBoosted && <View style={styles.offerBoostGlow} pointerEvents="none" />}
-          <View style={[styles.offerMarkerPin, isBoosted && styles.offerMarkerPinBoosted]}>
+          <View style={styles.offerMarkerPin}>
             {count > 1 ? (
               <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
             ) : (
@@ -306,7 +265,6 @@ const ClusteredOfferMarker = React.memo(({
 
 // Event Marker Component
 const EventMarker = React.memo(({ event, onPress }: { event: EventWithCommerce; onPress: (event: EventWithCommerce) => void }) => {
-  const isBoosted = event.boosted;
   const isAndroid = Platform.OS === 'android';
 
   const lat = event.latitude || event.commerces?.latitude;
@@ -323,13 +281,7 @@ const EventMarker = React.memo(({ event, onPress }: { event: EventWithCommerce; 
         draggable={false}
         onSelected={() => onPress(event)}
       >
-        <View
-          style={[
-            styles.eventMarkerPin,
-            isBoosted && styles.eventMarkerPinBoosted
-          ]}
-          collapsable={false}
-        >
+        <View style={styles.eventMarkerPin} collapsable={false}>
           <IconSymbol name="calendar" size={16} color={COLORS.white} />
         </View>
       </PointAnnotation>
@@ -347,13 +299,7 @@ const EventMarker = React.memo(({ event, onPress }: { event: EventWithCommerce; 
           activeOpacity={0.7}
           style={styles.markerContainer}
         >
-          {isBoosted && <View style={styles.eventBoostGlow} pointerEvents="none" />}
-          <View
-            style={[
-              styles.eventMarkerPin,
-              isBoosted && styles.eventMarkerPinBoosted
-            ]}
-          >
+          <View style={styles.eventMarkerPin}>
             <IconSymbol name="calendar" size={16} color={COLORS.white} />
           </View>
         </TouchableOpacity>
@@ -370,7 +316,6 @@ const ClusteredEventMarker = React.memo(({
   cluster: EventCluster;
   onPress: (cluster: EventCluster) => void;
 }) => {
-  const isBoosted = cluster.isBoosted;
   const count = cluster.events.length;
   const isAndroid = Platform.OS === 'android';
 
@@ -383,10 +328,7 @@ const ClusteredEventMarker = React.memo(({
         draggable={false}
         onSelected={() => onPress(cluster)}
       >
-        <View
-          style={[styles.eventMarkerPin, isBoosted && styles.eventMarkerPinBoosted]}
-          collapsable={false}
-        >
+        <View style={styles.eventMarkerPin} collapsable={false}>
           {count > 1 ? (
             <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
           ) : (
@@ -408,8 +350,7 @@ const ClusteredEventMarker = React.memo(({
           activeOpacity={0.7}
           style={styles.markerContainer}
         >
-          {isBoosted && <View style={styles.eventBoostGlow} pointerEvents="none" />}
-          <View style={[styles.eventMarkerPin, isBoosted && styles.eventMarkerPinBoosted]}>
+          <View style={styles.eventMarkerPin}>
             {count > 1 ? (
               <Text style={styles.offerClusterCountText} numberOfLines={1}>{count}</Text>
             ) : (
@@ -1041,18 +982,6 @@ export default function CompassScreen() {
   const getCategoryIcon = useCallback((category: string) => 
     categoryIcons[category as keyof typeof categoryIcons] || '📍', [categoryIcons]);
 
-  const getBoostBadge = useCallback((commerce: Commerce) => {
-    if (!commerce.boosted) return null;
-    return t('boosted');
-  }, [t]);
-
-  const getBoostBadgeColor = useCallback((commerce: Commerce) => {
-    if (!commerce.boosted) return null;
-    return '#FF6233';
-  }, []);
-
-  
-
   // Use activeLocation (custom or GPS) as default center, fallback to Montreal
   const defaultCenter: LngLat = activeLocation ?? userLocation ?? [-73.5673, 45.5017];
 
@@ -1260,10 +1189,7 @@ export default function CompassScreen() {
               keyExtractor={(item) => item.id}
               renderItem={({ item: commerce }) => (
                 <TouchableOpacity
-                  style={[
-                    styles.searchResultItem,
-                    commerce.boosted && styles.searchResultItemBoosted
-                  ]}
+                  style={styles.searchResultItem}
                   onPress={() => handleCommerceSelect(commerce)}
                 >
                   {commerce.image_url ? (
@@ -1275,19 +1201,14 @@ export default function CompassScreen() {
                     <IconSymbol
                       name="storefront.fill"
                       size={20}
-                      color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                      color={COLORS.teal}
                     />
                   )}
                   <View style={styles.searchResultTextContainer}>
                     <View style={styles.searchResultNameRow}>
-                      <Text style={[styles.searchResultText, commerce.boosted && styles.searchResultTextBoosted]} numberOfLines={1}>
+                      <Text style={styles.searchResultText} numberOfLines={1}>
                         {commerce.name}
                       </Text>
-                      {commerce.boosted && (
-                        <View style={styles.searchBoostedBadge}>
-                          <IconSymbol name="star.fill" size={10} color={COLORS.white} />
-                        </View>
-                      )}
                     </View>
                     <Text style={styles.searchResultSubtext} numberOfLines={1}>
                       {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
@@ -1354,10 +1275,7 @@ export default function CompassScreen() {
             contentContainerStyle={styles.businessListContent}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[
-                  styles.businessListItem,
-                  item.boosted && styles.businessListItemBoosted
-                ]}
+                style={styles.businessListItem}
                   onPress={() => {
                     handleBusinessPress(item);
                     setModalState(prev => ({ ...prev, showBusinessList: false }));
@@ -1372,16 +1290,6 @@ export default function CompassScreen() {
                       <Text style={styles.businessItemName} numberOfLines={1}>
                         {item.name}
                       </Text>
-                      {item.boosted && (
-                        <View style={[
-                          styles.listBoostBadge,
-                          { backgroundColor: getBoostBadgeColor(item) || COLORS.primary }
-                        ]}>
-                          <Text style={styles.listBoostBadgeText}>
-                            {getBoostBadge(item)}
-                          </Text>
-                        </View>
-                      )}
                     </View>
                     <Text style={styles.businessItemAddress} numberOfLines={1}>
                       {item.address || t('address_not_available')}
@@ -1513,10 +1421,7 @@ export default function CompassScreen() {
               {selectedCluster?.commerces.map((commerce: Commerce) => (
                 <TouchableOpacity
                   key={commerce.id}
-                  style={[
-                    styles.clusterCommerceItem,
-                    commerce.boosted && styles.clusterCommerceItemBoosted
-                  ]}
+                  style={styles.clusterCommerceItem}
                   onPress={() => {
                     handleCloseClusterModal();
                     setTimeout(() => handleBusinessPress(commerce), 100);
@@ -1533,7 +1438,7 @@ export default function CompassScreen() {
                       <IconSymbol
                         name="storefront.fill"
                         size={20}
-                        color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                        color={COLORS.teal}
                       />
                     </View>
                   )}
@@ -1584,10 +1489,7 @@ export default function CompassScreen() {
               {selectedOfferCluster?.offers.map((offer) => (
                 <TouchableOpacity
                   key={offer.id}
-                  style={[
-                    styles.clusterCommerceItem,
-                    offer.boosted && styles.clusterCommerceItemBoosted,
-                  ]}
+                  style={styles.clusterCommerceItem}
                   onPress={() => {
                     setShowOfferClusterModal(false);
                     setTimeout(() => {
@@ -1603,7 +1505,7 @@ export default function CompassScreen() {
                       <IconSymbol
                         name="tag.fill"
                         size={20}
-                        color={offer.boosted ? COLORS.primary : COLORS.teal}
+                        color={COLORS.teal}
                       />
                     </View>
                   )}
@@ -1647,10 +1549,7 @@ export default function CompassScreen() {
               {selectedEventCluster?.events.map((event) => (
                 <TouchableOpacity
                   key={event.id}
-                  style={[
-                    styles.clusterCommerceItem,
-                    event.boosted && styles.clusterCommerceItemBoosted,
-                  ]}
+                  style={styles.clusterCommerceItem}
                   onPress={() => {
                     setShowEventClusterModal(false);
                     setTimeout(() => {
@@ -1666,7 +1565,7 @@ export default function CompassScreen() {
                       <IconSymbol
                         name="calendar"
                         size={20}
-                        color={event.boosted ? COLORS.primary : COLORS.teal}
+                        color={COLORS.teal}
                       />
                     </View>
                   )}
@@ -1898,15 +1797,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#F0F0F0',
   },
-  markerPinBoosted: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
   markerPinButton: {
     // Android: Button shape (pill/rounded rectangle) with green fluo background
     width: 60,
@@ -1918,48 +1808,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.green, // Green fluo
     borderWidth: 0,
   },
-  markerPinButtonBoosted: {
-    // Android boosted: Better styled button with border and shadow
-    minWidth: 70,
-    height: 32,
-    borderRadius: 16,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    backgroundColor: COLORS.green,
-    borderWidth: 2,
-    borderColor: COLORS.teal,
-    shadowColor: COLORS.teal,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 6,
-  },
   markerLogo: {
     width: 30,
     height: 30,
-  },
-  markerLogoBoosted: {
-    width: 42,
-    height: 42,
   },
   markerText: {
     fontSize: 12,
     fontWeight: '700',
     color: COLORS.teal,
     textAlign: 'center',
-  },
-  markerTextBoosted: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: COLORS.teal,
-  },
-  boostGlow: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgb(70,130,195)',
-    opacity: 0.6,
   },
   businessListContainer: {
     position: 'absolute',
@@ -2043,47 +1900,11 @@ const styles = StyleSheet.create({
   },
   
 
-  boostBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  boostBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  businessListItemBoosted: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    backgroundColor: '#FFF5F3',
-  },
-  businessListItemFeatured: {
-    borderColor: '#FFD700',
-    backgroundColor: '#FFF9E6',
-  },
   businessNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 4,
-  },
-  listBoostBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  listBoostBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.white,
   },
   routeInfoContainer: {
     position: 'absolute',
@@ -2333,27 +2154,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.darkGray,
   },
-  searchResultItemBoosted: {
-    backgroundColor: 'rgba(255, 98, 51, 0.05)',
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-  },
   searchResultNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 4,
-  },
-  searchResultTextBoosted: {
-    color: COLORS.primary,
-  },
-  searchBoostedBadge: {
-    backgroundColor: COLORS.primary,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   destinationMarkerContainer: {
     alignItems: 'center',
@@ -2378,10 +2183,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.white,
     textAlign: 'center',
-  },
-  clusterCountTextBoosted: {
-    fontSize: 28,
-    color: COLORS.primary,
   },
   // Cluster modal styles
   modalOverlay: {
@@ -2438,11 +2239,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.gray,
-  },
-  clusterCommerceItemBoosted: {
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    backgroundColor: '#FFF5F3',
   },
   clusterCommerceLogo: {
     width: 40,
@@ -2642,23 +2438,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.white,
   },
-  offerMarkerPinBoosted: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 3,
-    borderColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOpacity: 0.5,
-  },
-  offerBoostGlow: {
-    position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: COLORS.primary,
-    opacity: 0.3,
-  },
   // Event marker styles
   eventMarkerPin: {
     width: 36,
@@ -2674,22 +2453,5 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 2,
     borderColor: COLORS.white,
-  },
-  eventMarkerPinBoosted: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 3,
-    borderColor: '#FFD700',
-    shadowColor: '#FFD700',
-    shadowOpacity: 0.5,
-  },
-  eventBoostGlow: {
-    position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: COLORS.blue,
-    opacity: 0.3,
   },
 });

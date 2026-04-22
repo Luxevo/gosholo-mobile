@@ -12,7 +12,6 @@ async function fetchOffersPrefetch() {
       .select('*, commerces:commerce_id(id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr))')
       .eq('is_active', true)
       .or(`end_date.is.null,end_date.gt.${today}`)
-      .order('boosted', { ascending: false })
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
@@ -29,7 +28,6 @@ async function fetchEventsPrefetch() {
       .select('*, commerces:commerce_id(id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr))')
       .eq('is_active', true)
       .or(`end_date.is.null,end_date.gt.${today}`)
-      .order('boosted', { ascending: false })
       .order('start_date', { ascending: true });
     if (error) throw error;
     return data || [];

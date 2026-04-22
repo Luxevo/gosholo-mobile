@@ -85,7 +85,7 @@ npx eas build --profile production --platform android
 **Custom Hooks** (`hooks/`):
 | Hook | Purpose |
 |------|---------|
-| `useOffers.ts` | Fetches offers with commerce joins, distance calculation (Haversine), boosted sorting |
+| `useOffers.ts` | Fetches offers with commerce joins, distance calculation (Haversine), sorted by proximity |
 | `useEvents.ts` | Fetches events with similar patterns, date filtering (this_week, upcoming) |
 | `useCommerces.ts` | Fetches active commerces with category/sub_category joins |
 | `useCategories.ts` | Fetches internationalized categories (name_fr, name_en) |
@@ -98,7 +98,7 @@ npx eas build --profile production --platform android
 ### Component Architecture
 
 **Card Components**:
-- `OfferCard.tsx` - Full-featured with boost badges, share, time remaining, category chip
+- `OfferCard.tsx` - Full-featured with share, time remaining, category chip
 - `EventCard.tsx` - Similar to OfferCard with event-specific features
 - `RestaurantCard.tsx` - Commerce card variant
 - `HomeCard.tsx` - Navigation card for home screen
@@ -193,9 +193,6 @@ Ink: #111827
 | sub_category_id | int | FK to sub_category |
 | facebook_url, instagram_url | text | Social links |
 | status | text | 'active' default |
-| boosted | boolean | Is promoted |
-| boosted_at | timestamptz | When boosted |
-| boost_type | enum | 'en_vedette' or 'visibilite' |
 
 **offers** (9 rows):
 | Column | Type | Description |
@@ -213,7 +210,6 @@ Ink: #111827
 | image_url | text | Offer image |
 | latitude, longitude | numeric | Coordinates |
 | category_id, sub_category_id | int | Category FKs |
-| boosted, boosted_at, boost_type | - | Boost system |
 
 **events** (2 rows):
 - Similar to offers with `category_events_id` instead
@@ -296,25 +292,6 @@ Ink: #111827
 | created_at | timestamptz |
 
 ### Monetization
-
-**user_boost_credits** (4 rows):
-| Column | Type |
-|--------|------|
-| id | uuid |
-| user_id | uuid (unique) |
-| available_en_vedette | int |
-| available_visibilite | int |
-
-**boost_transactions** (5 rows):
-| Column | Type |
-|--------|------|
-| id | uuid |
-| user_id | uuid |
-| boost_type | enum |
-| amount_cents | int |
-| stripe_payment_intent_id | text |
-| card_last_four, card_brand | text |
-| status | text |
 
 **subscriptions** (1 row):
 | Column | Type |

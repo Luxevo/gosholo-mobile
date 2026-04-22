@@ -328,11 +328,6 @@ export default function BusinessDetailModal({
                         <Text style={[styles.offerTitle, { color: theme.ink }]} numberOfLines={2}>
                           {offer.title}
                         </Text>
-                        {offer.boosted && (
-                          <View style={styles.boostedBadge}>
-                            <Ionicons name="star" size={10} color={COLORS.light.white} />
-                          </View>
-                        )}
                       </View>
                       {offer.description && (
                         <LinkableText style={[styles.offerDescription, { color: theme.inkLight }]} linkColor={theme.teal} numberOfLines={2}>
@@ -378,11 +373,6 @@ export default function BusinessDetailModal({
                         <Text style={[styles.eventTitle, { color: theme.ink }]} numberOfLines={2}>
                           {event.title}
                         </Text>
-                        {event.boosted && (
-                          <View style={styles.boostedBadge}>
-                            <Ionicons name="star" size={10} color={COLORS.light.white} />
-                          </View>
-                        )}
                       </View>
                       {event.description && (
                         <LinkableText style={[styles.eventDescription, { color: theme.inkLight }]} linkColor={theme.teal} numberOfLines={2}>
@@ -726,15 +716,6 @@ const styles = StyleSheet.create({
   eventDate: {
     fontSize: 11,
     fontWeight: '500',
-  },
-  boostedBadge: {
-    backgroundColor: COLORS.light.primary,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: SPACING.xs,
   },
   emptyState: {
     alignItems: 'center',

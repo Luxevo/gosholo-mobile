@@ -232,16 +232,6 @@ export default function OfferDetailModal({
                 </TouchableOpacity>
               </View>
             </SafeAreaView>
-
-            {/* Boost badge on image */}
-            {offer.boosted && (
-              <View style={styles.heroBoostBadge}>
-                <IconSymbol name="star.fill" size={12} color={COLORS.success} />
-                <Text style={styles.heroBoostText}>
-                  {offer.boost_type === 'en_vedette' ? t('featured') : t('promoted')}
-                </Text>
-              </View>
-            )}
           </View>
 
           {/* Content Card */}
@@ -426,25 +416,6 @@ const styles = StyleSheet.create({
   headerRightButtons: {
     flexDirection: 'row',
     gap: SPACING.sm,
-  },
-
-  heroBoostBadge: {
-    position: 'absolute',
-    bottom: 35,
-    left: SPACING.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.88)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 999,
-    gap: 4,
-  },
-  heroBoostText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.success,
-    letterSpacing: 0.3,
   },
 
   // Content card

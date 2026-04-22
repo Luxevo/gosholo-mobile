@@ -74,7 +74,6 @@ export const useEvents = (options: UseEventsOptions = {}) => {
         .select('*')
         .eq('is_active', true)
         .or(`end_date.is.null,end_date.gt.${today}`) // Include events with no end_date or end_date > today
-        .order('boosted', { ascending: false }) // Boosted events first
         .order('start_date', { ascending: true }); // Upcoming events first
 
       // Apply search filter if provided
@@ -151,14 +150,8 @@ export const useEvents = (options: UseEventsOptions = {}) => {
         });
       }
 
-      // Sort by boosted first, then by distance (closest to farthest)
+      // Sort by distance (closest to farthest); items without distance go to the end
       filteredData.sort((a, b) => {
-        // Boosted items first
-        if (a.boosted && !b.boosted) return -1;
-        if (!a.boosted && b.boosted) return 1;
-
-        // Then sort by distance (closest first)
-        // Items without distance go to the end
         if (a.distance === null && b.distance === null) return 0;
         if (a.distance === null) return 1;
         if (b.distance === null) return -1;

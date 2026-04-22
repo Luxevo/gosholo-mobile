@@ -12,7 +12,6 @@ export interface MarkerCluster {
   latitude: number;
   longitude: number;
   commerces: Commerce[];
-  isBoosted: boolean;
 }
 
 export interface OfferCluster {
@@ -20,7 +19,6 @@ export interface OfferCluster {
   latitude: number;
   longitude: number;
   offers: OfferWithCommerce[];
-  isBoosted: boolean;
 }
 
 export interface EventCluster {
@@ -28,7 +26,6 @@ export interface EventCluster {
   latitude: number;
   longitude: number;
   events: EventWithCommerce[];
-  isBoosted: boolean;
 }
 
 /**
@@ -105,14 +102,12 @@ export function groupCommercesByLocation(
 
     // Create cluster
     const clusterCommerces = [commerce, ...nearbyCommerces];
-    const isBoosted = clusterCommerces.some(c => c.boosted);
 
     clusters.push({
       id: `cluster-${commerce.id}`,
       latitude: commerce.latitude!,
       longitude: commerce.longitude!,
       commerces: clusterCommerces,
-      isBoosted,
     });
   });
 
@@ -160,7 +155,6 @@ export function groupOffersByLocation(
       latitude: lat,
       longitude: lng,
       offers: clusterOffers,
-      isBoosted: clusterOffers.some(o => !!o.boosted),
     });
   });
 
@@ -207,7 +201,6 @@ export function groupEventsByLocation(
       latitude: lat,
       longitude: lng,
       events: clusterEvents,
-      isBoosted: clusterEvents.some(e => !!e.boosted),
     });
   });
 

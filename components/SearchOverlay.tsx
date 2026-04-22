@@ -127,10 +127,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               onScrollBeginDrag={dismissKeyboard}
               renderItem={({ item: commerce }) => (
                 <TouchableOpacity
-                  style={[
-                    styles.resultItem,
-                    commerce.boosted && styles.resultItemBoosted
-                  ]}
+                  style={styles.resultItem}
                   onPress={() => {
                     onSelectCommerce(commerce);
                     onClose();
@@ -142,30 +139,19 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                       style={styles.resultLogo}
                     />
                   ) : (
-                    <View style={[
-                      styles.resultIconContainer,
-                      commerce.boosted && styles.resultIconContainerBoosted
-                    ]}>
+                    <View style={styles.resultIconContainer}>
                       <IconSymbol
                         name="storefront.fill"
                         size={24}
-                        color={commerce.boosted ? COLORS.primary : COLORS.teal}
+                        color={COLORS.teal}
                       />
                     </View>
                   )}
                   <View style={styles.resultTextContainer}>
                     <View style={styles.resultTitleRow}>
-                      <Text style={[
-                        styles.resultTitle,
-                        commerce.boosted && styles.resultTitleBoosted
-                      ]} numberOfLines={1}>
+                      <Text style={styles.resultTitle} numberOfLines={1}>
                         {commerce.name}
                       </Text>
-                      {commerce.boosted && (
-                        <View style={styles.boostedBadge}>
-                          <IconSymbol name="star.fill" size={10} color={COLORS.white} />
-                        </View>
-                      )}
                     </View>
                     <Text style={styles.resultSubtitle} numberOfLines={1}>
                       {commerce.category ? (i18n.language === 'fr' ? commerce.category.name_fr : commerce.category.name_en) : 'Commerce'} • {commerce.address}
@@ -319,28 +305,9 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
-  resultItemBoosted: {
-    backgroundColor: 'rgba(255, 98, 51, 0.05)',
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.primary,
-  },
-  resultIconContainerBoosted: {
-    backgroundColor: 'rgba(255, 98, 51, 0.1)',
-  },
   resultTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-  },
-  resultTitleBoosted: {
-    color: COLORS.primary,
-  },
-  boostedBadge: {
-    backgroundColor: COLORS.primary,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
