@@ -1,3 +1,4 @@
+import { AdBanner } from '@/components/AdBanner';
 import { EventCard } from '@/components/EventCard';
 import EventDetailModal from '@/components/EventDetailModal';
 import { LocationPicker, LocationPill } from '@/components/LocationPicker';
@@ -7,6 +8,7 @@ import { Toast } from '@/components/Toast';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useLocation } from '@/contexts/LocationContext';
 import { useCategories } from '@/hooks/useCategories';
+import { useAd } from '@/hooks/useAd';
 import { EventWithCommerce, useEvents } from '@/hooks/useEvents';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
@@ -60,6 +62,7 @@ export default function EventsScreen() {
   const { activeLocation } = useLocation();
   const userLocation = activeLocation;
   const { profile } = useMobileUser();
+  const ad = useAd();
   const { events, loading, error, refetch } = useEvents({ userLocation: userLocation || undefined });
   const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -348,16 +351,19 @@ export default function EventsScreen() {
       <FlatList
         data={filteredEvents}
         keyExtractor={(item) => item.id}
-        renderItem={({ item: event }) => (
-          <EventCard
-            event={event}
-            onPress={() => handleEventPress(event)}
-            onFavoritePress={() => handleFavoritePress(event.id)}
-            isFavorite={isFavorite('event', event.id)}
-            onLikePress={() => handleLikePress(event.id)}
-            isLiked={isLiked('event', event.id)}
-            likeCount={getLikeCount('event', event.id) || event.like_count}
-          />
+        renderItem={({ item: event, index }) => (
+          <>
+            <EventCard
+              event={event}
+              onPress={() => handleEventPress(event)}
+              onFavoritePress={() => handleFavoritePress(event.id)}
+              isFavorite={isFavorite('event', event.id)}
+              onLikePress={() => handleLikePress(event.id)}
+              isLiked={isLiked('event', event.id)}
+              likeCount={getLikeCount('event', event.id) || event.like_count}
+            />
+            {index === 0 && ad && <AdBanner ad={ad} />}
+          </>
         )}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

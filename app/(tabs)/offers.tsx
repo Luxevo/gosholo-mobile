@@ -1,3 +1,4 @@
+import { AdBanner } from '@/components/AdBanner';
 import { LocationPicker, LocationPill } from '@/components/LocationPicker';
 import { OfferCard } from '@/components/OfferCard';
 import OfferDetailModal from '@/components/OfferDetailModal';
@@ -10,6 +11,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useLikes } from '@/hooks/useLikes';
 import { useMobileUser } from '@/hooks/useMobileUser';
 import { useOffers, OfferWithCommerce } from '@/hooks/useOffers';
+import { useAd } from '@/hooks/useAd';
 import { matchesSearch } from '@/utils/searchUtils';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
@@ -53,6 +55,7 @@ export default function OffersScreen() {
   const { activeLocation } = useLocation();
   const userLocation = activeLocation;
   const { profile } = useMobileUser();
+  const ad = useAd();
   const { offers, loading, error, refetch } = useOffers({ userLocation: userLocation || undefined });
   const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
@@ -323,16 +326,19 @@ export default function OffersScreen() {
         <FlatList
           data={filteredOffers}
           keyExtractor={(item) => item.id}
-          renderItem={({ item: offer }) => (
-            <OfferCard
-              offer={offer}
-              onPress={() => handleOfferPress(offer)}
-              onFavoritePress={() => handleFavoritePress(offer.id)}
-              isFavorite={isFavorite('offer', offer.id)}
-              onLikePress={() => handleLikePress(offer.id)}
-              isLiked={isLiked('offer', offer.id)}
-              likeCount={getLikeCount('offer', offer.id) || offer.like_count}
-            />
+          renderItem={({ item: offer, index }) => (
+            <>
+              <OfferCard
+                offer={offer}
+                onPress={() => handleOfferPress(offer)}
+                onFavoritePress={() => handleFavoritePress(offer.id)}
+                isFavorite={isFavorite('offer', offer.id)}
+                onLikePress={() => handleLikePress(offer.id)}
+                isLiked={isLiked('offer', offer.id)}
+                likeCount={getLikeCount('offer', offer.id) || offer.like_count}
+              />
+              {index === 0 && ad && <AdBanner ad={ad} />}
+            </>
           )}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
