@@ -62,7 +62,7 @@ export default function EventsScreen() {
   const { activeLocation } = useLocation();
   const userLocation = activeLocation;
   const { profile } = useMobileUser();
-  const ad = useAd();
+  const ad = useAd('feed');
   const { events, loading, error, refetch } = useEvents({ userLocation: userLocation || undefined });
   const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite } = useFavorites();

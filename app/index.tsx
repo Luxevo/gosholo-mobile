@@ -1,3 +1,5 @@
+import { AdBanner } from '@/components/AdBanner';
+import { useAd } from '@/hooks/useAd';
 import { supabase } from '@/lib/supabase';
 import { prefetchAppData } from '@/utils/prefetch';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +10,7 @@ import { View, Animated, StyleSheet, Image } from 'react-native';
 
 export default function Index() {
   const router = useRouter();
+  const ad = useAd('splash');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
@@ -99,6 +102,11 @@ export default function Index() {
           resizeMode="contain"
         />
       </Animated.View>
+      {ad && (
+        <View style={styles.adContainer}>
+          <AdBanner ad={ad} />
+        </View>
+      )}
     </View>
   );
 }
@@ -117,5 +125,9 @@ const styles = StyleSheet.create({
   logo: {
     width: 200,
     height: 200,
+  },
+  adContainer: {
+    position: 'absolute',
+    bottom: 48,
   },
 });

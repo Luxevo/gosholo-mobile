@@ -9,7 +9,7 @@ export interface Ad {
   active_to: string;
 }
 
-export function useAd() {
+export function useAd(placement: 'feed' | 'splash') {
   const [ad, setAd] = useState<Ad | null>(null);
 
   useEffect(() => {
@@ -19,14 +19,16 @@ export function useAd() {
       .from('ads')
       .select('id, image_url, link_url, active_from, active_to')
       .eq('is_active', true)
+      .eq('placement', placement)
       .lte('active_from', today)
       .gte('active_to', today)
+      .order('created_at', { ascending: false })
       .limit(1)
       .single()
       .then(({ data }) => {
         if (data) setAd(data);
       });
-  }, []);
+  }, [placement]);
 
   return ad;
 }

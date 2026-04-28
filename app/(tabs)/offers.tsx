@@ -55,7 +55,7 @@ export default function OffersScreen() {
   const { activeLocation } = useLocation();
   const userLocation = activeLocation;
   const { profile } = useMobileUser();
-  const ad = useAd();
+  const ad = useAd('feed');
   const { offers, loading, error, refetch } = useOffers({ userLocation: userLocation || undefined });
   const { categories: dbCategories } = useCategories();
   const { isFavorite, toggleFavorite, isLoggedIn } = useFavorites();
