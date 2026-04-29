@@ -104,7 +104,7 @@ export default function Index() {
       </Animated.View>
       {ad && (
         <View style={styles.adContainer}>
-          <AdBanner ad={ad} />
+          <AdBanner ad={ad} variant="splash" />
         </View>
       )}
     </View>
