@@ -72,7 +72,7 @@ export default function Index() {
       }
 
       // No auth deep link — navigate after animation completes
-      setTimeout(checkAuthAndNavigate, 1500);
+      setTimeout(checkAuthAndNavigate, 2000);
     });
 
     // Also listen for deep links arriving while splash is visible (warm start)
