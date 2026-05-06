@@ -87,6 +87,7 @@ export function useAIChat(language: string = 'fr') {
           image_url: o.image_url,
           latitude: o.latitude || c.latitude,
           longitude: o.longitude || c.longitude,
+          recurrence_days: o.recurrence_days || null,
         };
       }),
       events: (events || []).map(e => {
@@ -104,6 +105,7 @@ export function useAIChat(language: string = 'fr') {
           image_url: e.image_url,
           latitude: e.latitude || c.latitude,
           longitude: e.longitude || c.longitude,
+          recurrence_days: e.recurrence_days || null,
         };
       }),
       userLocation: activeLocation

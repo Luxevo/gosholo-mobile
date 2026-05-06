@@ -102,6 +102,13 @@ const FSA_TO_NEIGHBORHOOD: Record<string, string> = {
   'G7K': 'Jonquière (Saguenay)', 'G7X': 'Chicoutimi (Saguenay)',
 };
 
+const DAY_NAMES_FR = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+function formatRecurrenceDays(days: number[] | null | undefined): string | null {
+  if (!days || days.length === 0) return null;
+  return days.map(d => DAY_NAMES_FR[d]).filter(Boolean).join(', ');
+}
+
 function getNeighborhood(postalCode?: string | null, address?: string | null): string | null {
   let fsa: string | null = null;
 
@@ -256,8 +263,10 @@ serve(async (req: Request) => {
         const neighborhood = getNeighborhood(o.postal_code, o.address);
         const quartier = neighborhood ? ` Quartier: ${neighborhood}.` : '';
         const addr = o.address ? ` Adresse: ${o.address}.` : '';
+        const days = formatRecurrenceDays(o.recurrence_days);
+        const recurrence = days ? ` Disponible uniquement: ${days}.` : '';
         contextParts.push(
-          `#O${i + 1} "${o.title}" at ${o.business || 'Unknown'} (${o.category || 'N/A'}) — ${o.description || 'No description'}. Valid: ${o.start_date || '?'} to ${o.end_date || '?'}.${quartier}${addr}`
+          `#O${i + 1} "${o.title}" at ${o.business || 'Unknown'} (${o.category || 'N/A'}) — ${o.description || 'No description'}. Valid: ${o.start_date || '?'} to ${o.end_date || '?'}.${recurrence}${quartier}${addr}`
         );
       });
     }
@@ -268,8 +277,10 @@ serve(async (req: Request) => {
         const neighborhood = getNeighborhood(e.postal_code, e.address);
         const quartier = neighborhood ? ` Quartier: ${neighborhood}.` : '';
         const addr = e.address ? ` Adresse: ${e.address}.` : '';
+        const days = formatRecurrenceDays(e.recurrence_days);
+        const recurrence = days ? ` Disponible uniquement: ${days}.` : '';
         contextParts.push(
-          `#E${i + 1} "${e.title}" at ${e.business || 'Unknown'} (${e.category || 'N/A'}) — ${e.description || 'No description'}. Dates: ${e.start_date || '?'} to ${e.end_date || '?'}.${quartier}${addr}`
+          `#E${i + 1} "${e.title}" at ${e.business || 'Unknown'} (${e.category || 'N/A'}) — ${e.description || 'No description'}. Dates: ${e.start_date || '?'} to ${e.end_date || '?'}.${recurrence}${quartier}${addr}`
         );
       });
     }
