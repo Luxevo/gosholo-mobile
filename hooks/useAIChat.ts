@@ -65,7 +65,7 @@ export function useAIChat(language: string = 'fr') {
     if (commerceIds.length > 0) {
       const { data: commerces } = await supabase
         .from('commerces')
-        .select('id, name, address, latitude, longitude, category_id, category:category_id(name_en, name_fr)')
+        .select('id, name, address, postal_code, latitude, longitude, category_id, category:category_id(name_en, name_fr)')
         .in('id', commerceIds);
 
       (commerces || []).forEach(c => { commercesMap[c.id] = c; });
@@ -82,7 +82,8 @@ export function useAIChat(language: string = 'fr') {
           end_date: o.end_date,
           business: c.name,
           category: (c.category as any)?.name_en,
-          address: c.address,
+          address: o.custom_location || c.address,
+          postal_code: o.postal_code || c.postal_code || null,
           image_url: o.image_url,
           latitude: o.latitude || c.latitude,
           longitude: o.longitude || c.longitude,
@@ -98,7 +99,8 @@ export function useAIChat(language: string = 'fr') {
           end_date: e.end_date,
           business: c.name,
           category: (c.category as any)?.name_en,
-          address: c.address,
+          address: e.custom_location || c.address,
+          postal_code: e.postal_code || c.postal_code || null,
           image_url: e.image_url,
           latitude: e.latitude || c.latitude,
           longitude: e.longitude || c.longitude,
